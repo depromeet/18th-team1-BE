@@ -22,6 +22,15 @@ build/
 ### Kotlin ###
 .kotlin/
 
+### Terraform ###
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+### Node (husky) ###
+node_modules/
+
 ### Environment ###
 .env
 .env.local
