@@ -3,7 +3,7 @@ set -eu
 
 # staged 변경에서 비밀키 검사 (gitleaks가 설치된 경우)
 if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks protect --staged
+  gitleaks git --pre-commit --staged .
 else
   echo "gitleaks 미설치: 비밀키 검사를 건너뜁니다."
 fi
