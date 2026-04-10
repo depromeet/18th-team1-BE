@@ -40,11 +40,11 @@ feat, fix, perf, refactor, test, docs, style, chore, ci, build, revert
 
 ## 금지 사항
 
-- Co-Authored-By 트레일러 절대 금지
 - `terraform.tfstate` 커밋 금지
 - `.env` 파일 커밋 금지
 - `--no-verify` 사용 금지
 - 커밋 메시지, PR은 한글로 작성
+- push, PR 생성은 명시적으로 요청하기 전까지 하지 말 것 — 커밋까지만 진행
 
 ## Terraform
 
