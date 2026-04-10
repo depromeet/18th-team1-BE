@@ -1,0 +1,6 @@
+project_id   = "project-10e57bb0-e960-4b16-9fa"
+region       = "asia-northeast3"
+zone         = "asia-northeast3-a"
+env          = "dev"
+service_name = "firstpenguin"
+machine_type = "e2-medium"
