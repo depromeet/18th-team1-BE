@@ -105,7 +105,6 @@ npx husky init
 **역할**
 - 커밋 타입 검증 (feat, fix, refactor 등)
 - 타입에 맞는 이모지 자동 prefix
-- `Co-authored-by` 트레일러 차단 (AI 공동 커밋 방지)
 
 **커밋 타입**
 
