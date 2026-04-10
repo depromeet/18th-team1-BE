@@ -56,6 +56,7 @@ resource "google_compute_firewall" "allow_ssh" {
     ports    = ["22"]
   }
 
+  target_tags   = ["api-server"]
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -68,6 +69,7 @@ resource "google_compute_firewall" "allow_app" {
     ports    = ["8080"]
   }
 
+  target_tags   = ["api-server"]
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -79,6 +81,7 @@ resource "google_compute_firewall" "allow_icmp" {
     protocol = "icmp"
   }
 
+  target_tags   = ["api-server"]
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -101,18 +104,6 @@ resource "google_compute_firewall" "allow_internal" {
   }
 
   source_ranges = ["10.0.0.0/16"]
-}
-
-resource "google_compute_firewall" "deny_all_ingress" {
-  name     = "${var.env}-${var.service_name}-fw-deny-all-ingress"
-  network  = google_compute_network.vpc.id
-  priority = 65534
-
-  deny {
-    protocol = "all"
-  }
-
-  source_ranges = ["0.0.0.0/0"]
 }
 
 # ============================================
