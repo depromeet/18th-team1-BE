@@ -1,0 +1,16 @@
+{
+  "name": "18th-team1-be",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Depromeet 18th Team1 Backend",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/depromeet/18th-team1-BE.git"
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
