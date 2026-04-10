@@ -11,7 +11,7 @@ cd app && ./gradlew testClasses # 컴파일 검증만
 
 ## 프로젝트 구조
 
-```
+```text
 app/                  — Spring Boot 애플리케이션 (Kotlin)
 infra/terraform/      — GCP 인프라 코드 (dev/prod 분리)
 docs/                 — 프로젝트 문서 (convention.md, husky.md)
