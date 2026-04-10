@@ -1,0 +1,62 @@
+name: "\U0001F9F9 Refactor"
+description: 구조 개선, 코드 정리, 기술 부채 해소 작업을 작성합니다.
+title: "[Refactor] "
+labels:
+  - refactor
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 리팩토링 배경
+      description: 왜 이 리팩토링이 필요한지, 현재 어떤 문제가 있는지 작성해주세요.
+      placeholder: 예) 서비스 계층 로직이 과도하게 비대해져 테스트와 유지보수가 어렵습니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_problem
+    attributes:
+      label: 현재 문제점
+      description: 구조적 문제, 중복 코드, 결합도, 테스트 어려움 등을 구체적으로 작성해주세요.
+      placeholder: 예) 동일한 검증 로직이 여러 유스케이스에 중복되어 수정 비용이 큽니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 변경 방향
+      description: 어떤 방식으로 구조를 개선할지 작성해주세요.
+      placeholder: 예) 공통 검증 로직을 도메인 서비스로 분리하고, 컨트롤러는 입출력 매핑만 담당하도록 정리합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: 영향 범위
+      description: 변경이 예상되는 패키지, API, DB, 테스트 범위를 작성해주세요.
+      placeholder: |
+        - Package:
+        - API:
+        - DB:
+        - Test:
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: 고려할 리스크
+      description: 리팩토링 중 주의해야 할 회귀 위험이나 호환성 이슈를 작성해주세요.
+      placeholder: 예) API 응답 스키마가 바뀌지 않도록 유지해야 하며 기존 통합 테스트가 모두 통과해야 합니다.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 체크리스트
+      options:
+        - label: 기능 추가가 아니라 구조 개선 목적임을 확인했습니다.
+          required: true
+        - label: 영향 범위와 리스크를 검토했습니다.
+          required: true

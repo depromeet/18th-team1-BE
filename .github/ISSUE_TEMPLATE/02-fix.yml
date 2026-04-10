@@ -1,0 +1,93 @@
+name: "\U0001F527 Fix"
+description: 버그 수정이나 장애 대응 작업을 작성합니다.
+title: "[Fix] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 문제 설명
+      description: 어떤 문제를 수정해야 하는지 간결하게 작성해주세요.
+      placeholder: 예) 룸메이트 신청 API 호출 시 500 에러가 발생합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      description: 문제가 재현되는 과정을 순서대로 작성해주세요.
+      placeholder: |
+        1. `POST /api/...` 요청
+        2. 특정 파라미터 전달
+        3. 응답 확인
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      description: 수정 후 기대하는 정상 동작을 작성해주세요.
+      placeholder: 예) 정상적으로 200 응답과 데이터가 반환되어야 합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 현재 동작
+      description: 현재 발생 중인 문제 상황을 작성해주세요.
+      placeholder: 예) 500 Internal Server Error가 반환됩니다.
+    validations:
+      required: true
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: 관련 API 또는 기능
+      description: 문제가 발생한 API, 도메인, 기능명을 작성해주세요.
+      placeholder: 예) `POST /api/rooms`, 채팅방 생성, 알림 전송
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 영향도
+      description: 서비스 영향 범위를 선택해주세요.
+      options:
+        - 치명적 (서비스 사용 불가)
+        - 높음 (주요 기능 오류)
+        - 보통 (우회 가능)
+        - 낮음 (경미한 문제)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / 스크린샷 / 참고 자료
+      description: 에러 로그, 응답 본문, 이미지 등이 있다면 첨부해주세요.
+      placeholder: 스택 트레이스, 에러 메시지, 관련 이미지 등을 붙여주세요.
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경 정보
+      description: 확인한 실행 환경을 작성해주세요.
+      placeholder: |
+        - Branch:
+        - Commit:
+        - OS:
+        - Browser / Client:
+        - 기타:
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 체크리스트
+      options:
+        - label: 중복 이슈가 없는지 확인했습니다.
+          required: true
+        - label: 재현 절차와 수정 목표를 확인했습니다.
+          required: true
