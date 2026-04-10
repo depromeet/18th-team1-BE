@@ -69,7 +69,6 @@ feat: 회원가입 API 추가
 
 - `husky` + 커스텀 `commit-msg` 훅 사용
 - 잘못된 커밋 타입 → 커밋 차단
-- `Co-authored-by` 트레일러 포함 → 커밋 차단
 
 ---
 
