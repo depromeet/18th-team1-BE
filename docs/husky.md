@@ -15,7 +15,7 @@ Husky는 **Git Hook을 쉽게 관리**할 수 있게 해주는 도구다. Git에
 
 ### 2.2. 브로큰 코드 유입 방지
 - `pre-commit`에서 컴파일 검증(`./gradlew testClasses`)만 해도 **빌드가 깨진 상태의 커밋**을 원천 차단할 수 있다.
-- `pre-push`에서 전체 테스트와 커버리지를 검증하면, **깨진 코드가 원격에 올라가는 일 자체를 방지**한다.
+- `pre-push`에서 전체 테스트를 검증하면, **깨진 코드가 원격에 올라가는 일 자체를 방지**한다.
 - CI가 돌아서 실패 알림이 올 때까지 기다릴 필요가 없다 → 로컬에서 먼저 걸린다.
 
 ### 2.3. 비밀키 유출 방지
@@ -50,7 +50,7 @@ git add .
 git commit -m "feat: 회원가입 API 추가"
 ```
 → `commit-msg` 훅이 자동으로 이모지를 붙여서 다음과 같이 변환:
-```
+```text
 ✨ feat: 회원가입 API 추가
 ```
 
@@ -59,7 +59,7 @@ git commit -m "feat: 회원가입 API 추가"
 |------|-----|-----------|
 | `git commit` 직전 | `pre-commit` | 비밀키 검사 + 컴파일 검증 |
 | `git commit` 메시지 작성 후 | `commit-msg` | 타입 검증 + 이모지 자동 삽입 |
-| `git push` 직전 | `pre-push` | 전체 테스트 + 커버리지 검증 |
+| `git push` 직전 | `pre-push` | 전체 테스트 검증 |
 
 ### 3.5. 훅이 실패했을 때
 - **컴파일 에러**: IDE에서 에러를 먼저 해결하고 다시 커밋
@@ -124,11 +124,11 @@ npx husky init
 | revert | ⏪ | 커밋 되돌리기 |
 
 **작성 예시**
-```
+```text
 feat: 회원가입 API 추가
 ```
 → 자동으로 변환:
-```
+```text
 ✨ feat: 회원가입 API 추가
 ```
 
@@ -147,7 +147,6 @@ feat: 회원가입 API 추가
 
 **역할**
 - 전체 테스트 실행 (`./gradlew clean test`)
-- 커버리지 검증 (`jacocoTestCoverageVerification`)
 
 **왜 push에만?**
 - 커밋은 자주 한다 → 빠른 피드백 필요
