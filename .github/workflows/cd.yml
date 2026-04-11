@@ -47,5 +47,5 @@ jobs:
           script: |
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             cd ~/app
-            docker compose up -d --force-recreate app
+            docker compose -f docker-compose-dev.yml up -d --force-recreate app
             docker image prune -f
