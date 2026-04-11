@@ -171,10 +171,12 @@ Controller → UseCase(Facade) → Service → Repository
 
 ## 8. 환경 변수 & 시크릿 관리
 
-### Git 서브모듈 기반 시크릿 관리 (미적용)
+### Git 서브모듈 기반 설정 관리
 
-- 민감 정보는 레포 분리
-- 해당 레포는 프라이빗
+- 설정 파일은 private config 레포에서 관리
+- 메인 레포에 submodule로 등록 (`app/src/main/resources/config`)
+- 민감 정보(DB 비밀번호, API 키 등)는 yml에 넣지 않고 환경변수 또는 볼륨 마운트로 주입
+- 상세 가이드: `docs/submodule.md`
 
 ---
 
