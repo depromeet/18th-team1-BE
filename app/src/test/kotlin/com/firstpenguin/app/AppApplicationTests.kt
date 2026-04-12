@@ -5,9 +5,8 @@ import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
 class AppApplicationTests {
-
     @Test
     fun contextLoads() {
+        // Spring application context loads successfully
     }
-
 }
