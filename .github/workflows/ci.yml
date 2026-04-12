@@ -5,7 +5,32 @@ on:
     branches: [dev, main]
 
 jobs:
+  lint:
+    name: 코드 스타일 검사
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: ktlint
+        run: ./gradlew lintKotlin
+
+      - name: detekt
+        run: ./gradlew detekt
+
   test:
+    name: 테스트 및 커버리지
+    needs: lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,5 +49,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: 빌드 및 테스트
-        run: ./gradlew clean build
+      - name: 테스트
+        run: ./gradlew test
+
+      - name: 커버리지 검증
+        run: ./gradlew koverVerify
