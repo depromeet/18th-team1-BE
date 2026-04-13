@@ -6,7 +6,7 @@
 
 ```
 18th-team1-BE (메인 레포 - public)
-└── app/src/main/resources/config  ← submodule (private)
+└── secret/  ← submodule (private)
     ├── application.yml
     ├── application-dev.yml
     └── application-prod.yml
@@ -14,6 +14,7 @@
 
 - 메인 레포에는 config 레포의 **커밋 해시(포인터)**만 저장됨
 - config 레포 접근 권한이 없으면 설정 파일을 볼 수 없음
+- 이미지에 yml을 포함하지 않고, **서버에서 볼륨 마운트로 주입**
 
 ## 최초 세팅 (clone 후)
 
@@ -38,7 +39,7 @@ git clone --recurse-submodules https://github.com/depromeet/18th-team1-BE.git
 config 레포의 파일을 수정하려면:
 
 ```bash
-cd app/src/main/resources/config
+cd secret
 
 # 파일 수정 후
 git add .
@@ -50,7 +51,7 @@ git push origin main
 
 ```bash
 cd /path/to/18th-team1-BE  # 메인 레포 루트로 이동
-git add app/src/main/resources/config
+git add secret
 git commit -m "chore: config submodule 업데이트"
 ```
 
@@ -62,13 +63,30 @@ git commit -m "chore: config submodule 업데이트"
 git submodule update --remote
 ```
 
+## 배포 시 설정 주입 방식
+
+Docker 이미지에 yml을 포함하지 않고, 서버에서 볼륨 마운트로 주입합니다.
+
+```yaml
+# docker-compose-dev.yml
+services:
+  app:
+    image: ghcr.io/depromeet/18th-team1-be/api:latest
+    volumes:
+      - ./config:/app/config   # 서버의 config 디렉터리를 컨테이너에 마운트
+```
+
+서버에서는 config 레포를 deploy key로 clone하여 관리합니다:
+```bash
+git clone git@github-config:kimseonj/18th-team1-BE-config.git /opt/firstpenguin/app/config
+```
+
 ## 민감 정보 관리 원칙
 
 | 구분 | 저장 위치 | 예시 |
 |------|-----------|------|
-| 공통 설정 | config 레포 (submodule) | 서버 포트, 로깅 레벨, JPA 설정 |
-| 환경별 설정 | config 레포 (submodule) | DB URL, Redis host |
-| 민감 정보 | 서버 환경변수 / `.env` | DB 비밀번호, API 키, JWT secret |
+| 환경별 설정 | config 레포 (submodule) | DB URL, JPA 설정, 로깅 레벨 |
+| 민감 정보 | 서버 `.env` | DB 비밀번호, API 키, JWT secret |
 
 민감 정보는 yml에 placeholder로 작성합니다:
 
@@ -76,15 +94,16 @@ git submodule update --remote
 # application-dev.yml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/firstpenguin
+    url: jdbc:postgresql://db:5432/firstpenguin
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 ```
 
-실제 값은 서버의 `.env` 파일 또는 Docker Compose의 `env_file`로 주입합니다.
+실제 값은 서버의 `.env` 파일에서 Docker Compose 환경변수로 주입합니다.
 
 ## 주의사항
 
 - config 레포에 **비밀번호, API 키를 직접 넣지 마세요** (placeholder 사용)
 - submodule 변경 후 메인 레포에서 **포인터 커밋을 잊지 마세요**
 - `.env` 파일은 `.gitignore`에 포함되어 있으므로 git에 올라가지 않습니다
+- 서버에서 config 레포 접근은 **deploy key** (read-only)로 제한합니다
