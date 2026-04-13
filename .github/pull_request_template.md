@@ -1,3 +1,6 @@
+<!-- PR 제목 형식: 타입: 설명 (예: feat: 회원가입 API 추가) -->
+<!-- 타입: feat, fix, perf, refactor, test, docs, style, chore, ci, build, revert -->
+
 ## 📢 요약
 - 무엇을, 왜 변경했는지 설명
 
