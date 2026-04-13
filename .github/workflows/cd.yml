@@ -2,7 +2,7 @@ name: CD
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, main]
 
 env:
   REGISTRY: ghcr.io
@@ -12,15 +12,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+
     permissions:
       contents: read
       packages: write
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
-          token: ${{ secrets.CONFIG_TOKEN }}
 
       - name: GHCR 로그인
         uses: docker/login-action@v3
@@ -38,14 +37,10 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: dev 서버 배포
+      - name: 서버 배포
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.DEV_SERVER_HOST }}
-          username: ${{ secrets.DEV_SERVER_USER }}
-          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
-          script: |
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            cd ~/app
-            docker compose -f docker-compose-dev.yml up -d --force-recreate app
-            docker image prune -f
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: bash ${{ vars.DEPLOY_SCRIPT_PATH }}
