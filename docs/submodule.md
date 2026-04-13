@@ -6,12 +6,16 @@
 
 ```
 18th-team1-BE (메인 레포 - public)
+├── app/src/main/resources/
+│   ├── application.yml
+│   └── application-local.yml
 └── secret/  ← submodule (private)
-    ├── application.yml
     ├── application-dev.yml
     └── application-prod.yml
 ```
 
+- 로컬 환경은 classpath 리소스(`application.yml`, `application-local.yml`)를 사용
+- dev/prod 환경은 외부 config 레포의 profile yml을 사용
 - 메인 레포에는 config 레포의 **커밋 해시(포인터)**만 저장됨
 - config 레포 접근 권한이 없으면 설정 파일을 볼 수 없음
 - 이미지에 yml을 포함하지 않고, **서버에서 볼륨 마운트로 주입**
@@ -91,7 +95,7 @@ git clone git@github-config:kimseonj/18th-team1-BE-config.git /opt/firstpenguin/
 민감 정보는 yml에 placeholder로 작성합니다:
 
 ```yaml
-# application-dev.yml
+# secret/application-dev.yml
 spring:
   datasource:
     url: jdbc:postgresql://db:5432/firstpenguin
