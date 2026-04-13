@@ -11,7 +11,7 @@ GitHub Actions (cd.yml)
   1. 소스코드 checkout
   2. GHCR 로그인
   3. Docker 이미지 빌드 (멀티스테이지)
-  4. GHCR에 이미지 push (latest + commit SHA 태그)
+  4. GHCR에 이미지 push (환경별 태그 + commit SHA 태그)
   5. SSH로 서버 접속 → 배포 스크립트 실행
 ```
 
@@ -31,7 +31,7 @@ GitHub Actions (cd.yml)
 [1단계 - 빌드]                      [2단계 - 실행]
 gradle:8.13-jdk21                   eclipse-temurin:21-jre
 ├── 소스코드 복사                    ├── jar만 복사
-├── gradle build -x test            └── java -jar app.jar
+├── gradle bootJar                  └── java -jar app.jar
 └── jar 생성 (~1GB)                     (~300MB)
 ```
 
@@ -45,7 +45,7 @@ gradle:8.13-jdk21                   eclipse-temurin:21-jre
 |------|------|
 | 레지스트리 | `ghcr.io` |
 | 이미지 경로 | `ghcr.io/depromeet/18th-team1-be/api` |
-| 태그 | `latest` + commit SHA |
+| 태그 | 환경별 (`dev`, `main`) + commit SHA |
 
 **GHCR 선택 이유**:
 - GitHub Actions에서 `GITHUB_TOKEN`으로 바로 인증 (별도 설정 불필요)
@@ -114,7 +114,7 @@ sudo mkdir -p /opt/firstpenguin/{scripts,app/config}
 sudo chown -R ubuntu:ubuntu /opt/firstpenguin
 
 # 2. 배포 스크립트 배치
-cp deploy-dev.sh /opt/firstpenguin/scripts/
+cp scripts/deploy-dev.sh /opt/firstpenguin/scripts/
 chmod +x /opt/firstpenguin/scripts/deploy-dev.sh
 
 # 3. docker-compose-dev.yml 배치

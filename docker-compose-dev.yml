@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/depromeet/18th-team1-be/api:latest
+    image: ghcr.io/depromeet/18th-team1-be/api:dev
     container_name: firstpenguin-api
     ports:
       - "8080:8080"

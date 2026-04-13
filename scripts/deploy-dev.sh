@@ -10,7 +10,7 @@ cd "$CONFIG_DIR"
 git pull origin main
 
 echo "=== 최신 이미지 pull ==="
-docker pull "$IMAGE:latest"
+docker pull "$IMAGE:dev"
 
 echo "=== 앱 재시작 ==="
 cd "$APP_DIR"
