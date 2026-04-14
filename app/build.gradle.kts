@@ -1,8 +1,11 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.spring") version "2.2.21"
+    kotlin("jvm") version "2.2.20"
+    kotlin("plugin.spring") version "2.2.20"
     id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("org.jmailen.kotlinter") version "5.3.0"
+    id("dev.detekt") version "2.0.0-alpha.1"
 }
 
 group = "com.firstpenguin"
@@ -35,4 +38,19 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+detekt {
+    config.setFrom(files("$rootDir/../detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(0)
+            }
+        }
+    }
 }
