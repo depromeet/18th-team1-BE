@@ -1,3 +1,11 @@
 spring:
   application:
     name: app
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha

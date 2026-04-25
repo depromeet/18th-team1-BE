@@ -1,0 +1,7 @@
+# prod profile
+# Swagger UI 노출을 막으려면 아래 두 키의 주석을 해제한다.
+#springdoc:
+#  api-docs:
+#    enabled: false
+#  swagger-ui:
+#    enabled: false
