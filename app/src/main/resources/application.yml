@@ -2,6 +2,10 @@ spring:
   application:
     name: app
 
+server:
+  servlet:
+    context-path: /api
+
 springdoc:
   api-docs:
     enabled: true
