@@ -72,12 +72,7 @@ gradle:8.13-jdk21                   eclipse-temurin:21-jre
 | `SERVER_HOST` | 서버 외부 IP |
 | `SERVER_USER` | SSH 사용자 (ubuntu) |
 | `SERVER_SSH_KEY` | 배포용 SSH 개인키 |
-
-### Variables (Settings → Environments → 환경별 등록)
-
-| Variable | dev | prod |
-|----------|-----|------|
-| `DEPLOY_SCRIPT_PATH` | `/opt/firstpenguin/scripts/deploy-dev.sh` | `/opt/firstpenguin/scripts/deploy-prod.sh` |
+| `DEPLOY_SCRIPT_PATH` | 배포 스크립트 절대 경로 (dev: `/opt/firstpenguin/scripts/deploy-dev.sh`, prod: `/opt/firstpenguin/scripts/deploy-prod.sh`) |
 
 ### SSH 키 생성 방법
 
