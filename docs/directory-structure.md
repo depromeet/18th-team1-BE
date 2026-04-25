@@ -79,4 +79,8 @@ app/build/generated-sources/jooq/
 - 파일명: `{Domain}` prefix 사용 (예: `UserController`, `UserUseCase`)
 - DTO: `data class` 사용
 - Request DTO: `{Action}{Domain}Request` (예: `CreateUserRequest`)
-- Response DTO: `{Domain}Response` 또는 `{Action}{Domain}Response`
+- Response DTO:
+  - 기본 상세 응답: `{Domain}Response` (예: `UserResponse`)
+  - 목록/요약 응답: `{Domain}SummaryResponse`, `{Action}{Domain}Response` (예: `UserSummaryResponse`, `SearchUserResponse`)
+  - 생성/수정 결과가 기본 상세 응답과 같으면 `{Domain}Response`를 재사용
+  - 생성/수정 결과가 액션에 특화되어 있으면 `{Action}{Domain}Response` 사용 (예: `CreateUserResponse`)
