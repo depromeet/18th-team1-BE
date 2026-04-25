@@ -11,6 +11,8 @@
 *.ipr
 out/
 
+src/main/resources/application-*.yml
+
 ### VS Code ###
 .vscode/
 
