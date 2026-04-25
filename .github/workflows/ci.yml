@@ -49,7 +49,7 @@ jobs:
       - name: 테스트 DB 실행
         run: |
           cp ../.env.example ../.env
-          docker compose -f ../docker-compose-local.yml up -d db
+          docker compose -f ../docker-compose-local.yml up -d --wait db
 
       - name: 테스트
         run: ./gradlew test
