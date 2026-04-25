@@ -1,3 +1,15 @@
 spring:
   application:
     name: app
+
+server:
+  servlet:
+    context-path: /api
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
