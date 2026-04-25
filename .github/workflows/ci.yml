@@ -46,8 +46,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: 테스트 DB 실행
+        run: |
+          cp ../.env.example ../.env
+          docker compose -f ../docker-compose-local.yml up -d db
+
       - name: 테스트
         run: ./gradlew test
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/changeme
+          DB_USER: changeme
+          DB_PASSWORD: changeme
 
       - name: 커버리지 검증
         run: ./gradlew koverVerify
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/changeme
+          DB_USER: changeme
+          DB_PASSWORD: changeme
