@@ -25,6 +25,13 @@ docs/                 — 프로젝트 문서 (convention.md, husky.md)
 - 커밋: Conventional Commits — 이모지는 commit-msg 훅이 자동 삽입
 - PR 대상: `dev` 브랜치
 - 머지 순서: feature → dev → main(배포)
+- `dev` 브랜치에 직접 커밋하거나 push하지 않는다. 모든 변경은 작업 브랜치에서 커밋하고 PR로 반영한다.
+
+## 설정 파일 규칙
+
+- 환경별 설정과 민감 정보는 `secret` submodule의 profile yml에서 관리한다.
+- `app/src/main/resources/application.yml`에는 애플리케이션 공통 설정만 둔다.
+- DB 접속 정보, OAuth secret, JWT secret 등 환경별 값은 `app/src/main/resources`에 추가하지 않는다.
 
 ## 커밋 타입
 
