@@ -23,16 +23,20 @@ class UserRepository(
             .where(UserTable.ID.eq(id))
             .fetchOne(::toUser)
 
-    fun findByProviderId(providerId: String): User? =
+    fun findByProviderAndProviderId(
+        provider: Provider,
+        providerId: String,
+    ): User? =
         dsl
             .select(USER_FIELDS)
             .from(UserTable.USERS)
-            .where(UserTable.PROVIDER_ID.eq(providerId))
+            .where(UserTable.PROVIDER.eq(provider.name))
+            .and(UserTable.PROVIDER_ID.eq(providerId))
             .fetchOne(::toUser)
 
     @Transactional
     fun upsertOAuthUser(profile: OAuthUserProfile): User {
-        val existingUser = findByProviderId(profile.providerId)
+        val existingUser = findByProviderAndProviderId(profile.provider, profile.providerId)
 
         if (existingUser == null) {
             return insertOAuthUser(profile)

@@ -45,7 +45,7 @@ class CustomOAuth2UserService(
 
         return OAuthUserProfile(
             provider = Provider.KAKAO,
-            providerId = "kakao_$externalId",
+            providerId = externalId,
             email = null,
             nickname = normalizeNickname(Provider.KAKAO, nickname, externalId),
             profileImageKey = profileImageUrl,
@@ -58,7 +58,7 @@ class CustomOAuth2UserService(
 
         return OAuthUserProfile(
             provider = Provider.GOOGLE,
-            providerId = "google_$externalId",
+            providerId = externalId,
             email = attributes["email"] as? String,
             nickname = normalizeNickname(Provider.GOOGLE, nickname, externalId),
             profileImageKey = null,
