@@ -70,6 +70,8 @@ class UserRepository(
         return dsl
             .update(UserTable.USERS)
             .set(UserTable.EMAIL, profile.email ?: user.email)
+            .set(UserTable.NICKNAME, profile.nickname)
+            .set(UserTable.PROFILE_IMAGE_KEY, profile.profileImageKey ?: user.profileImageKey)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
             .set(UserTable.DELETED_AT, null as LocalDateTime?)
             .set(UserTable.LAST_LOGIN_AT, now)

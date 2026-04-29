@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.auth.token
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -11,6 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+
+const val JWT_AUTHENTICATION_ERROR_ATTRIBUTE = "jwtAuthenticationError"
 
 @Component
 class JwtAuthenticationFilter(
@@ -23,23 +24,26 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        authenticate(resolveBearerToken(request))
+        authenticate(request, resolveBearerToken(request))
         filterChain.doFilter(request, response)
     }
 
-    private fun authenticate(token: String?) {
+    private fun authenticate(
+        request: HttpServletRequest,
+        token: String?,
+    ) {
         if (token.isNullOrBlank()) {
             return
         }
 
         try {
             val claims = jwtTokenProvider.validateAccessToken(token)
-            val role = claims.role ?: throw CustomException(ErrorCode.INVALID_TOKEN)
-            val principal = AuthenticatedUser(id = claims.userId, role = role)
-            val authentication = UsernamePasswordAuthenticationToken(principal, null, principal.authorities())
+            val principal = AuthenticatedUser(id = claims.userId)
+            val authentication = UsernamePasswordAuthenticationToken(principal, null, emptyList())
             SecurityContextHolder.getContext().authentication = authentication
         } catch (e: CustomException) {
             log.debug("JWT authentication failed", e)
+            request.setAttribute(JWT_AUTHENTICATION_ERROR_ATTRIBUTE, e.errorCode)
             SecurityContextHolder.clearContext()
         }
     }

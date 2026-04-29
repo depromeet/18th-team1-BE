@@ -6,7 +6,7 @@
 com.firstpenguin.app/
 ├── global/                          # 전역 공통 모듈
 │   ├── exception/
-│   │   ├── ErrorCode.kt             # 에러 코드 enum (HTTP status + code + message)
+│   │   ├── ErrorCode.kt             # 에러 코드 enum (HTTP status + message)
 │   │   ├── CustomException.kt       # 비즈니스 예외 기본 클래스
 │   │   └── GlobalExceptionHandler.kt # @RestControllerAdvice 전역 예외 처리
 │   └── response/
@@ -47,19 +47,15 @@ com.firstpenguin.app/
 - **exception**: `ErrorCode`, `CustomException`, `GlobalExceptionHandler`
 - **response**: 공통 응답 DTO (현재 `ErrorResponse`)
 
-## 에러 코드 카테고리 규칙
+## 에러 응답 규칙
 
-| prefix | 카테고리 |
-|--------|----------|
-| `C` | Common (공통) |
-| `A` | Auth (인증/인가) |
-| `U` | User (사용자) |
-| 추가 필요 시 팀 합의 후 확장 | |
+`ErrorCode`는 HTTP status와 기본 메시지를 정의한다.
+`ErrorResponse`는 클라이언트에 `message`만 내려준다.
 
 예시:
 ```kotlin
 // ErrorCode.kt에 추가
-USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다"),
+USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
 ```
 
 예외 사용:

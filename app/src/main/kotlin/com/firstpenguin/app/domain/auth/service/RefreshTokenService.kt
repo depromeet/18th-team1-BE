@@ -64,7 +64,7 @@ class RefreshTokenService(
     ) = refreshTokenRepository.findByTokenHash(jwtTokenProvider.hash(refreshToken))
         ?: run {
             refreshTokenRepository.deleteByUserId(userId)
-            throw CustomException(ErrorCode.INVALID_TOKEN)
+            throw CustomException(ErrorCode.INVALID_REFRESH_TOKEN)
         }
 
     private fun validateStoredToken(
@@ -76,7 +76,7 @@ class RefreshTokenService(
         }
 
         refreshTokenRepository.deleteById(tokenId)
-        throw CustomException(ErrorCode.TOKEN_EXPIRED)
+        throw CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED)
     }
 
     private fun refreshTokenExpiresAt(): LocalDateTime = LocalDateTime.now().plusSeconds(refreshTokenExpirationSeconds)

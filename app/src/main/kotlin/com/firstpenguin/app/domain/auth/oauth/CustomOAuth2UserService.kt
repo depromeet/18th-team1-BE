@@ -41,13 +41,14 @@ class CustomOAuth2UserService(
         val account = attributes.mapValue("kakao_account")
         val profile = account.mapValue("profile")
         val nickname = profile["nickname"] as? String ?: attributes.mapValue("properties")["nickname"] as? String
+        val profileImageUrl = profile["profile_image_url"] as? String ?: profile["thumbnail_image_url"] as? String
 
         return OAuthUserProfile(
             provider = Provider.KAKAO,
             providerId = "kakao_$externalId",
-            email = account["email"] as? String,
+            email = null,
             nickname = normalizeNickname(Provider.KAKAO, nickname, externalId),
-            profileImageKey = null,
+            profileImageKey = profileImageUrl,
         )
     }
 

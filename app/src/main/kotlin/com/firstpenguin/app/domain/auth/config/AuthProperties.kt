@@ -25,7 +25,8 @@ data class AuthProperties(
     )
 
     data class OAuth2(
-        var successRedirectUrl: String = "http://localhost:3000/auth/callback",
+        var successRedirectUrl: String = "http://localhost:3000/login/kakao/callback",
         var failureRedirectUrl: String = "http://localhost:3000/login",
+        var allowedOrigins: List<String> = listOf("http://localhost:3000"),
     )
 }

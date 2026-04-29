@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.auth.token
 
 import com.firstpenguin.app.domain.auth.config.AuthProperties
 import com.firstpenguin.app.domain.auth.model.TokenClaims
-import com.firstpenguin.app.domain.user.model.Role
 import com.firstpenguin.app.domain.user.model.User
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -29,7 +28,6 @@ class JwtTokenProvider(
     fun createAccessToken(user: User): String =
         createToken(
             userId = user.id,
-            role = user.role,
             tokenType = ACCESS_TOKEN_TYPE,
             expiration = authProperties.jwt.accessTokenExpiration,
         )
@@ -37,14 +35,25 @@ class JwtTokenProvider(
     fun createRefreshToken(userId: Long): String =
         createToken(
             userId = userId,
-            role = null,
             tokenType = REFRESH_TOKEN_TYPE,
             expiration = authProperties.jwt.refreshTokenExpiration,
         )
 
-    fun validateAccessToken(token: String): TokenClaims = validateToken(token, ACCESS_TOKEN_TYPE)
+    fun validateAccessToken(token: String): TokenClaims =
+        validateToken(
+            token = token,
+            expectedType = ACCESS_TOKEN_TYPE,
+            invalidTokenError = ErrorCode.INVALID_ACCESS_TOKEN,
+            tokenExpiredError = ErrorCode.ACCESS_TOKEN_EXPIRED,
+        )
 
-    fun validateRefreshToken(token: String): TokenClaims = validateToken(token, REFRESH_TOKEN_TYPE)
+    fun validateRefreshToken(token: String): TokenClaims =
+        validateToken(
+            token = token,
+            expectedType = REFRESH_TOKEN_TYPE,
+            invalidTokenError = ErrorCode.INVALID_REFRESH_TOKEN,
+            tokenExpiredError = ErrorCode.REFRESH_TOKEN_EXPIRED,
+        )
 
     fun hash(token: String): String =
         MessageDigest
@@ -54,12 +63,11 @@ class JwtTokenProvider(
 
     private fun createToken(
         userId: Long,
-        role: Role?,
         tokenType: String,
         expiration: Duration,
     ): String {
         val now = Instant.now()
-        val claims = claims(userId, role, tokenType, now, expiration)
+        val claims = claims(userId, tokenType, now, expiration)
         val signedJwt = SignedJWT(JWSHeader(JWSAlgorithm.HS256), claims)
 
         signedJwt.sign(MACSigner(signingKey()))
@@ -69,24 +77,25 @@ class JwtTokenProvider(
     private fun validateToken(
         token: String,
         expectedType: String,
+        invalidTokenError: ErrorCode,
+        tokenExpiredError: ErrorCode,
     ): TokenClaims =
         try {
             val signedJwt = SignedJWT.parse(token)
-            validateParsedToken(signedJwt, expectedType)
-            tokenClaims(signedJwt)
+            validateParsedToken(signedJwt, expectedType, invalidTokenError, tokenExpiredError)
+            tokenClaims(signedJwt, invalidTokenError)
         } catch (e: CustomException) {
             throw e
         } catch (e: ParseException) {
-            throw CustomException(ErrorCode.INVALID_TOKEN).also { it.initCause(e) }
+            throw CustomException(invalidTokenError).also { it.initCause(e) }
         } catch (e: JOSEException) {
-            throw CustomException(ErrorCode.INVALID_TOKEN).also { it.initCause(e) }
+            throw CustomException(invalidTokenError).also { it.initCause(e) }
         } catch (e: IllegalArgumentException) {
-            throw CustomException(ErrorCode.INVALID_TOKEN).also { it.initCause(e) }
+            throw CustomException(invalidTokenError).also { it.initCause(e) }
         }
 
     private fun claims(
         userId: Long,
-        role: Role?,
         tokenType: String,
         now: Instant,
         expiration: Duration,
@@ -99,39 +108,41 @@ class JwtTokenProvider(
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plus(expiration)))
                 .claim(TOKEN_TYPE_CLAIM, tokenType)
-
-        role?.let { builder.claim(ROLE_CLAIM, it.name) }
         return builder.build()
     }
 
     private fun validateParsedToken(
         signedJwt: SignedJWT,
         expectedType: String,
+        invalidTokenError: ErrorCode,
+        tokenExpiredError: ErrorCode,
     ) {
         val expirationTime = signedJwt.jwtClaimsSet.expirationTime?.toInstant()
         val errorCode =
             when {
-                !signedJwt.verify(MACVerifier(signingKey())) -> ErrorCode.INVALID_TOKEN
-                expirationTime == null || !expirationTime.isAfter(Instant.now()) -> ErrorCode.TOKEN_EXPIRED
-                signedJwt.jwtClaimsSet.getStringClaim(TOKEN_TYPE_CLAIM) != expectedType -> ErrorCode.INVALID_TOKEN
+                !signedJwt.verify(MACVerifier(signingKey())) -> invalidTokenError
+                expirationTime == null || !expirationTime.isAfter(Instant.now()) -> tokenExpiredError
+                signedJwt.jwtClaimsSet.getStringClaim(TOKEN_TYPE_CLAIM) != expectedType -> invalidTokenError
                 else -> null
             }
 
         errorCode?.let { throw CustomException(it) }
     }
 
-    private fun tokenClaims(signedJwt: SignedJWT): TokenClaims {
+    private fun tokenClaims(
+        signedJwt: SignedJWT,
+        invalidTokenError: ErrorCode,
+    ): TokenClaims {
         val userId =
             signedJwt.jwtClaimsSet.subject.toLongOrNull()
-                ?: throw CustomException(ErrorCode.INVALID_TOKEN)
-        val role = signedJwt.jwtClaimsSet.getStringClaim(ROLE_CLAIM)?.let(Role::valueOf)
+                ?: throw CustomException(invalidTokenError)
 
-        return TokenClaims(userId = userId, role = role)
+        return TokenClaims(userId = userId)
     }
 
     private fun signingKey(): ByteArray {
         if (authProperties.jwt.secret.isBlank()) {
-            throw CustomException(ErrorCode.INVALID_TOKEN)
+            throw CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
         }
 
         return MessageDigest
@@ -143,6 +154,5 @@ class JwtTokenProvider(
         const val ACCESS_TOKEN_TYPE = "access"
         const val REFRESH_TOKEN_TYPE = "refresh"
         const val TOKEN_TYPE_CLAIM = "type"
-        const val ROLE_CLAIM = "role"
     }
 }

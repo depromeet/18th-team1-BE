@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.auth.config
 import com.firstpenguin.app.domain.auth.oauth.CustomOAuth2UserService
 import com.firstpenguin.app.domain.auth.oauth.JwtIssueSuccessHandler
 import com.firstpenguin.app.domain.auth.oauth.OAuth2FailureHandler
+import com.firstpenguin.app.domain.auth.token.JWT_AUTHENTICATION_ERROR_ATTRIBUTE
 import com.firstpenguin.app.domain.auth.token.JwtAuthenticationFilter
 import com.firstpenguin.app.global.exception.ErrorCode
 import com.firstpenguin.app.global.response.ErrorResponse
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -17,6 +19,9 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import tools.jackson.databind.json.JsonMapper
 
 @Configuration
@@ -27,12 +32,14 @@ class SecurityConfig(
     private val jwtIssueSuccessHandler: JwtIssueSuccessHandler,
     private val oAuth2FailureHandler: OAuth2FailureHandler,
     private val jsonMapper: JsonMapper,
+    private val authProperties: AuthProperties,
 ) {
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
         clientRegistrationRepository: ObjectProvider<ClientRegistrationRepository>,
     ): SecurityFilterChain {
+        http.cors { cors -> cors.configurationSource(corsConfigurationSource()) }
         http.csrf { csrf -> csrf.disable() }
         http.sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
         http.authorizeHttpRequests { authorize ->
@@ -40,7 +47,12 @@ class SecurityConfig(
             authorize.anyRequest().authenticated()
         }
         http.exceptionHandling { exceptions ->
-            exceptions.authenticationEntryPoint { _, response, _ -> writeError(response, ErrorCode.UNAUTHORIZED) }
+            exceptions.authenticationEntryPoint { request, response, _ ->
+                val errorCode =
+                    request.getAttribute(JWT_AUTHENTICATION_ERROR_ATTRIBUTE) as? ErrorCode
+                        ?: ErrorCode.UNAUTHORIZED
+                writeError(response, errorCode)
+            }
             exceptions.accessDeniedHandler { _, response, _ -> writeError(response, ErrorCode.FORBIDDEN) }
         }
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
@@ -66,7 +78,29 @@ class SecurityConfig(
         jsonMapper.writeValue(response.writer, ErrorResponse.of(errorCode))
     }
 
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val config =
+            CorsConfiguration().apply {
+                allowedOrigins = authProperties.oauth2.allowedOrigins
+                allowedMethods = CORS_ALLOWED_METHODS
+                allowedHeaders = listOf("*")
+                allowCredentials = true
+            }
+
+        return UrlBasedCorsConfigurationSource().apply { registerCorsConfiguration("/**", config) }
+    }
+
     private companion object {
+        val CORS_ALLOWED_METHODS =
+            listOf(
+                HttpMethod.GET.name(),
+                HttpMethod.POST.name(),
+                HttpMethod.PUT.name(),
+                HttpMethod.DELETE.name(),
+                HttpMethod.OPTIONS.name(),
+            )
+
         val PERMIT_ALL_PATTERNS =
             arrayOf(
                 "/auth/refresh",
