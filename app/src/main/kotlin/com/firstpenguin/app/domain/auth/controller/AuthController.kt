@@ -1,14 +1,15 @@
 package com.firstpenguin.app.domain.auth.controller
 
+import com.firstpenguin.app.domain.auth.config.AuthProperties
 import com.firstpenguin.app.domain.auth.dto.AccessTokenResponse
 import com.firstpenguin.app.domain.auth.service.RefreshTokenService
 import com.firstpenguin.app.domain.auth.token.RefreshTokenCookieManager
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -18,12 +19,15 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val refreshTokenService: RefreshTokenService,
     private val refreshTokenCookieManager: RefreshTokenCookieManager,
+    private val authProperties: AuthProperties,
 ) {
     @PostMapping("/refresh")
     fun refresh(
-        @CookieValue(name = "refresh_token", required = false) refreshToken: String?,
+        request: HttpServletRequest,
         response: HttpServletResponse,
     ): AccessTokenResponse {
+        val refreshToken = request.refreshTokenCookieValue()
+
         if (refreshToken.isNullOrBlank()) {
             throw CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED)
         }
@@ -34,10 +38,14 @@ class AuthController(
     }
 
     @PostMapping("/logout")
-    fun logout(
-        @CookieValue(name = "refresh_token", required = false) refreshToken: String?,
-    ): ResponseEntity<Unit> {
+    fun logout(request: HttpServletRequest): ResponseEntity<Unit> {
+        val refreshToken = request.refreshTokenCookieValue()
         refreshToken?.takeIf { it.isNotBlank() }?.let(refreshTokenService::logout)
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.expire().toString()).build()
     }
+
+    private fun HttpServletRequest.refreshTokenCookieValue(): String? =
+        cookies
+            ?.firstOrNull { it.name == authProperties.refreshToken.cookieName }
+            ?.value
 }

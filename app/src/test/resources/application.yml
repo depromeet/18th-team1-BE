@@ -6,3 +6,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jooq:
     sql-dialect: postgres
+
+auth:
+  jwt:
+    secret: test-jwt-secret
