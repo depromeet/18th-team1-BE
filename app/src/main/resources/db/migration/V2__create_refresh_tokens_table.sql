@@ -10,10 +10,6 @@ CREATE TABLE refresh_tokens (
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT refresh_tokens_user_fk
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-        ON DELETE CASCADE,
     CONSTRAINT refresh_tokens_token_hash_unique UNIQUE (token_hash),
     CONSTRAINT refresh_tokens_user_device_unique UNIQUE (user_id, device_id)
 );

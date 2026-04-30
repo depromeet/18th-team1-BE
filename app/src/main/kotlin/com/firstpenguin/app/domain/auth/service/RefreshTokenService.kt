@@ -5,7 +5,7 @@ import com.firstpenguin.app.domain.auth.model.TokenPair
 import com.firstpenguin.app.domain.auth.repository.RefreshTokenRepository
 import com.firstpenguin.app.domain.auth.token.JwtTokenProvider
 import com.firstpenguin.app.domain.user.model.User
-import com.firstpenguin.app.domain.user.repository.UserRepository
+import com.firstpenguin.app.domain.user.service.UserService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -15,8 +15,8 @@ import java.util.UUID
 @Service
 class RefreshTokenService(
     private val refreshTokenRepository: RefreshTokenRepository,
-    private val userRepository: UserRepository,
     private val jwtTokenProvider: JwtTokenProvider,
+    private val userService: UserService,
     private val authProperties: AuthProperties,
 ) {
     fun issue(user: User): String {
@@ -36,7 +36,7 @@ class RefreshTokenService(
         val storedToken = findStoredTokenOrDeleteAll(refreshToken, claims.userId)
         validateStoredToken(storedToken.id, storedToken.expiresAt)
 
-        val user = userRepository.findById(claims.userId) ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
+        val user = userService.getById(claims.userId)
         val newRefreshToken = jwtTokenProvider.createRefreshToken(user.id)
         refreshTokenRepository.updateToken(
             id = storedToken.id,
