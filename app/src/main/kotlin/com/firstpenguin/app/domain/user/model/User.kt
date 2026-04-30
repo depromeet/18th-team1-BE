@@ -8,7 +8,7 @@ data class User(
     val providerId: String,
     val email: String?,
     val nickname: String,
-    val profileImageKey: String?,
+    val profileImageId: Long?,
     val status: UserStatus,
     val role: Role,
     val lastLoginAt: LocalDateTime?,

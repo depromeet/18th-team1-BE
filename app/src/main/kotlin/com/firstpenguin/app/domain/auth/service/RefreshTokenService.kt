@@ -9,7 +9,6 @@ import com.firstpenguin.app.domain.user.repository.UserRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -20,7 +19,6 @@ class RefreshTokenService(
     private val jwtTokenProvider: JwtTokenProvider,
     private val authProperties: AuthProperties,
 ) {
-    @Transactional
     fun issue(user: User): String {
         val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
 
@@ -33,7 +31,6 @@ class RefreshTokenService(
         return refreshToken
     }
 
-    @Transactional
     fun rotate(refreshToken: String): TokenPair {
         val claims = jwtTokenProvider.validateRefreshToken(refreshToken)
         val storedToken = findStoredTokenOrDeleteAll(refreshToken, claims.userId)
@@ -53,7 +50,6 @@ class RefreshTokenService(
         )
     }
 
-    @Transactional
     fun logout(refreshToken: String) {
         refreshTokenRepository.deleteByTokenHash(jwtTokenProvider.hash(refreshToken))
     }

@@ -1,20 +1,21 @@
 package com.firstpenguin.app.domain.user.usecase
 
+import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.user.dto.UserResponse
-import com.firstpenguin.app.domain.user.repository.UserRepository
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
+import com.firstpenguin.app.domain.user.service.UserService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
 @Component
 class UserUseCase(
-    private val userRepository: UserRepository,
+    private val imageService: ImageService,
+    private val userService: UserService,
 ) {
     @Transactional(readOnly = true)
     fun getMe(userId: Long): UserResponse {
-        val user = userRepository.findById(userId) ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
+        val user = userService.getById(userId)
+        val profileImageUrl = user.profileImageId?.let(imageService::findUrlById)
 
-        return UserResponse.from(user)
+        return UserResponse.from(user, profileImageUrl)
     }
 }

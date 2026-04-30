@@ -2,7 +2,7 @@ package com.firstpenguin.app.domain.auth.oauth
 
 import com.firstpenguin.app.domain.user.model.OAuthUserProfile
 import com.firstpenguin.app.domain.user.model.Provider
-import com.firstpenguin.app.domain.user.repository.UserRepository
+import com.firstpenguin.app.domain.user.usecase.OAuthUserUseCase
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class CustomOAuth2UserService(
-    private val userRepository: UserRepository,
+    private val oAuthUserUseCase: OAuthUserUseCase,
 ) : OAuth2UserService<OAuth2UserRequest, OAuth2User> {
     private val delegate = DefaultOAuth2UserService()
 
@@ -21,7 +21,7 @@ class CustomOAuth2UserService(
         val oAuth2User = delegate.loadUser(userRequest)
         val registrationId = userRequest.clientRegistration.registrationId.lowercase()
         val profile = toUserProfile(registrationId, oAuth2User.attributes)
-        val user = userRepository.upsertOAuthUser(profile)
+        val user = oAuthUserUseCase.upsertOAuthUser(profile)
 
         return OAuth2AuthenticatedUser(user = user, attributes = oAuth2User.attributes)
     }
@@ -41,14 +41,12 @@ class CustomOAuth2UserService(
         val account = attributes.mapValue("kakao_account")
         val profile = account.mapValue("profile")
         val nickname = profile["nickname"] as? String ?: attributes.mapValue("properties")["nickname"] as? String
-        val profileImageUrl = profile["profile_image_url"] as? String ?: profile["thumbnail_image_url"] as? String
 
         return OAuthUserProfile(
             provider = Provider.KAKAO,
             providerId = externalId,
             email = null,
             nickname = normalizeNickname(Provider.KAKAO, nickname, externalId),
-            profileImageKey = profileImageUrl,
         )
     }
 
@@ -61,7 +59,6 @@ class CustomOAuth2UserService(
             providerId = externalId,
             email = attributes["email"] as? String,
             nickname = normalizeNickname(Provider.GOOGLE, nickname, externalId),
-            profileImageKey = null,
         )
     }
 

@@ -8,7 +8,7 @@ CREATE TABLE users (
     provider_id VARCHAR(100) NOT NULL,
     email VARCHAR(255),
     nickname VARCHAR(15) NOT NULL,
-    profile_image_key VARCHAR(500),
+    profile_image_id BIGINT,
     status VARCHAR(20) NOT NULL,
     role VARCHAR(20) NOT NULL,
     last_login_at TIMESTAMP,
@@ -16,7 +16,7 @@ CREATE TABLE users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT users_provider_check CHECK (provider IN ('KAKAO', 'GOOGLE')),
-    CONSTRAINT users_provider_id_unique UNIQUE (provider_id),
+    CONSTRAINT users_provider_provider_id_unique UNIQUE (provider, provider_id),
     CONSTRAINT users_nickname_check CHECK (
         char_length(nickname) BETWEEN 1 AND 15
         AND nickname !~ '\s'

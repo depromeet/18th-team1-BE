@@ -9,12 +9,15 @@ data class UserResponse(
     val profileImageUrl: String?,
 ) {
     companion object {
-        fun from(user: User): UserResponse =
+        fun from(
+            user: User,
+            profileImageUrl: String?,
+        ): UserResponse =
             UserResponse(
                 id = user.id,
                 email = user.email,
                 nickname = user.nickname,
-                profileImageUrl = user.profileImageKey,
+                profileImageUrl = profileImageUrl,
             )
     }
 }
