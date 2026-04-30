@@ -10,7 +10,6 @@ CREATE TABLE users (
     nickname VARCHAR(15) NOT NULL,
     profile_image_id BIGINT,
     status VARCHAR(20) NOT NULL,
-    role VARCHAR(20) NOT NULL,
     last_login_at TIMESTAMP,
     deleted_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -21,8 +20,7 @@ CREATE TABLE users (
         char_length(nickname) BETWEEN 1 AND 15
         AND nickname !~ '\s'
     ),
-    CONSTRAINT users_status_check CHECK (status IN ('ACTIVE', 'BLOCKED', 'DELETED')),
-    CONSTRAINT users_role_check CHECK (role IN ('USER', 'ADMIN'))
+    CONSTRAINT users_status_check CHECK (status IN ('ACTIVE', 'BLOCKED', 'DELETED'))
 );
 
 CREATE INDEX users_status_idx ON users (status);

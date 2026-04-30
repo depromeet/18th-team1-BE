@@ -10,7 +10,6 @@ data class User(
     val nickname: String,
     val profileImageId: Long?,
     val status: UserStatus,
-    val role: Role,
     val lastLoginAt: LocalDateTime?,
     val deletedAt: LocalDateTime?,
     val createdAt: LocalDateTime,

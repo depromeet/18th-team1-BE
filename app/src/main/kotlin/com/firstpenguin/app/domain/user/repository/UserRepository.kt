@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.user.repository
 
 import com.firstpenguin.app.domain.user.model.OAuthUserProfile
 import com.firstpenguin.app.domain.user.model.Provider
-import com.firstpenguin.app.domain.user.model.Role
 import com.firstpenguin.app.domain.user.model.User
 import com.firstpenguin.app.domain.user.model.UserStatus
 import org.jooq.DSLContext
@@ -33,7 +32,6 @@ class UserRepository(
             .set(UserTable.EMAIL, profile.email)
             .set(UserTable.NICKNAME, profile.nickname)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
-            .set(UserTable.ROLE, Role.USER.name)
             .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.CREATED_AT, now)
             .set(UserTable.UPDATED_AT, now)
@@ -59,7 +57,6 @@ class UserRepository(
             nickname = record.get(UserTable.NICKNAME),
             profileImageId = record.get(UserTable.PROFILE_IMAGE_ID),
             status = UserStatus.valueOf(record.get(UserTable.STATUS)),
-            role = Role.valueOf(record.get(UserTable.ROLE)),
             lastLoginAt = record.get(UserTable.LAST_LOGIN_AT),
             deletedAt = record.get(UserTable.DELETED_AT),
             createdAt = record.get(UserTable.CREATED_AT),
@@ -76,7 +73,6 @@ class UserRepository(
                 UserTable.NICKNAME,
                 UserTable.PROFILE_IMAGE_ID,
                 UserTable.STATUS,
-                UserTable.ROLE,
                 UserTable.LAST_LOGIN_AT,
                 UserTable.DELETED_AT,
                 UserTable.CREATED_AT,
