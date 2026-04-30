@@ -7,6 +7,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
@@ -34,6 +35,10 @@ class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException::class)
     fun handleNoResourceFound(): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(ErrorCode.NOT_FOUND.status).body(ErrorResponse.of(ErrorCode.NOT_FOUND))
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleValidationException(): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(ErrorCode.INVALID_REQUEST.status).body(ErrorResponse.of(ErrorCode.INVALID_REQUEST))
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
