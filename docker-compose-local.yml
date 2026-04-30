@@ -1,21 +1,4 @@
 services:
-  app:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    image: firstpenguin-api-local
-    container_name: firstpenguin-api-local
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: local
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: on-failure
-
   db:
     image: postgres:17
     container_name: firstpenguin-db-local
