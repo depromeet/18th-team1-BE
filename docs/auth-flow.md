@@ -150,6 +150,14 @@ refresh token payload:
 인증 principal은 사용자 ID만 가진다.
 DB에는 refresh token 원문을 저장하지 않고 SHA-256 hash만 저장한다.
 
+## OAuth 사용자 식별자 저장 정책
+
+`users.provider_id`에는 Kakao, Google이 내려준 외부 사용자 ID 원문을 저장한다.
+즉 `kakao_...`, `google_...`처럼 provider prefix를 붙이지 않는다.
+
+provider 구분은 별도 `users.provider` 컬럼으로 관리하고, 중복 방지는 `(provider, provider_id)` 복합 unique 제약으로 처리한다.
+따라서 서로 다른 provider에서 같은 외부 ID 문자열을 내려주더라도 DB 레벨에서 충돌하지 않는다.
+
 ## 인증 에러 응답
 
 에러 응답은 `message`만 내려준다.

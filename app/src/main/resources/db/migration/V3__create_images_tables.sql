@@ -22,8 +22,5 @@ CREATE UNIQUE INDEX image_owners_owner_image_unique
 CREATE UNIQUE INDEX image_owners_owner_sort_order_unique
     ON image_owners (owner_type, owner_id, sort_order);
 
-CREATE INDEX image_owners_owner_idx
-    ON image_owners (owner_type, owner_id, sort_order);
-
 CREATE INDEX image_owners_image_id_idx
     ON image_owners (image_id);
