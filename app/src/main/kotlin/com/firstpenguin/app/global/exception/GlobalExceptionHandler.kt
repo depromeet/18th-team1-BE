@@ -6,9 +6,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.HandlerMethodValidationException
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
@@ -30,6 +32,13 @@ class GlobalExceptionHandler {
                 ?: ErrorCode.INVALID_INPUT.message
         return ResponseEntity.badRequest().body(ErrorResponse.of(message))
     }
+
+    @ExceptionHandler(
+        MethodArgumentTypeMismatchException::class,
+        MissingServletRequestParameterException::class,
+    )
+    fun handleInvalidRequestParameter(): ResponseEntity<ErrorResponse> =
+        ResponseEntity.badRequest().body(ErrorResponse.of(ErrorCode.INVALID_INPUT))
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     fun handleMethodNotAllowed(): ResponseEntity<ErrorResponse> =

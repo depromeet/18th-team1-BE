@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.auth.config
 
 import com.firstpenguin.app.domain.auth.oauth.CustomOAuth2UserService
+import com.firstpenguin.app.domain.auth.oauth.CustomOidcUserService
 import com.firstpenguin.app.domain.auth.oauth.JwtIssueSuccessHandler
 import com.firstpenguin.app.domain.auth.oauth.OAuth2FailureHandler
 import com.firstpenguin.app.domain.auth.token.JWT_AUTHENTICATION_ERROR_ATTRIBUTE
@@ -29,6 +30,7 @@ import tools.jackson.databind.json.JsonMapper
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val customOAuth2UserService: CustomOAuth2UserService,
+    private val customOidcUserService: CustomOidcUserService,
     private val jwtIssueSuccessHandler: JwtIssueSuccessHandler,
     private val oAuth2FailureHandler: OAuth2FailureHandler,
     private val jsonMapper: JsonMapper,
@@ -63,7 +65,10 @@ class SecurityConfig(
 
     private fun configureOAuth2Login(http: HttpSecurity) {
         http.oauth2Login { oauth2 ->
-            oauth2.userInfoEndpoint { userInfo -> userInfo.userService(customOAuth2UserService) }
+            oauth2.userInfoEndpoint { userInfo ->
+                userInfo.userService(customOAuth2UserService)
+                userInfo.oidcUserService(customOidcUserService)
+            }
             oauth2.successHandler(jwtIssueSuccessHandler)
             oauth2.failureHandler(oAuth2FailureHandler)
         }
