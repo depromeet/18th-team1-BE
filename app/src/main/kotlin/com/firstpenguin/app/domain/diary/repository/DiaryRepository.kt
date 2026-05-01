@@ -59,12 +59,15 @@ class DiaryRepository(
             createdAt = record.get(DiaryTable.CREATED_AT),
             updatedAt = record.get(DiaryTable.UPDATED_AT),
             deletedAt = record.get(DiaryTable.DELETED_AT),
-            quoteContent = record.get(QuoteTable.CONTENT),
-            coverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
-            author = record.get(BookTable.AUTHOR),
-            title = record.get(BookTable.TITLE),
-            aladinLink = record.get(BookTable.ALADIN_LINK),
+            quoteContent = record.required(QuoteTable.CONTENT),
+            coverImageUrl = record.required(BookTable.COVER_IMAGE_URL),
+            author = record.required(BookTable.AUTHOR),
+            title = record.required(BookTable.TITLE),
+            aladinLink = record.required(BookTable.ALADIN_LINK),
         )
+
+    private fun <T : Any> Record.required(field: Field<T>): T =
+        get(field) ?: error("${field.qualifiedName} must not be null")
 
     private companion object {
         val DIARY_JOIN_FIELDS: List<Field<*>> =

@@ -53,10 +53,10 @@ data class DiaryResponse(
                 createdAt = diary.createdAt.toLocalDate(),
                 content = diary.content,
                 emotionIntensity = diary.emotionIntensity,
-                quoteContent = checkNotNull(diary.quoteContent),
-                coverImageUrl = checkNotNull(diary.coverImageUrl),
-                author = checkNotNull(diary.author),
-                title = checkNotNull(diary.title),
+                quoteContent = diary.quoteContent,
+                coverImageUrl = diary.coverImageUrl,
+                author = diary.author,
+                title = diary.title,
             )
     }
 }

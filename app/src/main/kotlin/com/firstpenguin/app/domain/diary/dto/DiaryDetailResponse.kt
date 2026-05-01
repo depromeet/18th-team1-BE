@@ -35,14 +35,14 @@ data class DiaryDetailResponse(
             DiaryDetailResponse(
                 id = diary.id,
                 diaryImageUrl = diaryImageUrl,
-                title = checkNotNull(diary.title),
-                author = checkNotNull(diary.author),
-                coverImageUrl = checkNotNull(diary.coverImageUrl),
+                title = diary.title,
+                author = diary.author,
+                coverImageUrl = diary.coverImageUrl,
                 createdAt = diary.createdAt.toLocalDate(),
                 content = diary.content,
                 emotionIntensity = diary.emotionIntensity,
-                quoteContent = checkNotNull(diary.quoteContent),
-                aladinLink = checkNotNull(diary.aladinLink),
+                quoteContent = diary.quoteContent,
+                aladinLink = diary.aladinLink,
             )
     }
 }
