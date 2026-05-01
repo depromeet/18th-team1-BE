@@ -62,8 +62,7 @@ class DiaryRepository(
             aladinLink = record.required(BookTable.ALADIN_LINK),
         )
 
-    private fun <T : Any> Record.required(field: Field<T>): T =
-        get(field) ?: error("${field.qualifiedName} must not be null")
+    private fun <T : Any> Record.required(field: Field<T>): T = get(field) ?: error("${field.qualifiedName} must not be null")
 
     private companion object {
         val DIARY_JOIN_FIELDS: List<Field<*>> =
