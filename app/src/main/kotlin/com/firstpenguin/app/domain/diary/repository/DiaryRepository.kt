@@ -29,8 +29,6 @@ class DiaryRepository(
             .and(DiaryTable.CREATED_AT.ge(start))
             .and(DiaryTable.CREATED_AT.lt(end))
             .and(DiaryTable.DELETED_AT.isNull)
-            .and(QuoteTable.DELETED_AT.isNull)
-            .and(BookTable.DELETED_AT.isNull)
             .orderBy(DiaryTable.CREATED_AT.asc(), DiaryTable.ID.asc())
             .fetch(::toDiary)
 
@@ -44,8 +42,6 @@ class DiaryRepository(
             .on(QuoteTable.BOOK_ID.eq(BookTable.ID))
             .where(DiaryTable.ID.eq(id))
             .and(DiaryTable.DELETED_AT.isNull)
-            .and(QuoteTable.DELETED_AT.isNull)
-            .and(BookTable.DELETED_AT.isNull)
             .fetchOne(::toDiary)
 
     private fun toDiary(record: Record): Diary =
