@@ -1,6 +1,6 @@
 package com.firstpenguin.app.domain.diary.dto
 
-import com.firstpenguin.app.domain.diary.model.DiarySummary
+import com.firstpenguin.app.domain.diary.model.Diary
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
@@ -17,7 +17,7 @@ data class DiaryPeriodResponse(
         fun from(
             start: LocalDate,
             end: LocalDate,
-            diaries: List<DiarySummary>,
+            diaries: List<Diary>,
         ): DiaryPeriodResponse =
             DiaryPeriodResponse(
                 start = start,
@@ -47,16 +47,16 @@ data class DiaryResponse(
     val title: String,
 ) {
     companion object {
-        fun from(diary: DiarySummary): DiaryResponse =
+        fun from(diary: Diary): DiaryResponse =
             DiaryResponse(
                 id = diary.id,
-                createdAt = diary.createdAt,
+                createdAt = diary.createdAt.toLocalDate(),
                 content = diary.content,
                 emotionIntensity = diary.emotionIntensity,
-                quoteContent = diary.quoteContent,
-                coverImageUrl = diary.coverImageUrl,
-                author = diary.author,
-                title = diary.title,
+                quoteContent = checkNotNull(diary.quoteContent),
+                coverImageUrl = checkNotNull(diary.coverImageUrl),
+                author = checkNotNull(diary.author),
+                title = checkNotNull(diary.title),
             )
     }
 }

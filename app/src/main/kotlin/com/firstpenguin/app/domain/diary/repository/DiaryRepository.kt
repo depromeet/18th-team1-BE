@@ -1,7 +1,7 @@
 package com.firstpenguin.app.domain.diary.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
-import com.firstpenguin.app.domain.diary.model.DiarySummary
+import com.firstpenguin.app.domain.diary.model.Diary
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -17,9 +17,9 @@ class DiaryRepository(
         userId: Long,
         start: LocalDateTime,
         end: LocalDateTime,
-    ): List<DiarySummary> =
+    ): List<Diary> =
         dsl
-            .select(DIARY_SUMMARY_FIELDS)
+            .select(DIARY_JOIN_FIELDS)
             .from(DiaryTable.DIARIES)
             .join(QuoteTable.QUOTES)
             .on(DiaryTable.QUOTE_ID.eq(QuoteTable.ID))
@@ -32,31 +32,57 @@ class DiaryRepository(
             .and(QuoteTable.DELETED_AT.isNull)
             .and(BookTable.DELETED_AT.isNull)
             .orderBy(DiaryTable.CREATED_AT.asc(), DiaryTable.ID.asc())
-            .fetch(::toDiarySummary)
+            .fetch(::toDiary)
 
-    private fun toDiarySummary(record: Record): DiarySummary =
-        DiarySummary(
+    fun findById(id: Long): Diary? =
+        dsl
+            .select(DIARY_JOIN_FIELDS)
+            .from(DiaryTable.DIARIES)
+            .join(QuoteTable.QUOTES)
+            .on(DiaryTable.QUOTE_ID.eq(QuoteTable.ID))
+            .join(BookTable.BOOKS)
+            .on(QuoteTable.BOOK_ID.eq(BookTable.ID))
+            .where(DiaryTable.ID.eq(id))
+            .and(DiaryTable.DELETED_AT.isNull)
+            .and(QuoteTable.DELETED_AT.isNull)
+            .and(BookTable.DELETED_AT.isNull)
+            .fetchOne(::toDiary)
+
+    private fun toDiary(record: Record): Diary =
+        Diary(
             id = record.get(DiaryTable.ID),
-            createdAt = record.get(DiaryTable.CREATED_AT).toLocalDate(),
-            content = record.get(DiaryTable.CONTENT),
+            userId = record.get(DiaryTable.USER_ID),
+            quoteId = record.get(DiaryTable.QUOTE_ID),
+            diaryImageId = record.get(DiaryTable.DIARY_IMAGE_ID),
             emotionIntensity = record.get(DiaryTable.EMOTION_INTENSITY),
+            content = record.get(DiaryTable.CONTENT),
+            createdAt = record.get(DiaryTable.CREATED_AT),
+            updatedAt = record.get(DiaryTable.UPDATED_AT),
+            deletedAt = record.get(DiaryTable.DELETED_AT),
             quoteContent = record.get(QuoteTable.CONTENT),
             coverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
             author = record.get(BookTable.AUTHOR),
             title = record.get(BookTable.TITLE),
+            aladinLink = record.get(BookTable.ALADIN_LINK),
         )
 
     private companion object {
-        val DIARY_SUMMARY_FIELDS: List<Field<*>> =
+        val DIARY_JOIN_FIELDS: List<Field<*>> =
             listOf(
                 DiaryTable.ID,
-                DiaryTable.CREATED_AT,
-                DiaryTable.CONTENT,
+                DiaryTable.USER_ID,
+                DiaryTable.QUOTE_ID,
+                DiaryTable.DIARY_IMAGE_ID,
                 DiaryTable.EMOTION_INTENSITY,
+                DiaryTable.CONTENT,
+                DiaryTable.CREATED_AT,
+                DiaryTable.UPDATED_AT,
+                DiaryTable.DELETED_AT,
                 QuoteTable.CONTENT,
                 BookTable.COVER_IMAGE_URL,
                 BookTable.AUTHOR,
                 BookTable.TITLE,
+                BookTable.ALADIN_LINK,
             )
     }
 }

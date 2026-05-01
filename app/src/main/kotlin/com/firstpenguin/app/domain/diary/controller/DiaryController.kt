@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.diary.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
+import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.usecase.DiaryUseCase
 import com.firstpenguin.app.global.exception.CustomException
@@ -18,6 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -29,6 +31,73 @@ import java.time.LocalDate
 class DiaryController(
     private val diaryUseCase: DiaryUseCase,
 ) {
+    @GetMapping("/{diaryId}")
+    @Operation(
+        summary = "일기 상세 조회",
+        description = DETAIL_DESCRIPTION,
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "일기 상세 조회 성공",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = DiaryDetailResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "access token이 없거나, 만료되었거나, 유효하지 않습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "다른 사용자의 일기에는 접근할 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "일기를 찾을 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun getDiary(
+        @Parameter(hidden = true)
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(description = "일기 ID", example = "1")
+        @PathVariable
+        diaryId: Long,
+    ): DiaryDetailResponse {
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
+
+        return diaryUseCase.getDiary(
+            userId = authenticatedUser.id,
+            diaryId = diaryId,
+        )
+    }
+
     @GetMapping
     @Operation(
         summary = "기간별 일기 조회",
@@ -93,6 +162,10 @@ class DiaryController(
     }
 
     private companion object {
+        const val DETAIL_DESCRIPTION =
+            "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
+                "삭제되지 않은 내 일기만 조회합니다."
+
         const val PERIOD_DESCRIPTION =
             "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
                 "`start`와 `end`는 `yyyy-MM-dd` 형식이며, `end` 날짜의 23:59:59까지 포함합니다. " +
