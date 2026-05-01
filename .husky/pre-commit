@@ -8,5 +8,23 @@ else
   echo "gitleaks 미설치: 비밀키 검사를 건너뜁니다."
 fi
 
+# submodule 최신 여부 확인
+SUBMODULE_PATH="secret"
+SUBMODULE_URL=$(git config --file .gitmodules submodule."$SUBMODULE_PATH".url)
+SUBMODULE_BRANCH=$(git config --file .gitmodules submodule."$SUBMODULE_PATH".branch 2>/dev/null || echo "main")
+
+# 스테이징된 submodule 커밋 (실제로 커밋될 값)
+STAGED_COMMIT=$(git ls-files --stage -- "$SUBMODULE_PATH" | awk '{print $2}')
+
+if [ -n "$STAGED_COMMIT" ]; then
+  REMOTE_COMMIT=$(git ls-remote "$SUBMODULE_URL" "refs/heads/$SUBMODULE_BRANCH" | awk '{print $1}')
+  if [ "$STAGED_COMMIT" != "$REMOTE_COMMIT" ]; then
+    echo "⚠️  submodule '$SUBMODULE_PATH'이 최신 상태가 아닙니다. 자동으로 업데이트합니다..."
+    git submodule update --remote --merge "$SUBMODULE_PATH"
+    git add "$SUBMODULE_PATH"
+    echo "✅ submodule이 $REMOTE_COMMIT 으로 업데이트되었습니다."
+  fi
+fi
+
 # 최소 컴파일 검증 (app 모듈)
 cd app && ./gradlew testClasses
