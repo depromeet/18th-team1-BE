@@ -1,14 +1,15 @@
-package com.firstpenguin.app.emotion.service
+package com.firstpenguin.app.domain.emotion.service
 
-import com.firstpenguin.app.emotion.dto.TagDto
-import com.firstpenguin.app.emotion.dto.TagResponse
-import com.firstpenguin.app.emotion.dto.TagSelectResponse
-import com.firstpenguin.app.emotion.repository.EmotionRangeRepository
-import com.firstpenguin.app.emotion.repository.TagRepository
+import com.firstpenguin.app.domain.emotion.dto.TagDto
+import com.firstpenguin.app.domain.emotion.dto.TagResponse
+import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
+import com.firstpenguin.app.domain.emotion.repository.EmotionRangeRepository
+import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.global.exception.ErrorCode
 import com.firstpenguin.app.global.exception.CustomException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.collections.map
 
 @Service
 class EmotionService(

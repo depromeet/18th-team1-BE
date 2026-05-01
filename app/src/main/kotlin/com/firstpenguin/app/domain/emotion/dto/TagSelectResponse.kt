@@ -1,4 +1,4 @@
-package com.firstpenguin.app.emotion.dto
+package com.firstpenguin.app.domain.emotion.dto
 
 data class TagSelectResponse(
     val emotionTags: List<TagDto>,

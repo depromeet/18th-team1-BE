@@ -1,9 +1,9 @@
-package com.firstpenguin.app.emotion.controller
+package com.firstpenguin.app.domain.emotion.controller
 
-import com.firstpenguin.app.emotion.dto.TagResponse
-import com.firstpenguin.app.emotion.dto.TagSelectRequest
-import com.firstpenguin.app.emotion.dto.TagSelectResponse
-import com.firstpenguin.app.emotion.facade.EmotionFacade
+import com.firstpenguin.app.domain.emotion.dto.TagResponse
+import com.firstpenguin.app.domain.emotion.dto.TagSelectRequest
+import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
+import com.firstpenguin.app.domain.emotion.facade.EmotionFacade
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max

@@ -1,4 +1,4 @@
-package com.firstpenguin.app.emotion.dto
+package com.firstpenguin.app.domain.emotion.dto
 
 import com.firstpenguin.app.global.enums.TagType
 

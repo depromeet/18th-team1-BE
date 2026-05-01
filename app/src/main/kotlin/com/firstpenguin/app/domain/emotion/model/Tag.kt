@@ -1,4 +1,4 @@
-package com.firstpenguin.app.emotion.model
+package com.firstpenguin.app.domain.emotion.model
 
 import com.firstpenguin.app.global.enums.TagType
 import java.time.LocalDateTime

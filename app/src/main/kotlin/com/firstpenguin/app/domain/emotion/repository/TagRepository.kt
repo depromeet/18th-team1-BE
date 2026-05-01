@@ -1,7 +1,7 @@
-package com.firstpenguin.app.emotion.repository
+package com.firstpenguin.app.domain.emotion.repository
 
-import com.firstpenguin.app.emotion.infrastructure.table.TagTable
-import com.firstpenguin.app.emotion.model.Tag
+import com.firstpenguin.app.domain.emotion.infrastructure.table.TagTable
+import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.DSLContext
 import org.jooq.Field

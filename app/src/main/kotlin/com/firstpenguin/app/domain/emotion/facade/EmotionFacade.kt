@@ -1,9 +1,9 @@
-package com.firstpenguin.app.emotion.facade
+package com.firstpenguin.app.domain.emotion.facade
 
-import com.firstpenguin.app.emotion.dto.TagResponse
-import com.firstpenguin.app.emotion.dto.TagSelectRequest
-import com.firstpenguin.app.emotion.dto.TagSelectResponse
-import com.firstpenguin.app.emotion.service.EmotionService
+import com.firstpenguin.app.domain.emotion.dto.TagResponse
+import com.firstpenguin.app.domain.emotion.dto.TagSelectRequest
+import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
+import com.firstpenguin.app.domain.emotion.service.EmotionService
 import org.springframework.stereotype.Service
 
 @Service
