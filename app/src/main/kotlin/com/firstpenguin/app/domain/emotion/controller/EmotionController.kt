@@ -9,7 +9,15 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+private const val MIN_EMOTION_SCORE = 0L
+private const val MAX_EMOTION_SCORE = 100L
 
 @RestController
 @RequestMapping("/emotions")
@@ -24,7 +32,7 @@ class EmotionController(
     )
     @GetMapping("/emotion-tags")
     fun getEmotionTags(
-        @RequestParam @Min(0) @Max(100) value: Int
+        @RequestParam @Min(MIN_EMOTION_SCORE) @Max(MAX_EMOTION_SCORE) value: Int
     ): ResponseEntity<TagResponse> {
         return ResponseEntity.ok(emotionFacade.getEmotionTags(value))
     }
