@@ -22,10 +22,25 @@ class EmotionService(
         val emotionRange = emotionRangeRepository.getEmotionRange(value)
             ?: throw CustomException(ErrorCode.NOT_FOUND_EMOTION_RANGE)
 
-        val tagList = tagRepository.getTagListByEmotionRangeId(emotionRange.id)
+        val emotionTags = tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
 
         return TagResponse(
-            tagList = tagList.map {
+            tags = emotionTags.map {
+                TagDto(
+                    id = it.id,
+                    label = it.label,
+                    type = it.type
+                )
+            }
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getToneTags(): TagResponse {
+        val toneTags = tagRepository.getToneTags()
+
+        return TagResponse(
+            tags = toneTags.map {
                 TagDto(
                     id = it.id,
                     label = it.label,
@@ -37,8 +52,8 @@ class EmotionService(
 
     @Transactional(readOnly = true)
     fun selectEmotionTags(emotionTagIds: List<Long>, toneTagIds: List<Long>): TagSelectResponse {
-        val emotionTags = tagRepository.getEmotionTags(emotionTagIds)
-        val toneTags = tagRepository.getToneTags(toneTagIds)
+        val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
+        val toneTags = tagRepository.getToneTagsByTagIdsIn(toneTagIds)
 
         if (emotionTags.size != emotionTagIds.distinct().size) {
             throw CustomException(ErrorCode.INVALID_EMOTION_TAG)

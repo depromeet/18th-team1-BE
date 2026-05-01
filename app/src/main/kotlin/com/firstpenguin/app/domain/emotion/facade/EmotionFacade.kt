@@ -14,7 +14,12 @@ class EmotionFacade(
         return emotionService.getEmotionTags(value)
     }
 
+    fun getToneTags(): TagResponse {
+        return emotionService.getToneTags()
+    }
+
     fun selectEmotionTags(request: TagSelectRequest): TagSelectResponse {
+        // 문장 추천
         return emotionService.selectEmotionTags(request.emotionTagIds, request.toneTagIds)
     }
 }

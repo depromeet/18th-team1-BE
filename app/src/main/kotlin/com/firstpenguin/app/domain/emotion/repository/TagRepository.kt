@@ -12,14 +12,24 @@ import org.springframework.stereotype.Repository
 class TagRepository(
     private val dsl: DSLContext,
 ) {
-    fun getTagListByEmotionRangeId(emotionRangeId: Long): List<Tag> =
+    fun getEmotionTagsByEmotionRangeId(emotionRangeId: Long): List<Tag> =
         dsl
             .select(tagFields())
             .from(TagTable.TAGS)
-            .where(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
+            .where(
+                TagTable.TYPE.eq(TagType.EMOTION.name)
+                    .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
+            )
             .fetch(::toTag)
 
-    fun getEmotionTags(tagIds: List<Long>): List<Tag> {
+    fun getToneTags(): List<Tag> =
+        dsl
+            .select(tagFields())
+            .from(TagTable.TAGS)
+            .where(TagTable.TYPE.eq(TagType.TONE.name))
+            .fetch(::toTag)
+
+    fun getEmotionTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
 
         return dsl
@@ -32,7 +42,7 @@ class TagRepository(
             .fetch(::toTag)
     }
 
-    fun getToneTags(tagIds: List<Long>): List<Tag> {
+    fun getToneTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
 
         return dsl
