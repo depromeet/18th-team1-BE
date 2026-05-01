@@ -18,8 +18,8 @@ data class DiaryDetailResponse(
     val coverImageUrl: String,
     @field:Schema(description = "일기 생성일", example = "2026-05-01")
     val createdAt: LocalDate,
-    @field:Schema(description = "일기 내용", example = "오늘은 책을 읽고 산책을 했다.")
-    val content: String,
+    @field:Schema(description = "일기 내용. 없으면 null", example = "오늘은 책을 읽고 산책을 했다.")
+    val content: String?,
     @field:Schema(description = "감정 온도", example = "HIGH")
     val emotionIntensity: String,
     @field:Schema(description = "문장 내용", example = "가장 중요한 것은 보이지 않는다.")

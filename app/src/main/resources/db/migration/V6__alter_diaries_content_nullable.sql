@@ -1,0 +1,2 @@
+ALTER TABLE diaries
+    ALTER COLUMN content DROP NOT NULL;

@@ -19,7 +19,7 @@ class DiaryService(
     fun updateContent(
         id: Long,
         userId: Long,
-        content: String,
+        content: String?,
         start: LocalDateTime,
         end: LocalDateTime,
     ) {
