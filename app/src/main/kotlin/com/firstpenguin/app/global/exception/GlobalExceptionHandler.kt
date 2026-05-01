@@ -3,6 +3,7 @@ package com.firstpenguin.app.global.exception
 import com.firstpenguin.app.global.response.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -16,7 +17,9 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException::class)
     fun handleCustomException(e: CustomException): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(e.errorCode.status).body(ErrorResponse.of(e.errorCode))
+        ResponseEntity
+            .status(e.errorCode.status)
+            .body(ErrorResponse.of(e.errorCode))
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
@@ -30,19 +33,36 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     fun handleMethodNotAllowed(): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(ErrorCode.METHOD_NOT_ALLOWED.status).body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED))
+        ResponseEntity
+            .status(ErrorCode.METHOD_NOT_ALLOWED.status)
+            .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED))
 
     @ExceptionHandler(NoResourceFoundException::class)
     fun handleNoResourceFound(): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(ErrorCode.NOT_FOUND.status).body(ErrorResponse.of(ErrorCode.NOT_FOUND))
+        ResponseEntity
+            .status(ErrorCode.NOT_FOUND.status)
+            .body(ErrorResponse.of(ErrorCode.NOT_FOUND))
 
     @ExceptionHandler(HandlerMethodValidationException::class)
     fun handleValidationException(): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(ErrorCode.INVALID_REQUEST.status).body(ErrorResponse.of(ErrorCode.INVALID_REQUEST))
+        ResponseEntity
+            .status(ErrorCode.INVALID_REQUEST.status)
+            .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST))
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(
+        e: HttpMessageNotReadableException,
+    ): ResponseEntity<ErrorResponse> {
+        return ResponseEntity
+            .status(ErrorCode.EMPTY_REQUEST_BODY.status)
+            .body(ErrorResponse.of(ErrorCode.EMPTY_REQUEST_BODY))
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
         log.error("Unhandled exception occurred", e)
-        return ResponseEntity.internalServerError().body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR))
+        return ResponseEntity
+            .status(ErrorCode.INTERNAL_SERVER_ERROR.status)
+            .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR))
     }
 }

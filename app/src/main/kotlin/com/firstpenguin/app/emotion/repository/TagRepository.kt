@@ -2,6 +2,7 @@ package com.firstpenguin.app.emotion.repository
 
 import com.firstpenguin.app.emotion.infrastructure.table.TagTable
 import com.firstpenguin.app.emotion.model.Tag
+import com.firstpenguin.app.global.enums.TagType
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -11,27 +12,54 @@ import org.springframework.stereotype.Repository
 class TagRepository(
     private val dsl: DSLContext,
 ) {
-    fun getTagList(emotionRangeId: Long): List<Tag> =
+    fun getTagListByEmotionRangeId(emotionRangeId: Long): List<Tag> =
         dsl
-            .select(TAG_FIELDS)
+            .select(tagFields())
             .from(TagTable.TAGS)
             .where(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
             .fetch(::toTag)
 
+    fun getEmotionTags(tagIds: List<Long>): List<Tag> {
+        if (tagIds.isEmpty()) return emptyList()
+
+        return dsl
+            .select(tagFields())
+            .from(TagTable.TAGS)
+            .where(
+                TagTable.ID.`in`(tagIds)
+                    .and(TagTable.TYPE.eq(TagType.EMOTION.name))
+            )
+            .fetch(::toTag)
+    }
+
+    fun getToneTags(tagIds: List<Long>): List<Tag> {
+        if (tagIds.isEmpty()) return emptyList()
+
+        return dsl
+            .select(tagFields())
+            .from(TagTable.TAGS)
+            .where(
+                TagTable.ID.`in`(tagIds)
+                    .and(TagTable.TYPE.eq(TagType.TONE.name))
+            )
+            .fetch(::toTag)
+    }
+
     private fun toTag(record: Record): Tag =
         Tag(
-            id = record.get(TagTable.ID),
-            emotionRangeId = record.get(TagTable.EMOTION_RANGE_ID),
-            label = record.get(TagTable.LABEL)
+            id = record[TagTable.ID]!!,
+            emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
+            label = record[TagTable.LABEL]!!,
+            type = TagType.from(record[TagTable.TYPE]!!),
+            createdAt = record[TagTable.CREATED_AT]!!
         )
 
-    private companion object {
-        val TAG_FIELDS: List<Field<*>> =
-            listOf(
-                TagTable.ID,
-                TagTable.EMOTION_RANGE_ID,
-                TagTable.LABEL,
-                TagTable.CREATED_AT
-            )
-    }
+    private fun tagFields(): List<Field<*>> =
+        listOf(
+            TagTable.ID,
+            TagTable.EMOTION_RANGE_ID,
+            TagTable.LABEL,
+            TagTable.TYPE,
+            TagTable.CREATED_AT
+        )
 }
