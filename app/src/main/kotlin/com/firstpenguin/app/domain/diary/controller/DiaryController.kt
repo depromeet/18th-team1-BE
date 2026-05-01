@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.diary.controller
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
+import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.usecase.DiaryUseCase
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -15,11 +16,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -31,6 +35,87 @@ import java.time.LocalDate
 class DiaryController(
     private val diaryUseCase: DiaryUseCase,
 ) {
+    @PatchMapping("/{diaryId}")
+    @Operation(
+        summary = "일기 내용 수정",
+        description = UPDATE_DESCRIPTION,
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "일기 내용 수정 성공",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = DiaryDetailResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "일기 내용이 비어 있거나 오늘 작성한 일기가 아닙니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "access token이 없거나, 만료되었거나, 유효하지 않습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "다른 사용자의 일기에는 접근할 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "일기를 찾을 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun updateDiaryContent(
+        @Parameter(hidden = true)
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(description = "일기 ID", example = "1")
+        @PathVariable
+        diaryId: Long,
+        @Valid
+        @RequestBody
+        request: UpdateDiaryContentRequest,
+    ): DiaryDetailResponse {
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
+
+        return diaryUseCase.updateDiaryContent(
+            userId = authenticatedUser.id,
+            diaryId = diaryId,
+            request = request,
+        )
+    }
+
     @GetMapping("/{diaryId}")
     @Operation(
         summary = "일기 상세 조회",
@@ -162,6 +247,10 @@ class DiaryController(
     }
 
     private companion object {
+        const val UPDATE_DESCRIPTION =
+            "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
+                "오늘 작성한 내 일기의 `content`만 수정할 수 있습니다."
+
         const val DETAIL_DESCRIPTION =
             "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
                 "삭제되지 않은 내 일기만 조회합니다."

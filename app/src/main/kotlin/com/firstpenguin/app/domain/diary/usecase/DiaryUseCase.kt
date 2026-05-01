@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.diary.usecase
 
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
+import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.global.exception.CustomException
@@ -15,6 +16,27 @@ class DiaryUseCase(
     private val diaryService: DiaryService,
     private val imageService: ImageService,
 ) {
+    @Transactional
+    fun updateDiaryContent(
+        userId: Long,
+        diaryId: Long,
+        request: UpdateDiaryContentRequest,
+    ): DiaryDetailResponse {
+        val diary = diaryService.getById(diaryId)
+        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+        val today = LocalDate.now()
+        validateTodayDiary(createdAt = diary.createdAt.toLocalDate(), today = today)
+
+        diaryService.updateContent(
+            id = diaryId,
+            userId = userId,
+            content = request.content,
+            start = today.atStartOfDay(),
+            end = today.plusDays(1).atStartOfDay(),
+        )
+        return getDiary(userId = userId, diaryId = diaryId)
+    }
+
     @Transactional(readOnly = true)
     fun getDiary(
         userId: Long,
@@ -49,6 +71,15 @@ class DiaryUseCase(
     ) {
         if (ownerId != userId) {
             throw CustomException(ErrorCode.FORBIDDEN)
+        }
+    }
+
+    private fun validateTodayDiary(
+        createdAt: LocalDate,
+        today: LocalDate,
+    ) {
+        if (createdAt != today) {
+            throw CustomException(ErrorCode.DIARY_UPDATE_NOT_ALLOWED)
         }
     }
 }

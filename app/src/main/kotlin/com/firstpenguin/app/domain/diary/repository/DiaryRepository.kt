@@ -44,6 +44,24 @@ class DiaryRepository(
             .and(DiaryTable.DELETED_AT.isNull)
             .fetchOne(::toDiary)
 
+    fun updateContent(
+        id: Long,
+        userId: Long,
+        content: String,
+        start: LocalDateTime,
+        end: LocalDateTime,
+    ): Int =
+        dsl
+            .update(DiaryTable.DIARIES)
+            .set(DiaryTable.CONTENT, content)
+            .set(DiaryTable.UPDATED_AT, LocalDateTime.now())
+            .where(DiaryTable.ID.eq(id))
+            .and(DiaryTable.USER_ID.eq(userId))
+            .and(DiaryTable.CREATED_AT.ge(start))
+            .and(DiaryTable.CREATED_AT.lt(end))
+            .and(DiaryTable.DELETED_AT.isNull)
+            .execute()
+
     private fun toDiary(record: Record): Diary =
         Diary(
             id = record.get(DiaryTable.ID),
