@@ -10,16 +10,13 @@ import org.springframework.stereotype.Service
 class EmotionFacade(
     private val emotionService: EmotionService,
 ) {
-    fun getEmotionTags(value: Int): TagResponse {
-        return emotionService.getEmotionTags(value)
-    }
+    fun getEmotionTags(value: Int): TagResponse = emotionService.getEmotionTags(value)
 
-    fun getToneTags(): TagResponse {
-        return emotionService.getToneTags()
-    }
+    fun getToneTags(): TagResponse = emotionService.getToneTags()
 
     fun selectEmotionTags(request: TagSelectRequest): TagSelectResponse {
         // 문장 추천
+        // 감정 온도 카테고리에 맞지 않은 태그선택 막기
         return emotionService.selectEmotionTags(request.emotionTagIds, request.toneTagIds)
     }
 }

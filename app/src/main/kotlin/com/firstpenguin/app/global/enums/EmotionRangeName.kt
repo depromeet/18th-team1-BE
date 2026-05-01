@@ -1,12 +1,13 @@
 package com.firstpenguin.app.global.enums
 
-import com.firstpenguin.app.global.exception.ErrorCode
 import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 
 enum class EmotionRangeName {
     SAD,
     NORMAL,
-    HAPPY;
+    HAPPY,
+    ;
 
     companion object {
         fun from(value: String): EmotionRangeName =

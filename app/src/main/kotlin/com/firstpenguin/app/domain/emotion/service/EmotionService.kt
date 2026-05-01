@@ -5,8 +5,8 @@ import com.firstpenguin.app.domain.emotion.dto.TagResponse
 import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
 import com.firstpenguin.app.domain.emotion.repository.EmotionRangeRepository
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
-import com.firstpenguin.app.global.exception.ErrorCode
 import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.collections.map
@@ -14,24 +14,25 @@ import kotlin.collections.map
 @Service
 class EmotionService(
     private val emotionRangeRepository: EmotionRangeRepository,
-    private val tagRepository: TagRepository
+    private val tagRepository: TagRepository,
 ) {
-
     @Transactional(readOnly = true)
     fun getEmotionTags(value: Int): TagResponse {
-        val emotionRange = emotionRangeRepository.getEmotionRange(value)
-            ?: throw CustomException(ErrorCode.NOT_FOUND_EMOTION_RANGE)
+        val emotionRange =
+            emotionRangeRepository.getEmotionRange(value)
+                ?: throw CustomException(ErrorCode.NOT_FOUND_EMOTION_RANGE)
 
         val emotionTags = tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
 
         return TagResponse(
-            tags = emotionTags.map {
-                TagDto(
-                    id = it.id,
-                    label = it.label,
-                    type = it.type
-                )
-            }
+            tags =
+                emotionTags.map {
+                    TagDto(
+                        id = it.id,
+                        label = it.label,
+                        type = it.type,
+                    )
+                },
         )
     }
 
@@ -40,18 +41,22 @@ class EmotionService(
         val toneTags = tagRepository.getToneTags()
 
         return TagResponse(
-            tags = toneTags.map {
-                TagDto(
-                    id = it.id,
-                    label = it.label,
-                    type = it.type
-                )
-            }
+            tags =
+                toneTags.map {
+                    TagDto(
+                        id = it.id,
+                        label = it.label,
+                        type = it.type,
+                    )
+                },
         )
     }
 
     @Transactional(readOnly = true)
-    fun selectEmotionTags(emotionTagIds: List<Long>, toneTagIds: List<Long>): TagSelectResponse {
+    fun selectEmotionTags(
+        emotionTagIds: List<Long>,
+        toneTagIds: List<Long>,
+    ): TagSelectResponse {
         val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
         val toneTags = tagRepository.getToneTagsByTagIdsIn(toneTagIds)
 
@@ -64,20 +69,22 @@ class EmotionService(
         }
 
         return TagSelectResponse(
-            emotionTags = emotionTags.map {
-                TagDto(
-                    id = it.id,
-                    label = it.label,
-                    type = it.type
-                )
-            },
-            toneTags = toneTags.map {
-                TagDto(
-                    id = it.id,
-                    label = it.label,
-                    type = it.type
-                )
-            }
+            emotionTags =
+                emotionTags.map {
+                    TagDto(
+                        id = it.id,
+                        label = it.label,
+                        type = it.type,
+                    )
+                },
+            toneTags =
+                toneTags.map {
+                    TagDto(
+                        id = it.id,
+                        label = it.label,
+                        type = it.type,
+                    )
+                },
         )
     }
 }

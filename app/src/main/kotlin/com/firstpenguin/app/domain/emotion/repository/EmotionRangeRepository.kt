@@ -25,7 +25,7 @@ class EmotionRangeRepository(
             id = record.get(EmotionRangeTable.ID),
             name = EmotionRangeName.from(record.get(EmotionRangeTable.NAME)),
             minValue = record.get(EmotionRangeTable.MIN_VALUE),
-            maxValue = record.get(EmotionRangeTable.MAX_VALUE)
+            maxValue = record.get(EmotionRangeTable.MAX_VALUE),
         )
 
     private companion object {
@@ -35,7 +35,7 @@ class EmotionRangeRepository(
                 EmotionRangeTable.NAME,
                 EmotionRangeTable.MIN_VALUE,
                 EmotionRangeTable.MAX_VALUE,
-                EmotionRangeTable.CREATED_AT
+                EmotionRangeTable.CREATED_AT,
             )
     }
 }

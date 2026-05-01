@@ -59,11 +59,10 @@ class GlobalExceptionHandler {
             .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST))
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadableException(): ResponseEntity<ErrorResponse> {
-        return ResponseEntity
+    fun handleHttpMessageNotReadableException(): ResponseEntity<ErrorResponse> =
+        ResponseEntity
             .status(ErrorCode.EMPTY_REQUEST_BODY.status)
             .body(ErrorResponse.of(ErrorCode.EMPTY_REQUEST_BODY))
-    }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {

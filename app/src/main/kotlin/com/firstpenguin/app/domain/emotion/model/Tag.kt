@@ -8,5 +8,5 @@ data class Tag(
     val emotionRangeId: Long?,
     val label: String,
     val type: TagType,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
 )

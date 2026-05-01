@@ -6,5 +6,5 @@ data class EmotionRange(
     val id: Long,
     val name: EmotionRangeName,
     val minValue: Int,
-    val maxValue: Int
+    val maxValue: Int,
 )

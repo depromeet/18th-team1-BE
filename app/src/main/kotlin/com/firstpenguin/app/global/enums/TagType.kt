@@ -5,7 +5,8 @@ import com.firstpenguin.app.global.exception.ErrorCode
 
 enum class TagType {
     EMOTION,
-    TONE;
+    TONE,
+    ;
 
     companion object {
         fun from(value: String): TagType =

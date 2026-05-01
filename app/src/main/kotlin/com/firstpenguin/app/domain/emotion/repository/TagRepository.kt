@@ -17,10 +17,10 @@ class TagRepository(
             .select(tagFields())
             .from(TagTable.TAGS)
             .where(
-                TagTable.TYPE.eq(TagType.EMOTION.name)
-                    .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
-            )
-            .fetch(::toTag)
+                TagTable.TYPE
+                    .eq(TagType.EMOTION.name)
+                    .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId)),
+            ).fetch(::toTag)
 
     fun getToneTags(): List<Tag> =
         dsl
@@ -36,10 +36,10 @@ class TagRepository(
             .select(tagFields())
             .from(TagTable.TAGS)
             .where(
-                TagTable.ID.`in`(tagIds)
-                    .and(TagTable.TYPE.eq(TagType.EMOTION.name))
-            )
-            .fetch(::toTag)
+                TagTable.ID
+                    .`in`(tagIds)
+                    .and(TagTable.TYPE.eq(TagType.EMOTION.name)),
+            ).fetch(::toTag)
     }
 
     fun getToneTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
@@ -49,10 +49,10 @@ class TagRepository(
             .select(tagFields())
             .from(TagTable.TAGS)
             .where(
-                TagTable.ID.`in`(tagIds)
-                    .and(TagTable.TYPE.eq(TagType.TONE.name))
-            )
-            .fetch(::toTag)
+                TagTable.ID
+                    .`in`(tagIds)
+                    .and(TagTable.TYPE.eq(TagType.TONE.name)),
+            ).fetch(::toTag)
     }
 
     private fun toTag(record: Record): Tag =
@@ -61,7 +61,7 @@ class TagRepository(
             emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
-            createdAt = record[TagTable.CREATED_AT]!!
+            createdAt = record[TagTable.CREATED_AT]!!,
         )
 
     private fun tagFields(): List<Field<*>> =
@@ -70,6 +70,6 @@ class TagRepository(
             TagTable.EMOTION_RANGE_ID,
             TagTable.LABEL,
             TagTable.TYPE,
-            TagTable.CREATED_AT
+            TagTable.CREATED_AT,
         )
 }
