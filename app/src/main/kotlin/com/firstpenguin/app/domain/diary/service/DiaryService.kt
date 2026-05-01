@@ -37,6 +37,25 @@ class DiaryService(
         }
     }
 
+    fun delete(
+        id: Long,
+        userId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+    ) {
+        val deletedCount =
+            diaryRepository.delete(
+                id = id,
+                userId = userId,
+                start = start,
+                end = end,
+            )
+
+        if (deletedCount == 0) {
+            throw CustomException(ErrorCode.DIARY_DELETE_NOT_ALLOWED)
+        }
+    }
+
     fun findByPeriod(
         userId: Long,
         start: LocalDate,

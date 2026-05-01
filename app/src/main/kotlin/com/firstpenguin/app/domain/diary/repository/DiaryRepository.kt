@@ -62,6 +62,26 @@ class DiaryRepository(
             .and(DiaryTable.DELETED_AT.isNull)
             .execute()
 
+    fun delete(
+        id: Long,
+        userId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+    ): Int {
+        val now = LocalDateTime.now()
+
+        return dsl
+            .update(DiaryTable.DIARIES)
+            .set(DiaryTable.DELETED_AT, now)
+            .set(DiaryTable.UPDATED_AT, now)
+            .where(DiaryTable.ID.eq(id))
+            .and(DiaryTable.USER_ID.eq(userId))
+            .and(DiaryTable.CREATED_AT.ge(start))
+            .and(DiaryTable.CREATED_AT.lt(end))
+            .and(DiaryTable.DELETED_AT.isNull)
+            .execute()
+    }
+
     private fun toDiary(record: Record): Diary =
         Diary(
             id = record.get(DiaryTable.ID),

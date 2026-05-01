@@ -17,6 +17,28 @@ class DiaryUseCase(
     private val imageService: ImageService,
 ) {
     @Transactional
+    fun deleteDiary(
+        userId: Long,
+        diaryId: Long,
+    ) {
+        val diary = diaryService.getById(diaryId)
+        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+        val today = LocalDate.now()
+        validateTodayDiary(
+            createdAt = diary.createdAt.toLocalDate(),
+            today = today,
+            errorCode = ErrorCode.DIARY_DELETE_NOT_ALLOWED,
+        )
+
+        diaryService.delete(
+            id = diaryId,
+            userId = userId,
+            start = today.atStartOfDay(),
+            end = today.plusDays(1).atStartOfDay(),
+        )
+    }
+
+    @Transactional
     fun updateDiaryContent(
         userId: Long,
         diaryId: Long,
@@ -25,7 +47,11 @@ class DiaryUseCase(
         val diary = diaryService.getById(diaryId)
         validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val today = LocalDate.now()
-        validateTodayDiary(createdAt = diary.createdAt.toLocalDate(), today = today)
+        validateTodayDiary(
+            createdAt = diary.createdAt.toLocalDate(),
+            today = today,
+            errorCode = ErrorCode.DIARY_UPDATE_NOT_ALLOWED,
+        )
 
         diaryService.updateContent(
             id = diaryId,
@@ -77,9 +103,10 @@ class DiaryUseCase(
     private fun validateTodayDiary(
         createdAt: LocalDate,
         today: LocalDate,
+        errorCode: ErrorCode,
     ) {
         if (createdAt != today) {
-            throw CustomException(ErrorCode.DIARY_UPDATE_NOT_ALLOWED)
+            throw CustomException(errorCode)
         }
     }
 }
