@@ -5,6 +5,7 @@ CREATE SEQUENCE diaries_id_seq
 CREATE TABLE diaries (
     id BIGINT PRIMARY KEY DEFAULT nextval('diaries_id_seq'),
     user_id BIGINT NOT NULL,
+    quote_id BIGINT NOT NULL,
     emotion_intensity VARCHAR(50) NOT NULL,
     content TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -13,6 +14,8 @@ CREATE TABLE diaries (
 );
 
 CREATE INDEX diaries_user_id_idx ON diaries (user_id);
+
+CREATE INDEX diaries_quote_id_idx ON diaries (quote_id);
 
 CREATE INDEX diaries_deleted_at_idx ON diaries (deleted_at);
 

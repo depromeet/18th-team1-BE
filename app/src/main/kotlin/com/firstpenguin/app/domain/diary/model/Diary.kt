@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 data class Diary(
     val id: Long,
     val userId: Long,
+    val quoteId: Long,
     val emotionIntensity: String,
     val content: String,
     val createdAt: LocalDateTime,
