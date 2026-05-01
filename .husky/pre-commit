@@ -8,5 +8,32 @@ else
   echo "gitleaks 미설치: 비밀키 검사를 건너뜁니다."
 fi
 
+# submodule 최신 여부 확인
+SUBMODULE_PATH="secret"
+SUBMODULE_URL=$(git config --file .gitmodules submodule."$SUBMODULE_PATH".url)
+SUBMODULE_BRANCH=$(git config --file .gitmodules submodule."$SUBMODULE_PATH".branch 2>/dev/null || echo "main")
+
+# 스테이징된 submodule 커밋 (실제로 커밋될 값)
+STAGED_COMMIT=$(git ls-files --stage -- "$SUBMODULE_PATH" | awk '{print $2}')
+
+if [ -n "$STAGED_COMMIT" ]; then
+  # ls-remote를 파이프 없이 실행해 exit code 마스킹 방지
+  LS_REMOTE_OUTPUT=$(git ls-remote "$SUBMODULE_URL" "refs/heads/$SUBMODULE_BRANCH")
+  REMOTE_COMMIT=$(echo "$LS_REMOTE_OUTPUT" | awk '{print $1}')
+
+  if [ -z "$REMOTE_COMMIT" ]; then
+    echo "❌ submodule 원격 커밋을 가져오지 못했습니다. 네트워크 또는 인증 오류를 확인하세요."
+    exit 1
+  fi
+
+  if [ "$STAGED_COMMIT" != "$REMOTE_COMMIT" ]; then
+    echo "❌ submodule '$SUBMODULE_PATH'이 최신 상태가 아닙니다."
+    echo "   현재: $STAGED_COMMIT"
+    echo "   최신: $REMOTE_COMMIT"
+    echo "   git submodule update --remote --checkout $SUBMODULE_PATH 후 다시 커밋하세요."
+    exit 1
+  fi
+fi
+
 # 최소 컴파일 검증 (app 모듈)
 cd app && ./gradlew testClasses

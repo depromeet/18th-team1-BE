@@ -1,13 +1,13 @@
 services:
   db:
     image: postgres:17
-    container_name: firstpenguin-db-local
+    container_name: firstpenguin-db
     ports:
       - "5432:5432"
     env_file:
       - .env
     volumes:
-      - postgres-data-local:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
@@ -16,4 +16,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres-data-local:
+  postgres-data:

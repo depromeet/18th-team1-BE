@@ -28,7 +28,7 @@ class GlobalExceptionHandler {
                 .firstOrNull()
                 ?.defaultMessage
                 ?: ErrorCode.INVALID_INPUT.message
-        return ResponseEntity.badRequest().body(ErrorResponse.of(ErrorCode.INVALID_INPUT.code, message))
+        return ResponseEntity.badRequest().body(ErrorResponse.of(message))
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
