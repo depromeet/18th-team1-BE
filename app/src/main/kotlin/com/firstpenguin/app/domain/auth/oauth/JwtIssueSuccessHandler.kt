@@ -21,11 +21,12 @@ class JwtIssueSuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication,
     ) {
-        val user = when (val principal = authentication.principal) {
-            is OAuth2AuthenticatedUser -> principal.user
-            is OidcAuthenticatedUser -> principal.user
-            else -> error("Unsupported principal type: ${principal!!::class}")
-        }
+        val user =
+            when (val principal = authentication.principal) {
+                is OAuth2AuthenticatedUser -> principal.user
+                is OidcAuthenticatedUser -> principal.user
+                else -> error("Unsupported principal type: ${principal!!::class}")
+            }
         val refreshToken = refreshTokenUseCase.issue(user)
 
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(refreshToken).toString())

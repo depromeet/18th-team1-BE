@@ -17,18 +17,22 @@ class CustomOidcUserService(
         val externalId = oidcUser.subject
         val nickname = oidcUser.fullName
 
-        val profile = OAuthUserProfile(
-            provider = Provider.GOOGLE,
-            providerId = externalId,
-            email = oidcUser.email,
-            nickname = normalizeNickname(nickname, externalId),
-        )
+        val profile =
+            OAuthUserProfile(
+                provider = Provider.GOOGLE,
+                providerId = externalId,
+                email = oidcUser.email,
+                nickname = normalizeNickname(nickname, externalId),
+            )
         val user = oAuthUserUseCase.upsertOAuthUser(profile)
 
         return OidcAuthenticatedUser(user = user, idToken = oidcUser.idToken, userInfo = oidcUser.userInfo)
     }
 
-    private fun normalizeNickname(nickname: String?, externalId: String): String {
+    private fun normalizeNickname(
+        nickname: String?,
+        externalId: String,
+    ): String {
         val normalized = nickname.orEmpty().replace(WHITESPACE_REGEX, "").take(NICKNAME_MAX_LENGTH)
         if (normalized.isNotBlank()) return normalized
         return "google${externalId.takeLast(FALLBACK_SUFFIX_LENGTH)}".take(NICKNAME_MAX_LENGTH)
