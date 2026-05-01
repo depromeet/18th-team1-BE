@@ -17,11 +17,32 @@ SUBMODULE_BRANCH=$(git config --file .gitmodules submodule."$SUBMODULE_PATH".bra
 STAGED_COMMIT=$(git ls-files --stage -- "$SUBMODULE_PATH" | awk '{print $2}')
 
 if [ -n "$STAGED_COMMIT" ]; then
-  REMOTE_COMMIT=$(git ls-remote "$SUBMODULE_URL" "refs/heads/$SUBMODULE_BRANCH" | awk '{print $1}')
+  # ls-remote를 파이프 없이 실행해 exit code 마스킹 방지
+  LS_REMOTE_OUTPUT=$(git ls-remote "$SUBMODULE_URL" "refs/heads/$SUBMODULE_BRANCH")
+  REMOTE_COMMIT=$(echo "$LS_REMOTE_OUTPUT" | awk '{print $1}')
+
+  if [ -z "$REMOTE_COMMIT" ]; then
+    echo "❌ submodule 원격 커밋을 가져오지 못했습니다. 네트워크 또는 인증 오류를 확인하세요."
+    exit 1
+  fi
+
   if [ "$STAGED_COMMIT" != "$REMOTE_COMMIT" ]; then
+    # 로컬 submodule에 uncommitted 변경이 있으면 자동 업데이트 중단
+    if ! git -C "$SUBMODULE_PATH" diff --quiet || ! git -C "$SUBMODULE_PATH" diff --cached --quiet; then
+      echo "❌ submodule에 로컬 변경이 있어 자동 업데이트를 건너뜁니다. 수동으로 처리하세요."
+      exit 1
+    fi
+
     echo "⚠️  submodule '$SUBMODULE_PATH'이 최신 상태가 아닙니다. 자동으로 업데이트합니다..."
-    git submodule update --remote --merge "$SUBMODULE_PATH"
+    git submodule update --remote --checkout "$SUBMODULE_PATH"
     git add "$SUBMODULE_PATH"
+
+    UPDATED_COMMIT=$(git ls-files --stage -- "$SUBMODULE_PATH" | awk '{print $2}')
+    if [ "$UPDATED_COMMIT" != "$REMOTE_COMMIT" ]; then
+      echo "❌ submodule 업데이트 후 커밋이 원격과 일치하지 않습니다."
+      exit 1
+    fi
+
     echo "✅ submodule이 $REMOTE_COMMIT 으로 업데이트되었습니다."
   fi
 fi
