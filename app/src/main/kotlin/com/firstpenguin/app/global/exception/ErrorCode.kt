@@ -30,7 +30,7 @@ enum class ErrorCode(
     // Emotion
     NOT_FOUND_EMOTION_RANGE(HttpStatus.NOT_FOUND, "일치하는 감정 분류가 존재하지 않습니다."),
     INVALID_EMOTION_RANGE_NAME(HttpStatus.INTERNAL_SERVER_ERROR, "감정 분류 데이터가 올바르지 않습니다."),
-    INVALID_TAG_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "감정 분류 데이터가 올바르지 않습니다."),
+    INVALID_TAG_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "태그 타입 데이터가 올바르지 않습니다."),
     INVALID_EMOTION_TAG(HttpStatus.BAD_REQUEST, "유효하지 않은 감정 태그가 포함되어 있습니다."),
     INVALID_TONE_TAG(HttpStatus.BAD_REQUEST, "유효하지 않은 톤 태그가 포함되어 있습니다."),
 
