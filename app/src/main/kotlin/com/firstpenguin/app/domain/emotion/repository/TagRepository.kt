@@ -29,10 +29,9 @@ class TagRepository(
             .from(TagTable.TAGS)
             .where(
                 TagTable.TYPE
-                        .eq(TagType.TONE.name)
-                        .and(TagTable.EMOTION_RANGE_ID.isNull),
-            )
-            .fetch(::toTag)
+                    .eq(TagType.TONE.name)
+                    .and(TagTable.EMOTION_RANGE_ID.isNull),
+            ).fetch(::toTag)
 
     fun getEmotionTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
