@@ -164,10 +164,10 @@ resource "google_service_account" "api" {
   display_name = "${var.env} API Server Service Account"
 }
 
-resource "google_project_iam_member" "api_sa_token_creator" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountTokenCreator"
-  member  = "serviceAccount:${google_service_account.api.email}"
+resource "google_service_account_iam_member" "api_sa_token_creator" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.api.email}"
 }
 
 # ============================================
