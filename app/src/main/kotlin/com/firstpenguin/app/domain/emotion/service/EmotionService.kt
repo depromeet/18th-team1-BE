@@ -8,7 +8,6 @@ import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import kotlin.collections.map
 
 @Service
@@ -16,7 +15,6 @@ class EmotionService(
     private val emotionRangeRepository: EmotionRangeRepository,
     private val tagRepository: TagRepository,
 ) {
-    @Transactional(readOnly = true)
     fun getEmotionTags(value: Int): TagResponse {
         val emotionRange =
             emotionRangeRepository.getEmotionRange(value)
@@ -36,7 +34,6 @@ class EmotionService(
         )
     }
 
-    @Transactional(readOnly = true)
     fun getToneTags(): TagResponse {
         val toneTags = tagRepository.getToneTags()
 
@@ -52,7 +49,6 @@ class EmotionService(
         )
     }
 
-    @Transactional(readOnly = true)
     fun selectEmotionTags(
         emotionTagIds: List<Long>,
         toneTagIds: List<Long>,
