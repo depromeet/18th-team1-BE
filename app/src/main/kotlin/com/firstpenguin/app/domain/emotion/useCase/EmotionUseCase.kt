@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional
 class EmotionUseCase(
     private val emotionService: EmotionService,
 ) {
-
     @Transactional(readOnly = true)
     fun getEmotionTags(value: Int): TagResponse = emotionService.getEmotionTags(value)
 
