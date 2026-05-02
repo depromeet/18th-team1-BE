@@ -174,7 +174,7 @@ resource "google_project_iam_member" "api_sa_token_creator" {
 # GCS Image Bucket
 # ============================================
 resource "google_storage_bucket" "images" {
-  name          = "${var.env}-senti-images"
+  name          = "${var.env}-${var.service_name}-images"
   location      = var.region
   force_destroy = false
 
