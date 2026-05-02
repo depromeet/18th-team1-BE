@@ -33,6 +33,7 @@ enum class ErrorCode(
     INVALID_TAG_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "태그 타입 데이터가 올바르지 않습니다."),
     INVALID_EMOTION_TAG(HttpStatus.BAD_REQUEST, "유효하지 않은 감정 태그가 포함되어 있습니다."),
     INVALID_TONE_TAG(HttpStatus.BAD_REQUEST, "유효하지 않은 톤 태그가 포함되어 있습니다."),
+    INVALID_EMOTION_TAG_RANGE(HttpStatus.BAD_REQUEST, "선택한 감정 태그는 동일한 감정 범위에 속해야 합니다."),
 
     // Diary
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "일기를 찾을 수 없습니다"),

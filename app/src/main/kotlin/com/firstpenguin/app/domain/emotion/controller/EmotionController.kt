@@ -6,9 +6,11 @@ import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
 import com.firstpenguin.app.domain.emotion.useCase.EmotionUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -30,6 +32,7 @@ class EmotionController(
         description = "사용자의 감정 점수를 기준으로 감정 범위를 찾고, 해당 감정 범위에 속한 태그 목록을 반환한다.",
     )
     @GetMapping("/emotion-tags")
+    @Validated
     fun getEmotionTags(
         @RequestParam @Min(MIN_EMOTION_SCORE) @Max(MAX_EMOTION_SCORE) value: Int,
     ): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getEmotionTags(value))
@@ -47,6 +50,6 @@ class EmotionController(
     )
     @PostMapping("/tag-selections")
     fun selectEmotionTags(
-        @RequestBody request: TagSelectRequest,
+        @Valid @RequestBody request: TagSelectRequest,
     ): ResponseEntity<TagSelectResponse> = ResponseEntity.ok(emotionUseCase.selectEmotionTags(request))
 }

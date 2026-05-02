@@ -64,6 +64,11 @@ class EmotionService(
             throw CustomException(ErrorCode.INVALID_TONE_TAG)
         }
 
+        val rangeIds = emotionTags.mapNotNull { it.emotionRangeId }.toSet()
+        if (rangeIds.size != 1) {
+            throw CustomException(ErrorCode.INVALID_EMOTION_TAG_RANGE)
+        }
+
         return TagSelectResponse(
             emotionTags =
                 emotionTags.map {
