@@ -26,7 +26,11 @@ class TagRepository(
         dsl
             .select(tagFields())
             .from(TagTable.TAGS)
-            .where(TagTable.TYPE.eq(TagType.TONE.name))
+            .where(
+                TagTable.TYPE
+                        .eq(TagType.TONE.name)
+                        .and(TagTable.EMOTION_RANGE_ID.isNull),
+            )
             .fetch(::toTag)
 
     fun getEmotionTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
@@ -38,7 +42,8 @@ class TagRepository(
             .where(
                 TagTable.ID
                     .`in`(tagIds)
-                    .and(TagTable.TYPE.eq(TagType.EMOTION.name)),
+                    .and(TagTable.TYPE.eq(TagType.EMOTION.name))
+                    .and(TagTable.EMOTION_RANGE_ID.isNull),
             ).fetch(::toTag)
     }
 
