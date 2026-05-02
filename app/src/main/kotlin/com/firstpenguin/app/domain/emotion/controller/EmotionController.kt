@@ -3,7 +3,7 @@ package com.firstpenguin.app.domain.emotion.controller
 import com.firstpenguin.app.domain.emotion.dto.TagResponse
 import com.firstpenguin.app.domain.emotion.dto.TagSelectRequest
 import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
-import com.firstpenguin.app.domain.emotion.facade.EmotionFacade
+import com.firstpenguin.app.domain.emotion.useCase.EmotionUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
@@ -23,7 +23,7 @@ private const val MAX_EMOTION_SCORE = 100L
 @RequestMapping("/emotions")
 @Tag(name = "EMOTION", description = "감정 API")
 class EmotionController(
-    private val emotionFacade: EmotionFacade,
+    private val emotionUseCase: EmotionUseCase,
 ) {
     @Operation(
         summary = "감정 점수 기반 감정 태그 목록 조회 API",
@@ -32,14 +32,14 @@ class EmotionController(
     @GetMapping("/emotion-tags")
     fun getEmotionTags(
         @RequestParam @Min(MIN_EMOTION_SCORE) @Max(MAX_EMOTION_SCORE) value: Int,
-    ): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionFacade.getEmotionTags(value))
+    ): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getEmotionTags(value))
 
     @Operation(
         summary = "톤 태그 목록 조회 API",
         description = "톤 태그 목록을 반환한다.",
     )
     @GetMapping("/tone-tags")
-    fun getToneTags(): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionFacade.getToneTags())
+    fun getToneTags(): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getToneTags())
 
     @Operation(
         summary = "감정, 톤 태그 선택 API",
@@ -48,5 +48,5 @@ class EmotionController(
     @PostMapping("/tag-selections")
     fun selectEmotionTags(
         @RequestBody request: TagSelectRequest,
-    ): ResponseEntity<TagSelectResponse> = ResponseEntity.ok(emotionFacade.selectEmotionTags(request))
+    ): ResponseEntity<TagSelectResponse> = ResponseEntity.ok(emotionUseCase.selectEmotionTags(request))
 }
