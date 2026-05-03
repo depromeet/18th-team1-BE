@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.recommendation.repository
 
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
+import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationTable
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -16,7 +17,7 @@ class DailyRecommendationRepository(
         userId: Long,
         quoteId: Long,
         userContext: String,
-        selectedEmotionRangeId: Long
+        selectedEmotionRangeId: Long,
     ) {
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
@@ -38,7 +39,8 @@ class DailyRecommendationRepository(
     ): Boolean =
         dsl.fetchExists(
             DailyRecommendationTable.DAILY_RECOMMENDATIONS,
-            DailyRecommendationTable.USER_ID.eq(userId)
+            DailyRecommendationTable.USER_ID
+                .eq(userId)
                 .and(DailyRecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate)),
         )
 

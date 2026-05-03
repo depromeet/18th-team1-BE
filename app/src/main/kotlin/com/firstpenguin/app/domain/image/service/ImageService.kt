@@ -10,6 +10,8 @@ class ImageService(
 ) {
     fun findUrlById(id: Long): String? = imageRepository.findUrlById(id)
 
-    fun findUrlsByOwnerIdAndOwnerType(ownerType: ImageOwner, ownerId: Long): List<String> =
-        imageRepository.findUrlsByOwnerTypeAndOwnerId(ownerType, ownerId)
+    fun findUrlsByOwnerIdAndOwnerType(
+        ownerType: ImageOwner,
+        ownerId: Long,
+    ): List<String> = imageRepository.findUrlsByOwnerTypeAndOwnerId(ownerType, ownerId)
 }

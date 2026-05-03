@@ -50,7 +50,7 @@ class EmotionService(
                 id = it.id,
                 label = it.label,
                 type = it.type,
-                emotionRangeId = it.emotionRangeId
+                emotionRangeId = it.emotionRangeId,
             )
         }
     }

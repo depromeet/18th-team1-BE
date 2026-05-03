@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class BookService(
-    private val bookRepository: BookRepository
+    private val bookRepository: BookRepository,
 ) {
     fun findBookById(id: Long): Book =
         bookRepository.findBookById(id)

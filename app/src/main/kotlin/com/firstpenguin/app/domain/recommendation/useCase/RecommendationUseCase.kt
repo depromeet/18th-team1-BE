@@ -3,9 +3,9 @@ package com.firstpenguin.app.domain.recommendation.useCase
 import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
+import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.service.QuoteService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationAvailabilityResponse
-import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
@@ -24,18 +24,20 @@ class RecommendationUseCase(
     private val imageService: ImageService,
 ) {
     @Transactional
-    fun recommendQuote(userId: Long, request: RecommendationRequest): RecommendationResponse {
-        if (recommendationService.hasRecommendedToday(userId)) {
-            throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
-        }
+    fun recommendQuote(
+        userId: Long,
+        request: RecommendationRequest,
+    ): RecommendationResponse {
+        recommendationService.validateTodayRecommendation(userId)
 
         val selectEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
         val selectToneTags = emotionService.selectToneTags(request.toneTagIds)
 
         val randomQuote = quoteService.getRandomQuote()
 
-        val selectedEmotionRangeId = selectEmotionTags.first().emotionRangeId
-            ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
+        val selectedEmotionRangeId =
+            selectEmotionTags.first().emotionRangeId
+                ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
 
         recommendationService.createDailyRecommendation(
             userId = userId,
@@ -47,15 +49,16 @@ class RecommendationUseCase(
         val book = bookService.findBookById(randomQuote.bookId)
         val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId).first()
 
-        val quoteResponse = QuoteResponse(
-            quoteId = randomQuote.id,
-            bookId = book.id,
-            content = randomQuote.content,
-            title = book.title,
-            author = book.author,
-            publisher = book.publisher,
-            image = bookCoverImage,
-        )
+        val quoteResponse =
+            QuoteResponse(
+                quoteId = randomQuote.id,
+                bookId = book.id,
+                content = randomQuote.content,
+                title = book.title,
+                author = book.author,
+                publisher = book.publisher,
+                image = bookCoverImage,
+            )
 
         return RecommendationResponse(quoteResponse, selectEmotionTags, selectToneTags)
     }

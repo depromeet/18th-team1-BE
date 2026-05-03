@@ -11,15 +11,14 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/home")
-@Tag(name = "HOME", description = "홈 API")class HomeController(
-    private val homeUserCase: HomeUserCase
+@Tag(name = "HOME", description = "홈 API")
+class HomeController(
+    private val homeUserCase: HomeUserCase,
 ) {
-
     @Operation(
         summary = "랜덤 추천 문구 API",
         description = "홈화면 랜덤 추천 문구를 정보를 반환한다.",
     )
     @GetMapping("/random")
-    fun getRandomQuote(): ResponseEntity<QuoteResponse> =
-        ResponseEntity.ok(homeUserCase.getRandomQuote())
+    fun getRandomQuote(): ResponseEntity<QuoteResponse> = ResponseEntity.ok(homeUserCase.getRandomQuote())
 }

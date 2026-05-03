@@ -1,6 +1,8 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationRepository
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
@@ -12,7 +14,7 @@ class RecommendationService(
         userId: Long,
         quoteId: Long,
         userContext: String,
-        selectedEmotionRangeId: Long
+        selectedEmotionRangeId: Long,
     ) {
         dailyRecommendationRepository.insertDailyRecommendation(userId, quoteId, userContext, selectedEmotionRangeId)
     }
@@ -21,5 +23,11 @@ class RecommendationService(
         val today = LocalDate.now()
 
         return dailyRecommendationRepository.existsByUserIdAndRecommendationDate(userId, today)
+    }
+
+    fun validateTodayRecommendation(userId: Long) {
+        if (hasRecommendedToday(userId)) {
+            throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
+        }
     }
 }
