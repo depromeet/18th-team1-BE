@@ -13,7 +13,10 @@ class ImageService(
 ) {
     fun findUrlById(id: Long): String? = imageRepository.findUrlById(id)
 
-    fun issue(type: ImageType, contentType: String): Pair<String, String> {
+    fun issue(
+        type: ImageType,
+        contentType: String,
+    ): Pair<String, String> {
         require(contentType in ALLOWED_CONTENT_TYPES) {
             "허용되지 않는 contentType: $contentType"
         }

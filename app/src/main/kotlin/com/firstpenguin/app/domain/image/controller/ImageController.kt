@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/images")
 class ImageController(
-    private val imageService: ImageService
+    private val imageService: ImageService,
 ) {
     @PostMapping("/presigned-url")
     fun issuePresignedUrl(

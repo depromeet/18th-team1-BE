@@ -6,7 +6,7 @@ import org.springframework.validation.annotation.Validated
 
 @Validated
 @ConfigurationProperties(prefix = "gcs")
-data class GcsProperties (
+data class GcsProperties(
     @field:NotBlank
     var bucketName: String = "temp",
     @field:NotBlank
