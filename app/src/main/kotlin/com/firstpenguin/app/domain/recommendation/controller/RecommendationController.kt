@@ -1,13 +1,18 @@
 package com.firstpenguin.app.domain.recommendation.controller
 
+import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationAvailabilityResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.useCase.RecommendationUseCase
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -26,14 +31,14 @@ class RecommendationController(
     )
     @PostMapping("/quotes")
     fun recommendationQuote(
-//        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
         @Valid @RequestBody request: RecommendationRequest,
     ): ResponseEntity<RecommendationResponse> {
-//        if (authenticatedUser == null) {
-//            throw CustomException(ErrorCode.UNAUTHORIZED)
-//        }
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
 
-        return ResponseEntity.ok(recommendationUseCase.recommendQuote(1L, request))
+        return ResponseEntity.ok(recommendationUseCase.recommendQuote(authenticatedUser.id, request))
     }
 
     @Operation(
@@ -42,12 +47,12 @@ class RecommendationController(
     )
     @GetMapping("/availability")
     fun isAvailableDailyRecommendation(
-//        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
     ): ResponseEntity<RecommendationAvailabilityResponse> {
-//        if (authenticatedUser == null) {
-//            throw CustomException(ErrorCode.UNAUTHORIZED)
-//        }
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
 
-        return ResponseEntity.ok(recommendationUseCase.isDailyRecommendationAvailable(1L))
+        return ResponseEntity.ok(recommendationUseCase.isDailyRecommendationAvailable(authenticatedUser.id))
     }
 }
