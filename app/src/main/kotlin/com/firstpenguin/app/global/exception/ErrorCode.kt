@@ -28,7 +28,7 @@ enum class ErrorCode(
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
 
     // Emotion
-    NOT_FOUND_EMOTION_RANGE(HttpStatus.NOT_FOUND, "일치하는 감정 분류가 존재하지 않습니다."),
+    EMOTION_RANGE_NOT_FOUND(HttpStatus.NOT_FOUND, "일치하는 감정 분류가 존재하지 않습니다."),
     INVALID_EMOTION_RANGE_NAME(HttpStatus.INTERNAL_SERVER_ERROR, "감정 분류 데이터가 올바르지 않습니다."),
     INVALID_TAG_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "태그 타입 데이터가 올바르지 않습니다."),
     INVALID_EMOTION_TAG(HttpStatus.BAD_REQUEST, "유효하지 않은 감정 태그가 포함되어 있습니다."),
@@ -39,4 +39,16 @@ enum class ErrorCode(
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "일기를 찾을 수 없습니다"),
     DIARY_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 수정할 수 있습니다"),
     DIARY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 삭제할 수 있습니다"),
+
+    // Recommendation
+    DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
+
+    // Book
+    BOOK_NOT_FOUND(HttpStatus.CONFLICT, "책이 존재하지 않습니다."),
+
+    // Quote
+    QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장이 존재하지 않습니다."),
+
+    // Image
+    INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),
 }

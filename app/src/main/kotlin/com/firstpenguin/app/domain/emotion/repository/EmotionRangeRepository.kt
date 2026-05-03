@@ -1,7 +1,7 @@
 package com.firstpenguin.app.domain.emotion.repository
 
-import com.firstpenguin.app.domain.emotion.infrastructure.table.EmotionRangeTable
 import com.firstpenguin.app.domain.emotion.model.EmotionRange
+import com.firstpenguin.app.domain.emotion.repository.table.EmotionRangeTable
 import com.firstpenguin.app.global.enums.EmotionRangeName
 import org.jooq.DSLContext
 import org.jooq.Field
