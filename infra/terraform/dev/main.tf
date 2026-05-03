@@ -122,6 +122,8 @@ resource "google_compute_instance" "api" {
   machine_type = var.machine_type
   zone         = var.zone
 
+  allow_stopping_for_update = true
+
   metadata = {
     block-project-ssh-keys = "true"
   }
@@ -181,7 +183,7 @@ resource "google_storage_bucket" "images" {
   uniform_bucket_level_access = true
 
   cors {
-    origin          = ["https://senti.today"]
+    origin          = ["https://dev.senti.today"]
     method          = ["GET", "PUT"]
     response_header = ["Content-Type", "Access-Control-Allow-Origin"]
     max_age_seconds = 3600
