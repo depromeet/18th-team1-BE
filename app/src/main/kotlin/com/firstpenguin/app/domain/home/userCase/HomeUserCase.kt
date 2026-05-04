@@ -21,10 +21,11 @@ class HomeUserCase(
         val randomQuote = quoteService.getRandomQuote()
 
         val book = bookService.findBookById(randomQuote.bookId)
-        val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
-            .firstOrNull() ?: throw CustomException(
-            ErrorCode.IMAGE_NOT_FOUND
-        )
+        val bookCoverImage =
+            imageService
+                .findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
+                .firstOrNull()
+                ?: throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
 
         return QuoteResponse(
             quoteId = randomQuote.id,

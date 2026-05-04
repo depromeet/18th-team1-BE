@@ -16,7 +16,13 @@ class RecommendationService(
         userContext: String?,
         selectedEmotionRangeId: Long,
     ) {
-        val inserted = dailyRecommendationRepository.insertDailyRecommendation(userId, quoteId, userContext, selectedEmotionRangeId)
+        val inserted =
+            dailyRecommendationRepository.insertDailyRecommendation(
+                userId = userId,
+                quoteId = quoteId,
+                userContext = userContext,
+                selectedEmotionRangeId = selectedEmotionRangeId,
+            )
 
         if (inserted == 0) throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
     }
