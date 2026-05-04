@@ -32,4 +32,13 @@ class ImageService(
         val imageId = imageRepository.save(publicUrl)
         return presignedUrl to imageId
     }
+
+    fun saveImages(
+        imageIds: List<Long>,
+        ownerType: ImageOwner,
+        ownerId: Long,
+    ) {
+        if (imageIds.isEmpty()) return
+        imageRepository.saveOwners(ownerType, ownerId, imageIds)
+    }
 }
