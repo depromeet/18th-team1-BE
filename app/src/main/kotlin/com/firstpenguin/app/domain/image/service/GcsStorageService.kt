@@ -16,7 +16,7 @@ private const val PRESIGNED_URL_EXPIRATION_MINUTES = 15L
 class GcsStorageService(
     private val gcsProperties: GcsProperties,
 ) : CloudStorageService {
-    private val storage: Storage = StorageOptions.getDefaultInstance().service
+    private val storage: Storage by lazy { StorageOptions.getDefaultInstance().service }
 
     override fun issuePresignedUrl(
         type: ImageType,
