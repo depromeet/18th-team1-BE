@@ -5,7 +5,7 @@ CREATE TABLE daily_recommendations (
    recommendation_date DATE NOT NULL,
    user_context TEXT NOT NULL,
    selected_emotion_range_id BIGINT NOT NULL,
-   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX daily_recommendations_user_date_uidx
