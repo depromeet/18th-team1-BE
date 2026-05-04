@@ -5,6 +5,8 @@ import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.service.QuoteService
 import com.firstpenguin.app.global.enums.ImageOwner
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,7 +21,10 @@ class HomeUserCase(
         val randomQuote = quoteService.getRandomQuote()
 
         val book = bookService.findBookById(randomQuote.bookId)
-        val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId).first()
+        val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
+            .firstOrNull() ?: throw CustomException(
+            ErrorCode.IMAGE_NOT_FOUND
+        )
 
         return QuoteResponse(
             quoteId = randomQuote.id,

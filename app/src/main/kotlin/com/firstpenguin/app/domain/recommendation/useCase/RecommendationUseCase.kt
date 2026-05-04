@@ -47,7 +47,10 @@ class RecommendationUseCase(
         )
 
         val book = bookService.findBookById(randomQuote.bookId)
-        val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId).first()
+        val bookCoverImage = imageService.findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
+            .firstOrNull() ?: throw CustomException(
+            ErrorCode.IMAGE_NOT_FOUND
+        )
 
         val quoteResponse =
             QuoteResponse(
