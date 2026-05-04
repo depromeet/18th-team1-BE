@@ -1,4 +1,4 @@
-package com.firstpenguin.app.domain.image.repository
+package com.firstpenguin.app.domain.image.repository.table
 
 import org.jooq.impl.DSL
 import java.time.LocalDateTime

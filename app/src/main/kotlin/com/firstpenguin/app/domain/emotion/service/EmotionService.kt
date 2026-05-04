@@ -1,8 +1,6 @@
 package com.firstpenguin.app.domain.emotion.service
 
 import com.firstpenguin.app.domain.emotion.dto.TagDto
-import com.firstpenguin.app.domain.emotion.dto.TagResponse
-import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.emotion.repository.EmotionRangeRepository
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
@@ -16,69 +14,45 @@ class EmotionService(
     private val emotionRangeRepository: EmotionRangeRepository,
     private val tagRepository: TagRepository,
 ) {
-    fun getEmotionTags(value: Int): TagResponse {
+    fun getEmotionTags(value: Int): List<Tag> {
         val emotionRange =
             emotionRangeRepository.getEmotionRange(value)
-                ?: throw CustomException(ErrorCode.NOT_FOUND_EMOTION_RANGE)
+                ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
 
-        val emotionTags = tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
-
-        return TagResponse(
-            tags =
-                emotionTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                    )
-                },
-        )
+        return tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
     }
 
-    fun getToneTags(): TagResponse {
-        val toneTags = tagRepository.getToneTags()
+    fun getToneTags(): List<Tag> = tagRepository.getToneTags()
 
-        return TagResponse(
-            tags =
-                toneTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                    )
-                },
-        )
-    }
-
-    fun selectEmotionTags(
-        emotionTagIds: List<Long>,
-        toneTagIds: List<Long>,
-    ): TagSelectResponse {
+    fun selectEmotionTags(emotionTagIds: List<Long>): List<TagDto> {
         val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
-        val toneTags = tagRepository.getToneTagsByTagIdsIn(toneTagIds)
 
         validateEmotionTags(emotionTags, emotionTagIds)
-        validateToneTags(toneTags, toneTagIds)
         validateSameEmotionRange(emotionTags)
 
-        return TagSelectResponse(
-            emotionTags =
-                emotionTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                    )
-                },
-            toneTags =
-                toneTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                    )
-                },
-        )
+        return emotionTags.map {
+            TagDto(
+                id = it.id,
+                label = it.label,
+                type = it.type,
+                emotionRangeId = it.emotionRangeId,
+            )
+        }
+    }
+
+    fun selectToneTags(toneTagIds: List<Long>): List<TagDto> {
+        val toneTags = tagRepository.getToneTagsByTagIdsIn(toneTagIds)
+
+        validateToneTags(toneTags, toneTagIds)
+
+        return toneTags.map {
+            TagDto(
+                id = it.id,
+                label = it.label,
+                type = it.type,
+                emotionRangeId = it.emotionRangeId,
+            )
+        }
     }
 
     private fun validateEmotionTags(

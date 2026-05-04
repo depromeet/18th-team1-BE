@@ -6,4 +6,5 @@ data class TagDto(
     val id: Long,
     val label: String,
     val type: TagType,
+    val emotionRangeId: Long?,
 )
