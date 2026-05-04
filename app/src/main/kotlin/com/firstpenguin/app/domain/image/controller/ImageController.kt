@@ -2,7 +2,7 @@ package com.firstpenguin.app.domain.image.controller
 
 import com.firstpenguin.app.domain.image.dto.PresignedUrlRequest
 import com.firstpenguin.app.domain.image.dto.PresignedUrlResponse
-import com.firstpenguin.app.domain.image.service.ImageService
+import com.firstpenguin.app.domain.image.usecase.ImageUseCase
 import com.firstpenguin.app.global.response.ErrorResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/images")
 @Tag(name = "이미지", description = "이미지 업로드 API")
 class ImageController(
-    private val imageService: ImageService,
+    private val imageUseCase: ImageUseCase,
 ) {
     @PostMapping("/presigned-url")
     @Operation(
@@ -66,10 +66,7 @@ class ImageController(
     )
     fun issuePresignedUrl(
         @RequestBody request: PresignedUrlRequest,
-    ): ResponseEntity<PresignedUrlResponse> {
-        val (presignedUrl, imageId) = imageService.issue(request.type, request.contentType)
-        return ResponseEntity.ok(PresignedUrlResponse(presignedUrl, imageId))
-    }
+    ): ResponseEntity<PresignedUrlResponse> = ResponseEntity.ok(imageUseCase.issuePresignedUrl(request.type, request.contentType))
 
     private companion object {
         const val PRESIGNED_URL_DESCRIPTION =
