@@ -8,7 +8,6 @@ internal object BookTable {
     val ID = DSL.field(DSL.name("books", "id"), Long::class.java)
     val TITLE = DSL.field(DSL.name("books", "title"), String::class.java)
     val AUTHOR = DSL.field(DSL.name("books", "author"), String::class.java)
-    val PUBLISHER = DSL.field(DSL.name("books", "publisher"), String::class.java)
     val ISBN13 = DSL.field(DSL.name("books", "isbn13"), String::class.java)
     val ALADIN_LINK = DSL.field(DSL.name("books", "aladin_link"), String::class.java)
     val COVER_IMAGE_URL = DSL.field(DSL.name("books", "cover_image_url"), String::class.java)

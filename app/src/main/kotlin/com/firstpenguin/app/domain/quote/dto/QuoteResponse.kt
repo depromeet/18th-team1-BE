@@ -6,6 +6,5 @@ data class QuoteResponse(
     val content: String,
     val title: String,
     val author: String,
-    val publisher: String,
     val image: String,
 )

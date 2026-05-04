@@ -61,7 +61,6 @@ class RecommendationUseCase(
                 content = randomQuote.content,
                 title = book.title,
                 author = book.author,
-                publisher = book.publisher,
                 image = bookCoverImage,
             )
 
