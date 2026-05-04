@@ -21,12 +21,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/recommendations")
-@Tag(name = "RECOMMENDATION", description = "추천 API")
+@Tag(name = "추천", description = "문장 추천 API")
 class RecommendationController(
     private val recommendationUseCase: RecommendationUseCase,
 ) {
     @Operation(
-        summary = "감정, 톤 태그 선택하면 추천된 문장 반환 API",
+        summary = "감정/톤 태그 선택, 사용자 문장을 받아 추천된 문장 반환 API",
         description = "사용자가 선택한 감정 태그와 톤 태그를 검증하고, 추천된 문장을 반환한다.",
     )
     @PostMapping("/quotes")
