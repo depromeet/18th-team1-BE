@@ -41,11 +41,16 @@ class RecommendationUseCase(
 
         val userContext = request.userContext.takeIf { it.isNotBlank() }
 
-        recommendationService.createDailyRecommendation(
+        val dailyRecommendationId = recommendationService.createDailyRecommendation(
             userId = userId,
             quoteId = randomQuote.id,
             userContext = userContext,
             selectedEmotionRangeId = selectedEmotionRangeId,
+        )
+
+        recommendationService.createDailyRecommendationQuotes(
+            dailyRecommendationId = dailyRecommendationId,
+            quoteIds = listOf(randomQuote.id),
         )
 
         val book = bookService.findBookById(randomQuote.bookId)
