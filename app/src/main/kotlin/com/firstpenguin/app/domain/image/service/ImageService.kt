@@ -2,6 +2,8 @@ package com.firstpenguin.app.domain.image.service
 
 import com.firstpenguin.app.domain.image.model.ImageType
 import com.firstpenguin.app.domain.image.repository.ImageRepository
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 private val ALLOWED_CONTENT_TYPES = setOf("image/jpeg", "image/png", "image/webp")
@@ -17,8 +19,8 @@ class ImageService(
         type: ImageType,
         contentType: String,
     ): Pair<String, String> {
-        require(contentType in ALLOWED_CONTENT_TYPES) {
-            "허용되지 않는 contentType: $contentType"
+        if (contentType !in ALLOWED_CONTENT_TYPES) {
+            throw CustomException(ErrorCode.UNSUPPORTED_IMAGE_CONTENT_TYPE)
         }
         return cloudStorageService.issuePresignedUrl(type, contentType)
     }
