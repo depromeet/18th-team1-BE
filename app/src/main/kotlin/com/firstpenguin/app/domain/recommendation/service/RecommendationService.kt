@@ -13,7 +13,7 @@ class RecommendationService(
     fun createDailyRecommendation(
         userId: Long,
         quoteId: Long,
-        userContext: String,
+        userContext: String?,
         selectedEmotionRangeId: Long,
     ) {
         dailyRecommendationRepository.insertDailyRecommendation(userId, quoteId, userContext, selectedEmotionRangeId)

@@ -16,7 +16,7 @@ class DailyRecommendationRepository(
     fun insertDailyRecommendation(
         userId: Long,
         quoteId: Long,
-        userContext: String,
+        userContext: String?,
         selectedEmotionRangeId: Long,
     ) {
         val now = LocalDateTime.now()

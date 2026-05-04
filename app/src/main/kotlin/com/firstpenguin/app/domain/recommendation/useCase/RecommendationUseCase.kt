@@ -39,10 +39,12 @@ class RecommendationUseCase(
             selectEmotionTags.first().emotionRangeId
                 ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
 
+        val userContext = request.userContext.takeIf { it.isNotBlank() }
+
         recommendationService.createDailyRecommendation(
             userId = userId,
             quoteId = randomQuote.id,
-            userContext = request.userContext,
+            userContext = userContext,
             selectedEmotionRangeId = selectedEmotionRangeId,
         )
 
