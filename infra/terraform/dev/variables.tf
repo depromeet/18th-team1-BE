@@ -24,7 +24,7 @@ variable "env" {
 variable "service_name" {
   description = "서비스 이름"
   type        = string
-  default     = "senti"
+  default     = "firstpenguin"
 }
 
 variable "machine_type" {

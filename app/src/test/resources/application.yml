@@ -10,3 +10,10 @@ spring:
 auth:
   jwt:
     secret: test-jwt-secret
+
+cloud:
+  provider: none
+
+gcs:
+  bucket-name: test-bucket
+  base-url: https://storage.googleapis.com/test-bucket
