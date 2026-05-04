@@ -5,7 +5,7 @@ import com.firstpenguin.app.global.config.GcsProperties
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
-import com.google.cloud.storage.StorageOptions
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -13,10 +13,11 @@ import java.util.concurrent.TimeUnit
 private const val PRESIGNED_URL_EXPIRATION_MINUTES = 15L
 
 @Service
+@ConditionalOnProperty(name = ["cloud.provider"], havingValue = "gcp")
 class GcsStorageService(
     private val gcsProperties: GcsProperties,
+    private val storage: Storage,
 ) : CloudStorageService {
-    private val storage: Storage by lazy { StorageOptions.getDefaultInstance().service }
 
     override fun issuePresignedUrl(
         type: ImageType,

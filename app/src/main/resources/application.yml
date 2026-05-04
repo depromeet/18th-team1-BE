@@ -7,6 +7,9 @@ server:
   servlet:
     context-path: /api
 
+cloud:
+  provider: gcp
+
 springdoc:
   api-docs:
     enabled: true
