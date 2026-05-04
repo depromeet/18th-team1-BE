@@ -18,7 +18,7 @@ class ImageController(
     fun issuePresignedUrl(
         @RequestBody request: PresignedUrlRequest,
     ): ResponseEntity<PresignedUrlResponse> {
-        val (presignedUrl, publicUrl) = imageService.issue(request.type, request.contentType)
-        return ResponseEntity.ok(PresignedUrlResponse(presignedUrl, publicUrl))
+        val (presignedUrl, imageId) = imageService.issue(request.type, request.contentType)
+        return ResponseEntity.ok(PresignedUrlResponse(presignedUrl, imageId))
     }
 }

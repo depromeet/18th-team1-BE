@@ -2,5 +2,5 @@ package com.firstpenguin.app.domain.image.dto
 
 data class PresignedUrlResponse(
     val presignedUrl: String,
-    val publicUrl: String,
+    val imageId: Long,
 )

@@ -30,4 +30,11 @@ class ImageRepository(
             .and(ImageOwnerTable.OWNER_ID.eq(ownerId))
             .orderBy(ImageOwnerTable.SORT_ORDER.asc())
             .fetch(ImageTable.URL)
+
+    fun save(url: String): Long =
+        dsl
+            .insertInto(ImageTable.IMAGES, ImageTable.URL)
+            .values(url)
+            .returning(ImageTable.ID)
+            .fetchOne(ImageTable.ID)!!
 }

@@ -24,10 +24,12 @@ class ImageService(
     fun issue(
         type: ImageType,
         contentType: String,
-    ): Pair<String, String> {
+    ): Pair<String, Long> {
         if (contentType !in ALLOWED_CONTENT_TYPES) {
             throw CustomException(ErrorCode.UNSUPPORTED_IMAGE_CONTENT_TYPE)
         }
-        return cloudStorageService.issuePresignedUrl(type, contentType)
+        val (presignedUrl, publicUrl) = cloudStorageService.issuePresignedUrl(type, contentType)
+        val imageId = imageRepository.save(publicUrl)
+        return presignedUrl to imageId
     }
 }
