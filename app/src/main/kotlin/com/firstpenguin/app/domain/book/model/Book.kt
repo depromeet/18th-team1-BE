@@ -8,7 +8,6 @@ data class Book(
     val author: String,
     val isbn13: String,
     val aladinLink: String,
-    val coverImageUrl: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val deletedAt: LocalDateTime?,

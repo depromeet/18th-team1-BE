@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.image.service
 
 import com.firstpenguin.app.domain.image.model.ImageType
 import com.firstpenguin.app.domain.image.repository.ImageRepository
+import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -14,6 +15,11 @@ class ImageService(
     private val cloudStorageService: CloudStorageService,
 ) {
     fun findUrlById(id: Long): String? = imageRepository.findUrlById(id)
+
+    fun findUrlsByOwnerIdAndOwnerType(
+        ownerType: ImageOwner,
+        ownerId: Long,
+    ): List<String> = imageRepository.findUrlsByOwnerTypeAndOwnerId(ownerType, ownerId)
 
     fun issue(
         type: ImageType,

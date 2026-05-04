@@ -1,4 +1,4 @@
-package com.firstpenguin.app.domain.emotion.infrastructure.table
+package com.firstpenguin.app.domain.emotion.repository.table
 
 import org.jooq.impl.DSL
 import java.time.LocalDateTime

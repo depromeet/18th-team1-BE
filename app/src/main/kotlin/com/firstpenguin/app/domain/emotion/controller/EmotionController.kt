@@ -1,19 +1,14 @@
 package com.firstpenguin.app.domain.emotion.controller
 
 import com.firstpenguin.app.domain.emotion.dto.TagResponse
-import com.firstpenguin.app.domain.emotion.dto.TagSelectRequest
-import com.firstpenguin.app.domain.emotion.dto.TagSelectResponse
 import com.firstpenguin.app.domain.emotion.useCase.EmotionUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -43,13 +38,4 @@ class EmotionController(
     )
     @GetMapping("/tone-tags")
     fun getToneTags(): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getToneTags())
-
-    @Operation(
-        summary = "감정, 톤 태그 선택 API",
-        description = "사용자가 선택한 감정 태그와 톤 태그를 검증하고, 추천 요청에 사용할 선택 태그 정보를 반환한다.",
-    )
-    @PostMapping("/tag-selections")
-    fun selectEmotionTags(
-        @Valid @RequestBody request: TagSelectRequest,
-    ): ResponseEntity<TagSelectResponse> = ResponseEntity.ok(emotionUseCase.selectEmotionTags(request))
 }
