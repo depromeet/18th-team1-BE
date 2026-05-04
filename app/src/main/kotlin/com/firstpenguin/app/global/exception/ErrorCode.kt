@@ -44,7 +44,7 @@ enum class ErrorCode(
     DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
 
     // Book
-    BOOK_NOT_FOUND(HttpStatus.CONFLICT, "책이 존재하지 않습니다."),
+    BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "책이 존재하지 않습니다."),
 
     // Quote
     QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장이 존재하지 않습니다."),

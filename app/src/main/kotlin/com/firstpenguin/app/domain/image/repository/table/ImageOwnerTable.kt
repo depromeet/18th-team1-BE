@@ -5,7 +5,6 @@ import kotlin.jvm.java
 
 internal object ImageOwnerTable {
     val IMAGE_OWNERS = DSL.table(DSL.name("image_owners"))
-    val ID = DSL.field(DSL.name("image_owners", "id"), Long::class.java)
     val IMAGE_ID = DSL.field(DSL.name("image_owners", "image_id"), Long::class.java)
     val OWNER_TYPE = DSL.field(DSL.name("image_owners", "owner_type"), String::class.java)
     val OWNER_ID = DSL.field(DSL.name("image_owners", "owner_id"), Long::class.java)
