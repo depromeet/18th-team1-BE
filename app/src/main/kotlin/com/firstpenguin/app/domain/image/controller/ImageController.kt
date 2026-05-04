@@ -66,8 +66,7 @@ class ImageController(
     )
     fun issuePresignedUrl(
         @RequestBody request: PresignedUrlRequest,
-    ): ResponseEntity<PresignedUrlResponse> =
-        ResponseEntity.ok(imageUseCase.issuePresignedUrl(request.type, request.contentType))
+    ): ResponseEntity<PresignedUrlResponse> = ResponseEntity.ok(imageUseCase.issuePresignedUrl(request))
 
     private companion object {
         const val PRESIGNED_URL_DESCRIPTION =
