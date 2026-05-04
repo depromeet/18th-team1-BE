@@ -4,21 +4,26 @@ import com.firstpenguin.app.domain.quote.model.Quote
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
-import org.jooq.impl.DSL.rand
+import org.jooq.impl.DSL
+import org.jooq.impl.DSL.max
 import org.springframework.stereotype.Repository
 
 @Repository
 class QuoteRepository(
     private val dsl: DSLContext,
 ) {
-    fun findRandomQuote(): Quote? =
+    fun findQuoteById(id: Long?): Quote? =
         dsl
             .select(QUOTE_FIELDS)
             .from(QuoteTable.QUOTES)
-            .where(QuoteTable.DELETED_AT.isNull)
-            .orderBy(rand())
-            .limit(1)
+            .where(QuoteTable.ID.eq(id))
             .fetchOne(::toQuote)
+
+    fun getMaxQuoteId(): Long =
+        dsl
+            .select(DSL.coalesce(max(QuoteTable.ID), 0L))
+            .from(QuoteTable.QUOTES)
+            .fetchOne(0, Long::class.java)!!
 
     private fun toQuote(record: Record): Quote =
         Quote(
