@@ -18,7 +18,6 @@ class GcsStorageService(
     private val gcsProperties: GcsProperties,
     private val storage: Storage,
 ) : CloudStorageService {
-
     override fun issuePresignedUrl(
         type: ImageType,
         contentType: String,
