@@ -3,7 +3,7 @@ CREATE TABLE daily_recommendations (
    user_id BIGINT NOT NULL,
    quote_id BIGINT NOT NULL,
    recommendation_date DATE NOT NULL,
-   user_context TEXT NOT NULL,
+   user_context TEXT,
    selected_emotion_range_id BIGINT NOT NULL,
    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
