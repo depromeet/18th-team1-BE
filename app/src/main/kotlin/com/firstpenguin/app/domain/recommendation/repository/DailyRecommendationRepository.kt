@@ -18,11 +18,11 @@ class DailyRecommendationRepository(
         quoteId: Long,
         userContext: String?,
         selectedEmotionRangeId: Long,
-    ) {
+    ): Int {
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
 
-        dsl
+        return dsl
             .insertInto(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
             .set(DailyRecommendationTable.USER_ID, userId)
             .set(DailyRecommendationTable.QUOTE_ID, quoteId)
@@ -30,6 +30,7 @@ class DailyRecommendationRepository(
             .set(DailyRecommendationTable.USER_CONTEXT, userContext)
             .set(DailyRecommendationTable.SELECTED_EMOTION_RANGE_ID, selectedEmotionRangeId)
             .set(DailyRecommendationTable.CREATED_AT, now)
+            .onConflictDoNothing()
             .execute()
     }
 
