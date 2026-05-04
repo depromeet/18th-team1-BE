@@ -19,6 +19,12 @@ provider "google" {
   region  = var.region
 }
 
+locals {
+  instance_ssh_keys = [
+    for ssh_key in var.ssh_public_keys : "${ssh_key.user}:${ssh_key.key}"
+  ]
+}
+
 # ============================================
 # VPC
 # ============================================
@@ -124,9 +130,14 @@ resource "google_compute_instance" "api" {
 
   allow_stopping_for_update = true
 
-  metadata = {
-    block-project-ssh-keys = "true"
-  }
+  metadata = merge(
+    {
+      block-project-ssh-keys = "true"
+    },
+    length(local.instance_ssh_keys) > 0 ? {
+      ssh-keys = join("\n", local.instance_ssh_keys)
+    } : {}
+  )
 
   boot_disk {
     initialize_params {

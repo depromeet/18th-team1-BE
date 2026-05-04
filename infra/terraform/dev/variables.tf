@@ -32,3 +32,12 @@ variable "machine_type" {
   type        = string
   default     = "e2-medium"
 }
+
+variable "ssh_public_keys" {
+  description = "VM 인스턴스에 등록할 SSH 공개키 목록"
+  type = list(object({
+    user = string
+    key  = string
+  }))
+  default = []
+}
