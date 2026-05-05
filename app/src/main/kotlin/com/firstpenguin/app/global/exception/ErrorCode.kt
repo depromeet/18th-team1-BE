@@ -17,6 +17,9 @@ enum class ErrorCode(
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
+    AUTH_USER_NOT_FOUND(HttpStatus.UNAUTHORIZED, "인증된 사용자를 찾을 수 없습니다"),
+    AUTH_USER_DELETED(HttpStatus.UNAUTHORIZED, "탈퇴한 사용자입니다"),
+    AUTH_USER_BLOCKED(HttpStatus.UNAUTHORIZED, "차단된 사용자입니다"),
     ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Access Token이 만료되었습니다"),
     INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access Token입니다"),
     REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다"),
