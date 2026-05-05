@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.image.repository.table.ImageOwnerTable
 import com.firstpenguin.app.domain.image.repository.table.ImageTable
 import com.firstpenguin.app.global.enums.ImageOwner
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -30,4 +31,30 @@ class ImageRepository(
             .and(ImageOwnerTable.OWNER_ID.eq(ownerId))
             .orderBy(ImageOwnerTable.SORT_ORDER.asc())
             .fetch(ImageTable.URL)
+
+    fun save(url: String): Long =
+        dsl
+            .insertInto(ImageTable.IMAGES, ImageTable.URL)
+            .values(url)
+            .returning(ImageTable.ID)
+            .fetchOne(ImageTable.ID)!!
+
+    fun saveOwners(
+        ownerType: ImageOwner,
+        ownerId: Long,
+        imageIds: List<Long>,
+    ) {
+        dsl
+            .insertInto(
+                ImageOwnerTable.IMAGE_OWNERS,
+                ImageOwnerTable.IMAGE_ID,
+                ImageOwnerTable.OWNER_TYPE,
+                ImageOwnerTable.OWNER_ID,
+                ImageOwnerTable.SORT_ORDER,
+            ).valuesOfRows(
+                imageIds.mapIndexed { index, imageId ->
+                    DSL.row(imageId, ownerType.name, ownerId, index)
+                },
+            ).execute()
+    }
 }

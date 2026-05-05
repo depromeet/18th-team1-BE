@@ -1,4 +1,4 @@
-# 이미지 정책
+# 이미지 업로드 흐름과 저장 정책
 
 ## 기본 원칙
 
@@ -8,6 +8,7 @@
 DB에는 최종 조회용 public URL을 저장한다.
 `images.url`은 서비스가 허용한 스토리지에 업로드된 이미지의 절대 public URL을 의미한다.
 presigned URL은 업로드용 임시 URL이므로 DB에 저장하지 않는다.
+클라이언트는 public URL을 직접 저장 API에 전달하지 않고, 백엔드가 발급한 `imageId`만 도메인 API에 전달한다.
 
 현재 스토리지는 GCP Cloud Storage(dev 환경)를 사용한다.
 
@@ -16,16 +17,30 @@ presigned URL은 업로드용 임시 URL이므로 DB에 저장하지 않는다.
 이미지 업로드는 클라이언트 직접 업로드 방식으로 처리한다.
 
 1. 클라이언트가 백엔드에 presigned URL 발급을 요청한다. 요청 시 이미지 타입과 파일 형식을 함께 전달한다.
-2. 백엔드는 타입에 따라 경로 prefix를 결정하고, UUID로 파일명을 생성한 뒤 presigned URL과 public URL을 함께 반환한다.
-3. 클라이언트는 presigned URL로 스토리지에 파일을 직접 업로드한다. PUT 요청 시 `Content-Type` 헤더를 발급 시 지정한 값과 동일하게 설정해야 한다.
-4. 업로드 성공 후 클라이언트는 public URL을 백엔드 저장 API에 전달한다.
-5. 백엔드는 public URL을 검증한 뒤 `images.url`에 저장한다.
+2. 백엔드는 타입에 따라 경로 prefix를 결정하고, UUID로 파일명을 생성한다.
+3. 백엔드는 GCS 업로드용 presigned URL과 최종 조회용 public URL을 생성한다.
+4. 백엔드는 public URL을 `images.url`에 먼저 저장하고, 생성된 `images.id`를 `imageId`로 반환한다.
+5. 클라이언트는 presigned URL로 스토리지에 파일을 직접 업로드한다. PUT 요청 시 `Content-Type` 헤더를 발급 시 지정한 값과 동일하게 설정해야 한다.
+6. 도메인 생성 API는 클라이언트가 전달한 `imageIds`를 받아 `image_owners`에 owner 연결만 저장한다.
+
+```text
+POST /images/presigned-url
+  -> GCS presigned URL 생성
+  -> images INSERT(publicUrl)
+  <- { presignedUrl, imageId }
+
+클라이언트 GCS PUT 업로드
+
+POST /diaries 또는 다른 도메인 생성 API
+  body: { ..., imageIds: [123] }
+  -> image_owners INSERT(imageId, ownerType, ownerId, sortOrder)
+```
 
 ### Presigned URL 발급 요청
 
 ```json
 {
-  "type": "DIARY_IMAGE",
+  "type": "DIARY",
   "contentType": "image/webp"
 }
 ```
@@ -35,10 +50,52 @@ presigned URL은 업로드용 임시 URL이므로 DB에 저장하지 않는다.
 | 필드 | 설명 |
 |------|------|
 | `presignedUrl` | 클라이언트가 스토리지에 파일을 업로드할 때 사용하는 임시 PUT URL |
-| `publicUrl` | 업로드 성공 후 DB에 저장하고 API 응답으로 내려줄 조회용 URL |
+| `imageId` | `images` 테이블에 저장된 이미지 ID. 도메인 생성 API 호출 시 전달 |
 
-스토리지 업로드 성공 여부는 클라이언트가 presigned URL 요청의 응답으로 판단한다.
-현재 단계에서는 `uploadId`, 임시 업로드 테이블, 스토리지 `HEAD` 검증, 완료 상태 관리는 도입하지 않는다.
+스토리지 업로드 성공 여부는 클라이언트가 GCS PUT 요청 결과로 판단한다.
+현재 응답에는 public URL을 노출하지 않는다.
+
+## 서버 저장 로직
+
+### `ImageService.issue(type, contentType)`
+
+presigned URL 발급 API에서 사용하는 로직이다.
+
+1. `contentType`이 허용 목록에 포함되는지 검증한다.
+2. `CloudStorageService.issuePresignedUrl(type, contentType)`으로 presigned URL과 public URL을 생성한다.
+3. `ImageRepository.save(publicUrl)`로 `images` row를 생성한다.
+4. `presignedUrl`과 `imageId`를 반환한다.
+
+### `ImageService.saveImages(imageIds, ownerType, ownerId)`
+
+도메인 생성 로직에서 가져다 쓰는 공용 연결 로직이다.
+
+1. `imageIds`가 비어 있으면 아무 작업도 하지 않는다.
+2. `ImageRepository.saveOwners(ownerType, ownerId, imageIds)`를 호출한다.
+3. `image_owners`에는 `image_id`, `owner_type`, `owner_id`, `sort_order`가 저장된다.
+
+`images` row는 presigned URL 발급 시점에 이미 생성되어 있으므로, 도메인 생성 시점에는 `image_owners` 연결만 만든다.
+
+## DB 저장 구조
+
+### `images`
+
+| 컬럼 | 설명 |
+|------|------|
+| `id` | 이미지 ID. presigned URL 발급 응답의 `imageId` |
+| `url` | 최종 조회용 public URL |
+| `created_at` | 이미지 row 생성 시각 |
+
+### `image_owners`
+
+| 컬럼 | 설명 |
+|------|------|
+| `image_id` | `images.id` |
+| `owner_type` | 이미지를 소유하거나 참조하는 도메인 타입 |
+| `owner_id` | 도메인 row ID |
+| `sort_order` | 같은 owner 내 이미지 정렬 순서 |
+
+하나의 도메인 owner가 여러 이미지를 가질 수 있으므로 `imageIds`는 리스트로 전달한다.
 
 ## 경로 정책
 
@@ -47,23 +104,18 @@ presigned URL은 업로드용 임시 URL이므로 DB에 저장하지 않는다.
 
 | ImageType | 경로 prefix |
 |-----------|------------|
-| `DIARY_IMAGE` | `diary/` |
-| `USER_PROFILE_IMAGE` | `user/profile/` |
+| `DIARY` | `diary/` |
+| `USER_PROFILE` | `user/profile/` |
+| `REPORT` | `report/` |
 
 최종 오브젝트 키 예시: `diary/550e8400-e29b-41d4-a716.webp`
 
-## URL 검증
+## URL 정책
 
-백엔드는 클라이언트가 전달한 public URL을 그대로 신뢰하지 않는다.
-저장 전에 최소한 다음 조건을 검증한다.
+백엔드는 클라이언트가 전달한 public URL을 저장하지 않는다.
+public URL은 백엔드가 GCS object key와 설정된 base URL로 직접 생성한다.
 
-- URL 형식이 정상이어야 한다.
-- 현재 환경에서 허용한 public base URL 또는 host에 속해야 한다.
-- presigned URL처럼 query string이 포함된 값은 저장하지 않는다.
-
-검증에 실패하면 DB에 저장하지 않고 `400 Bad Request`로 응답한다.
-
-환경별 허용 public URL 기준값은 설정으로 관리한다.
+환경별 public URL 기준값은 설정으로 관리한다.
 
 ```yaml
 gcs:
@@ -91,6 +143,20 @@ SVG, GIF, 동영상, 문서 파일은 이미지 업로드 대상에 포함하지
 
 이미지를 삭제하거나 교체하면 DB 레코드와 스토리지 객체 정리 책임이 함께 발생한다.
 스토리지 객체 정리를 즉시 처리할지, 별도 배치나 운영 작업으로 처리할지는 구현 시점에 정한다.
+
+## 현재 구현 범위와 TODO
+
+현재 구현은 presigned URL 발급 시 `images` row를 생성하고, 도메인 생성 로직에서 재사용할 수 있는 `saveImages()` 연결 메서드를 제공한다.
+
+다음 항목은 아직 구현하지 않았다.
+
+- `ImageCleanupScheduler` 기반 orphan image row 정리
+- GCS orphan object 정리
+- `imageId` 소유권 검증
+- `images.created_at` 기반 cleanup 인덱스
+
+presigned URL을 발급받았지만 도메인 생성까지 이어지지 않은 경우 `images` row가 orphan 상태로 남을 수 있다.
+추후 cleanup을 추가할 때는 `image_owners`에 연결되지 않고 일정 시간 이상 지난 `images` row를 삭제하는 방식으로 처리한다.
 
 ## 변경 가능성
 
