@@ -22,11 +22,19 @@ class UserService(
     fun upsertOAuthUser(profile: OAuthUserProfile): User = userRepository.upsertOAuthUser(profile)
 
     private fun validateAuthenticatableStatus(user: User) {
-        if (user.status == UserStatus.DELETED || user.deletedAt != null) {
-            throw CustomException(ErrorCode.AUTH_USER_DELETED)
-        }
-        if (user.status == UserStatus.BLOCKED) {
-            throw CustomException(ErrorCode.AUTH_USER_BLOCKED)
-        }
+        val errorCode =
+            when {
+                user.deletedAt != null -> ErrorCode.AUTH_USER_DELETED
+                else -> authenticatableStatusErrorCode(user.status)
+            }
+
+        errorCode?.let { throw CustomException(it) }
     }
+
+    private fun authenticatableStatusErrorCode(status: UserStatus): ErrorCode? =
+        when (status) {
+            UserStatus.ACTIVE -> null
+            UserStatus.BLOCKED -> ErrorCode.AUTH_USER_BLOCKED
+            UserStatus.DELETED -> ErrorCode.AUTH_USER_DELETED
+        }
 }
