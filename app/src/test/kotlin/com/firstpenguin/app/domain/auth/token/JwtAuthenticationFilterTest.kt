@@ -63,15 +63,17 @@ class JwtAuthenticationFilterTest {
     fun `인증 실패 시 인증 에러를 저장하고 SecurityContext를 비운다`() {
         val request = requestWithBearerToken()
         val response = MockHttpServletResponse()
+        val filterChain = Mockito.mock(FilterChain::class.java)
         SecurityContextHolder.getContext().authentication = authentication()
         Mockito
             .`when`(jwtAuthenticator.authenticate(TOKEN))
             .thenThrow(CustomException(ErrorCode.AUTH_USER_DELETED))
 
-        jwtAuthenticationFilter.doFilter(request, response, FilterChain { _, _ -> })
+        jwtAuthenticationFilter.doFilter(request, response, filterChain)
 
         assertNull(SecurityContextHolder.getContext().authentication)
         assertEquals(ErrorCode.AUTH_USER_DELETED, request.getAttribute(JWT_AUTHENTICATION_ERROR_ATTRIBUTE))
+        Mockito.verify(filterChain).doFilter(request, response)
     }
 
     private fun requestWithBearerToken(): MockHttpServletRequest =
