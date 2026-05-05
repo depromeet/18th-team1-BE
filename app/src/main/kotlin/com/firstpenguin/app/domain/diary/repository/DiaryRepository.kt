@@ -62,6 +62,14 @@ class DiaryRepository(
             .and(DiaryTable.DELETED_AT.isNull)
             .execute()
 
+    fun countByUserId(userId: Long): Int =
+        dsl
+            .selectCount()
+            .from(DiaryTable.DIARIES)
+            .where(DiaryTable.USER_ID.eq(userId))
+            .and(DiaryTable.DELETED_AT.isNull)
+            .fetchOne(0, Int::class.java) ?: 0
+
     fun delete(
         id: Long,
         userId: Long,
