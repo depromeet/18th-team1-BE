@@ -145,32 +145,33 @@ class DiaryShareImageService(
     }
 
     private companion object {
-        const val WIDTH = 746
-        const val HEIGHT = 842
-        const val HEADER_HEIGHT = 126
-        const val BODY_HEIGHT = 533
-        const val DIVIDER_Y = 659
-        const val DIVIDER_HEIGHT = 34
-        const val FOOTER_Y = 693
-        const val CONTENT_X = 53
-        const val DATE_BASELINE_Y = 75
-        const val QUOTE_BASELINE_Y = 232
-        const val BOOK_BASELINE_Y = 778
-        const val DATE_FONT_SIZE = 36
-        const val QUOTE_FONT_SIZE = 42
-        const val BOOK_FONT_SIZE = 32
-        const val QUOTE_MAX_WIDTH = 640
-        const val BOOK_MAX_WIDTH = 640
-        const val QUOTE_LINE_HEIGHT = 58
-        const val BOOK_LINE_HEIGHT = 42
+        const val WIDTH = 260
+        const val HEADER_HEIGHT = 44
+        const val BODY_HEIGHT = 186
+        const val DIVIDER_HEIGHT = 12
+        const val FOOTER_HEIGHT = 52
+        const val HEIGHT = HEADER_HEIGHT + BODY_HEIGHT + DIVIDER_HEIGHT + FOOTER_HEIGHT
+        const val DIVIDER_Y = HEADER_HEIGHT + BODY_HEIGHT
+        const val FOOTER_Y = DIVIDER_Y + DIVIDER_HEIGHT
+        const val CONTENT_X = 18
+        const val DATE_BASELINE_Y = 26
+        const val QUOTE_BASELINE_Y = 81
+        const val BOOK_BASELINE_Y = 272
+        const val DATE_FONT_SIZE = 13
+        const val QUOTE_FONT_SIZE = 15
+        const val BOOK_FONT_SIZE = 11
+        const val QUOTE_MAX_WIDTH = 223
+        const val BOOK_MAX_WIDTH = 223
+        const val QUOTE_LINE_HEIGHT = 20
+        const val BOOK_LINE_HEIGHT = 15
         const val QUOTE_MAX_LINES = 6
         const val BOOK_MAX_LINES = 2
         const val IMAGE_FORMAT = "png"
         const val ELLIPSIS = "..."
 
         val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM, dd", Locale.ENGLISH)
-        val BURGUNDY: Color = Color(0x76, 0x1B, 0x3F)
-        val OLIVE: Color = Color(0x90, 0x8C, 0x00)
-        val SKY_BLUE: Color = Color(0xA7, 0xD8, 0xDA)
+        val BURGUNDY: Color = Color(0x6B, 0x1E, 0x3C)
+        val OLIVE: Color = Color(0x8E, 0x81, 0x00)
+        val SKY_BLUE: Color = Color(0xA4, 0xD4, 0xD6)
     }
 }
