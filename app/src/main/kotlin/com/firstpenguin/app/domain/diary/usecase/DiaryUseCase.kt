@@ -6,9 +6,11 @@ import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryExistsResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
+import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
+import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -28,6 +30,18 @@ class DiaryUseCase(
         userId: Long,
         request: CreateDiaryRequest,
     ): CreateDiaryResponse {
+        diaryService.validateCanCreateTodayDiary(userId)
+        val dailyRecommendation = validateRecommendation(userId, request)
+        validateEmotion(dailyRecommendation, request)
+        val createdDiary = persistDiary(userId, request)
+        persistAssociations(createdDiary.diaryId, request)
+        return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
+    }
+
+    private fun validateRecommendation(
+        userId: Long,
+        request: CreateDiaryRequest,
+    ): DailyRecommendation {
         val dailyRecommendation =
             recommendationService.getDailyRecommendation(request.dailyRecommendationId)
 
@@ -38,6 +52,13 @@ class DiaryUseCase(
             quoteId = request.quoteId,
         )
 
+        return dailyRecommendation
+    }
+
+    private fun validateEmotion(
+        dailyRecommendation: DailyRecommendation,
+        request: CreateDiaryRequest,
+    ) {
         val emotionRange = emotionService.getEmotionRange(request.emotionIntensity)
         recommendationService.validateSelectedEmotionRange(
             dailyRecommendation = dailyRecommendation,
@@ -47,22 +68,28 @@ class DiaryUseCase(
             tagIds = request.tagIds,
             emotionRangeId = emotionRange.id,
         )
+    }
 
-        diaryService.validateCanCreateTodayDiary(userId)
-
+    private fun persistDiary(
+        userId: Long,
+        request: CreateDiaryRequest,
+    ): CreatedDiary {
         val content = request.content?.takeIf { it.isNotBlank() }
-        val createdDiary =
-            diaryService.createDiary(
-                userId = userId,
-                emotionIntensity = request.emotionIntensity,
-                quoteId = request.quoteId,
-                content = content,
-            )
 
-        diaryService.createDiaryTags(createdDiary.diaryId, request.tagIds)
-        imageService.saveImages(request.imageId, ImageOwner.DIARY, createdDiary.diaryId)
+        return diaryService.createDiary(
+            userId = userId,
+            emotionIntensity = request.emotionIntensity,
+            quoteId = request.quoteId,
+            content = content,
+        )
+    }
 
-        return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
+    private fun persistAssociations(
+        diaryId: Long,
+        request: CreateDiaryRequest,
+    ) {
+        diaryService.createDiaryTags(diaryId, request.tagIds)
+        imageService.saveImages(request.imageIds, ImageOwner.DIARY, diaryId)
     }
 
     @Transactional
