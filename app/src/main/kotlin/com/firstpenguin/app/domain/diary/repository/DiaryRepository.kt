@@ -7,9 +7,9 @@ import com.firstpenguin.app.domain.diary.repository.table.DiaryTable
 import com.firstpenguin.app.domain.image.repository.table.ImageOwnerTable
 import com.firstpenguin.app.domain.image.repository.table.ImageTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
-import com.firstpenguin.app.global.enums.ImageOwner
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
