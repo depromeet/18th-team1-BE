@@ -18,5 +18,5 @@ data class CreateDiaryRequest(
     val quoteId: Long,
     @field:Size(max = 300, message = "일기 내용은 300자 이하로 입력해주세요")
     val content: String? = null,
-    val imageId: List<Long> = emptyList(),
+    val imageIds: List<Long> = emptyList(),
 )
