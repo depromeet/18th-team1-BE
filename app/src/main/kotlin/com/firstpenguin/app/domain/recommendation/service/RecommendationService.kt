@@ -43,7 +43,7 @@ class RecommendationService(
     }
 
     fun getDailyRecommendation(id: Long) =
-        dailyRecommendationRepository.findDailyRecommendationByPk(id)
+        dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(id)
             ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
 
     fun getRecommendationHistory(dailyRecommendationId: Long): List<DailyRecommendationQuote> =

@@ -49,12 +49,14 @@ class DailyRecommendationRepository(
                 .and(DailyRecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate)),
         )
 
-    fun findDailyRecommendationByPk(id: Long): DailyRecommendation? =
+    fun findDailyRecommendationByPkForUpdate(id: Long): DailyRecommendation? =
         dsl
             .select(DAILY_RECOMMENDATION_FIELDS)
             .from(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
             .where(DailyRecommendationTable.ID.eq(id))
-            .fetchOne(::toDailyRecommendation)
+            .forUpdate()
+            .fetchOne()
+            ?.let(::toDailyRecommendation)
 
     private fun toDailyRecommendation(record: Record): DailyRecommendation =
         DailyRecommendation(
