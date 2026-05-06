@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.diary.usecase
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
+import com.firstpenguin.app.domain.diary.service.DiaryShareImageService
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.global.exception.CustomException
@@ -15,6 +16,7 @@ import java.time.LocalDate
 class DiaryUseCase(
     private val diaryService: DiaryService,
     private val imageService: ImageService,
+    private val diaryShareImageService: DiaryShareImageService,
 ) {
     @Transactional
     fun deleteDiary(
@@ -61,6 +63,17 @@ class DiaryUseCase(
             end = today.plusDays(1).atStartOfDay(),
         )
         return getDiary(userId = userId, diaryId = diaryId)
+    }
+
+    @Transactional(readOnly = true)
+    fun generateShareImage(
+        userId: Long,
+        diaryId: Long,
+    ): ByteArray {
+        val diary = diaryService.getById(diaryId)
+        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+
+        return diaryShareImageService.generate(diary)
     }
 
     @Transactional(readOnly = true)
