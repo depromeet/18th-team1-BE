@@ -42,12 +42,16 @@ enum class ErrorCode(
 
     // Recommendation
     DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
+    DAILY_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 추천 문구가 존재하지 않습니다."),
+    INVALID_DAILY_RECOMMENDATION(HttpStatus.BAD_REQUEST, "오늘 생성된 추천 문구만 사용할 수 있습니다."),
+    EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT(HttpStatus.CONFLICT, "일일 추천 문구 더보기 횟수를 초과했습니다."),
+    FORBIDDEN_DAILY_RECOMMENDATION(HttpStatus.FORBIDDEN, "본인의 일일 추천 문구만 사용할 수 있습니다."),
 
     // Book
     BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "책이 존재하지 않습니다."),
 
     // Quote
-    QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장이 존재하지 않습니다."),
+    NOT_ENOUGH_QUOTES(HttpStatus.CONFLICT, "추천 가능한 문장이 부족합니다."),
 
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),

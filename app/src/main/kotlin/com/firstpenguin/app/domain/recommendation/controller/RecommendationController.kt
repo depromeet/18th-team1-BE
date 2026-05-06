@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.recommendation.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
+import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationAvailabilityResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
@@ -14,6 +15,7 @@ import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -42,11 +44,27 @@ class RecommendationController(
     }
 
     @Operation(
+        summary = "문장 더보기 조회 API",
+        description = "오늘의 추천 문구 외에 추가 문장 3개를 조회하여 반환한다.",
+    )
+    @PostMapping("{dailyRecommendationId}/quotes")
+    fun getNextRecommendationQuotes(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @PathVariable dailyRecommendationId: Long,
+    ): ResponseEntity<List<QuoteResponse>> {
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
+
+        return ResponseEntity.ok(recommendationUseCase.getNextRecommendationQuotes(authenticatedUser.id, dailyRecommendationId))
+    }
+
+    @Operation(
         summary = "오늘의 추천 문구 존재 여부 API",
         description = "오늘의 추천 문구를 받을 수 있는지 결과를 반환한다.",
     )
     @GetMapping("/availability")
-    fun isAvailableDailyRecommendation(
+    fun isDailyRecommendationAvailable(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
     ): ResponseEntity<RecommendationAvailabilityResponse> {
         if (authenticatedUser == null) {
