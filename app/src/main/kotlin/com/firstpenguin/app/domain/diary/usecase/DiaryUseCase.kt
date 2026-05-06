@@ -1,11 +1,15 @@
 package com.firstpenguin.app.domain.diary.usecase
 
+import com.firstpenguin.app.domain.diary.dto.CreateDiaryRequest
+import com.firstpenguin.app.domain.diary.dto.CreateDiaryResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.service.DiaryService
+import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
-import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.domain.recommendation.service.RecommendationService
+import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -15,16 +19,60 @@ import java.time.LocalDate
 class DiaryUseCase(
     private val diaryService: DiaryService,
     private val imageService: ImageService,
+    private val recommendationService: RecommendationService,
+    private val emotionService: EmotionService,
 ) {
+    @Transactional
+    fun createDiary(
+        userId: Long,
+        request: CreateDiaryRequest,
+    ): CreateDiaryResponse {
+        val dailyRecommendation =
+            recommendationService.getDailyRecommendation(request.dailyRecommendationId)
+
+        recommendationService.validateOwner(userId, dailyRecommendation)
+        recommendationService.validateTodayRecommendation(dailyRecommendation.recommendationDate)
+        recommendationService.validateRecommendedQuote(
+            dailyRecommendationId = dailyRecommendation.id,
+            quoteId = request.quoteId,
+        )
+
+        val emotionRange = emotionService.getEmotionRange(request.emotionIntensity)
+        recommendationService.validateSelectedEmotionRange(
+            dailyRecommendation = dailyRecommendation,
+            emotionRangeId = emotionRange.id,
+        )
+        emotionService.validateEmotionTagsInRange(
+            tagIds = request.tagIds,
+            emotionRangeId = emotionRange.id,
+        )
+
+        diaryService.validateCanCreateTodayDiary(userId)
+
+        val content = request.content?.takeIf { it.isNotBlank() }
+        val createdDiary =
+            diaryService.createDiary(
+                userId = userId,
+                emotionIntensity = request.emotionIntensity,
+                quoteId = request.quoteId,
+                content = content,
+            )
+
+        diaryService.createDiaryTags(createdDiary.diaryId, request.tagIds)
+        imageService.saveImages(request.imageId, ImageOwner.DIARY, createdDiary.diaryId)
+
+        return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
+    }
+
     @Transactional
     fun deleteDiary(
         userId: Long,
         diaryId: Long,
     ) {
         val diary = diaryService.getById(diaryId)
-        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+        diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val today = LocalDate.now()
-        validateTodayDiary(
+        diaryService.validateTodayDiary(
             createdAt = diary.createdAt.toLocalDate(),
             today = today,
             errorCode = ErrorCode.DIARY_DELETE_NOT_ALLOWED,
@@ -45,9 +93,9 @@ class DiaryUseCase(
         request: UpdateDiaryContentRequest,
     ): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
-        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+        diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val today = LocalDate.now()
-        validateTodayDiary(
+        diaryService.validateTodayDiary(
             createdAt = diary.createdAt.toLocalDate(),
             today = today,
             errorCode = ErrorCode.DIARY_UPDATE_NOT_ALLOWED,
@@ -69,7 +117,7 @@ class DiaryUseCase(
         diaryId: Long,
     ): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
-        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+        diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val diaryImageUrl = diary.diaryImageId?.let(imageService::findUrlById)
 
         return DiaryDetailResponse.from(diary, diaryImageUrl)
@@ -89,24 +137,5 @@ class DiaryUseCase(
             )
 
         return DiaryPeriodResponse.from(start, end, diaries)
-    }
-
-    private fun validateDiaryOwner(
-        ownerId: Long,
-        userId: Long,
-    ) {
-        if (ownerId != userId) {
-            throw CustomException(ErrorCode.FORBIDDEN)
-        }
-    }
-
-    private fun validateTodayDiary(
-        createdAt: LocalDate,
-        today: LocalDate,
-        errorCode: ErrorCode,
-    ) {
-        if (createdAt != today) {
-            throw CustomException(errorCode)
-        }
     }
 }

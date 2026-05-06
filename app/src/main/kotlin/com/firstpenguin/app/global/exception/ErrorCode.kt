@@ -45,11 +45,15 @@ enum class ErrorCode(
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "일기를 찾을 수 없습니다"),
     DIARY_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 수정할 수 있습니다"),
     DIARY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 삭제할 수 있습니다"),
+    DIARY_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일기 생성에 실패했습니다."),
+    DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘 작성한 일기가 존재합니다."),
+    INVALID_DIARY_EMOTION_INTENSITY(HttpStatus.BAD_REQUEST, "추천받은 감정 범위와 일기 감정 온도가 일치하지 않습니다."),
 
     // Recommendation
     DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
     DAILY_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 추천 문구가 존재하지 않습니다."),
     INVALID_DAILY_RECOMMENDATION(HttpStatus.BAD_REQUEST, "오늘 생성된 추천 문구만 사용할 수 있습니다."),
+    INVALID_RECOMMENDATION_QUOTE(HttpStatus.BAD_REQUEST, "추천받은 문장만 선택할 수 있습니다."),
     EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT(HttpStatus.CONFLICT, "일일 추천 문구 더보기 횟수를 초과했습니다."),
     FORBIDDEN_DAILY_RECOMMENDATION(HttpStatus.FORBIDDEN, "본인의 일일 추천 문구만 사용할 수 있습니다."),
 

@@ -1,8 +1,12 @@
 package com.firstpenguin.app.domain.diary.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
+import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.model.Diary
+import com.firstpenguin.app.domain.diary.repository.table.DiaryTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -44,6 +48,20 @@ class DiaryRepository(
             .and(DiaryTable.DELETED_AT.isNull)
             .fetchOne(::toDiary)
 
+    fun existsByUserIdAndCreatedAtBetween(
+        userId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+    ): Boolean =
+        dsl.fetchExists(
+            DiaryTable.DIARIES,
+            DiaryTable.USER_ID
+                .eq(userId)
+                .and(DiaryTable.CREATED_AT.ge(start))
+                .and(DiaryTable.CREATED_AT.lt(end))
+                .and(DiaryTable.DELETED_AT.isNull),
+        )
+
     fun updateContent(
         id: Long,
         userId: Long,
@@ -61,6 +79,28 @@ class DiaryRepository(
             .and(DiaryTable.CREATED_AT.lt(end))
             .and(DiaryTable.DELETED_AT.isNull)
             .execute()
+
+    fun create(
+        userId: Long,
+        emotionIntensity: Int,
+        quoteId: Long,
+        content: String?,
+    ): CreatedDiary =
+        dsl
+            .insertInto(DiaryTable.DIARIES)
+            .set(DiaryTable.USER_ID, userId)
+            .set(DiaryTable.EMOTION_INTENSITY, emotionIntensity)
+            .set(DiaryTable.QUOTE_ID, quoteId)
+            .set(DiaryTable.CONTENT, content)
+            .returning(DiaryTable.ID, DiaryTable.CREATED_AT)
+            .fetchOne()
+            ?.let { record ->
+                CreatedDiary(
+                    diaryId = record.get(DiaryTable.ID),
+                    createdAt = record.get(DiaryTable.CREATED_AT),
+                )
+            }
+            ?: throw CustomException(ErrorCode.DIARY_CREATION_FAILED)
 
     fun delete(
         id: Long,

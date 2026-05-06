@@ -1,6 +1,8 @@
 package com.firstpenguin.app.domain.diary.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
+import com.firstpenguin.app.domain.diary.dto.CreateDiaryRequest
+import com.firstpenguin.app.domain.diary.dto.CreateDiaryResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -37,6 +40,22 @@ import java.time.LocalDate
 class DiaryController(
     private val diaryUseCase: DiaryUseCase,
 ) {
+    @Operation(
+        summary = "추천 문장 선택 기반 일기 생성 API",
+        description = "사용자가 선택한 추천 문장을 기준으로 일기를 생성하며, 텍스트와 사진은 선택값이다.",
+    )
+    @PostMapping
+    fun createDiary(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Valid @RequestBody request: CreateDiaryRequest,
+    ): ResponseEntity<CreateDiaryResponse> {
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
+
+        return ResponseEntity.ok(diaryUseCase.createDiary(authenticatedUser.id, request))
+    }
+
     @DeleteMapping("/{diaryId}")
     @Operation(
         summary = "일기 삭제",

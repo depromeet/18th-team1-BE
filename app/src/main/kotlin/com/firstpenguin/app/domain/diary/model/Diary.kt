@@ -7,7 +7,7 @@ data class Diary(
     val userId: Long,
     val quoteId: Long,
     val diaryImageId: Long?,
-    val emotionIntensity: String,
+    val emotionIntensity: Int,
     val content: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
