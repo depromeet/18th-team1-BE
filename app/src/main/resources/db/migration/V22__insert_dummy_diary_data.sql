@@ -47,7 +47,7 @@ INSERT INTO diaries (
     9003,
     9001,
     1,
-    'HIGH',
+    80,
     '더미 일기 데이터입니다.',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
