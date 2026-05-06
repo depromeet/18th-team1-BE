@@ -122,7 +122,9 @@ class DiaryUseCase(
     ): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
         diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
-        val diaryImageUrl = diary.diaryImageId?.let(imageService::findUrlById)
+        val diaryImageUrl =
+            diaryService
+                .findDiaryImageUrlByDiaryId(diary.id)
 
         return DiaryDetailResponse.from(diary, diaryImageUrl)
     }
