@@ -122,6 +122,8 @@ resource "google_compute_instance" "api" {
   machine_type = var.machine_type
   zone         = var.zone
 
+  allow_stopping_for_update = true
+
   metadata = {
     block-project-ssh-keys = "true"
   }
@@ -143,10 +145,59 @@ resource "google_compute_instance" "api" {
     }
   }
 
+  service_account {
+    email  = google_service_account.api.email
+    scopes = ["cloud-platform"]
+  }
+
   tags = ["api-server"]
 
   labels = {
     env     = var.env
     service = var.service_name
   }
+}
+
+# ============================================
+# Service Account (이미지 버킷용)
+# ============================================
+resource "google_service_account" "api" {
+  account_id   = "${var.env}-${var.service_name}-api-sa"
+  display_name = "${var.env} API Server Service Account"
+}
+
+resource "google_service_account_iam_member" "api_sa_token_creator" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.api.email}"
+}
+
+# ============================================
+# GCS Image Bucket
+# ============================================
+resource "google_storage_bucket" "images" {
+  name          = "${var.env}-${var.service_name}-images"
+  location      = var.region
+  force_destroy = false
+
+  uniform_bucket_level_access = true
+
+  cors {
+    origin          = ["https://dev.senti.today"]
+    method          = ["GET", "PUT"]
+    response_header = ["Content-Type", "Access-Control-Allow-Origin"]
+    max_age_seconds = 3600
+  }
+}
+
+resource "google_storage_bucket_iam_member" "images_public_read" {
+  bucket = google_storage_bucket.images.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+resource "google_storage_bucket_iam_member" "images_api_sa_admin" {
+  bucket = google_storage_bucket.images.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.api.email}"
 }
