@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.diary.usecase
 import com.firstpenguin.app.domain.diary.dto.CreateDiaryRequest
 import com.firstpenguin.app.domain.diary.dto.CreateDiaryResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
+import com.firstpenguin.app.domain.diary.dto.DiaryExistsResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.service.DiaryService
@@ -110,6 +111,9 @@ class DiaryUseCase(
         )
         return getDiary(userId = userId, diaryId = diaryId)
     }
+
+    @Transactional(readOnly = true)
+    fun hasTodayDiary(userId: Long): DiaryExistsResponse = DiaryExistsResponse(diaryService.hasTodayDiary(userId))
 
     @Transactional(readOnly = true)
     fun getDiary(

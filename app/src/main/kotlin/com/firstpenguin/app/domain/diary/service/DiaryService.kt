@@ -89,6 +89,16 @@ class DiaryService(
         diaryTagRepository.createAll(diaryId, tagIds)
     }
 
+    fun hasTodayDiary(userId: Long): Boolean {
+        val today = LocalDate.now()
+
+        return diaryRepository.existsByUserIdAndCreatedAtBetween(
+            userId = userId,
+            start = today.atStartOfDay(),
+            end = today.plusDays(1).atStartOfDay(),
+        )
+    }
+
     fun validateDiaryOwner(
         ownerId: Long,
         userId: Long,
@@ -109,15 +119,7 @@ class DiaryService(
     }
 
     fun validateCanCreateTodayDiary(userId: Long) {
-        val today = LocalDate.now()
-        val hasTodayDiary =
-            diaryRepository.existsByUserIdAndCreatedAtBetween(
-                userId = userId,
-                start = today.atStartOfDay(),
-                end = today.plusDays(1).atStartOfDay(),
-            )
-
-        if (hasTodayDiary) {
+        if (hasTodayDiary(userId)) {
             throw CustomException(ErrorCode.DIARY_ALREADY_EXISTS)
         }
     }
