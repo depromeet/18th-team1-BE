@@ -47,7 +47,7 @@ class RecommendationController(
         summary = "문장 더보기 조회 API",
         description = "오늘의 추천 문구 외에 추가 문장 3개를 조회하여 반환한다.",
     )
-    @PostMapping("{dailyRecommendationId}/quotes")
+    @PostMapping("/{dailyRecommendationId}/quotes")
     fun getNextRecommendationQuotes(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
         @PathVariable dailyRecommendationId: Long,
@@ -56,7 +56,12 @@ class RecommendationController(
             throw CustomException(ErrorCode.UNAUTHORIZED)
         }
 
-        return ResponseEntity.ok(recommendationUseCase.getNextRecommendationQuotes(authenticatedUser.id, dailyRecommendationId))
+        return ResponseEntity.ok(
+            recommendationUseCase.getNextRecommendationQuotes(
+                userId = authenticatedUser.id,
+                dailyRecommendationId = dailyRecommendationId,
+            ),
+        )
     }
 
     @Operation(

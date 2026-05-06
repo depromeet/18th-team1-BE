@@ -65,7 +65,10 @@ class RecommendationUseCase(
     }
 
     @Transactional
-    fun getNextRecommendationQuotes(userId: Long, dailyRecommendationId: Long): List<QuoteResponse> {
+    fun getNextRecommendationQuotes(
+        userId: Long,
+        dailyRecommendationId: Long,
+    ): List<QuoteResponse> {
         val dailyRecommendation = recommendationService.getDailyRecommendation(dailyRecommendationId)
 
         recommendationService.validateOwner(userId, dailyRecommendation)
@@ -73,7 +76,10 @@ class RecommendationUseCase(
 
         val recommendationHistory = recommendationService.getRecommendationHistory(dailyRecommendation.id)
 
-        recommendationService.validateRecommendationCount(recommendationHistory.size, NEXT_RECOMMENDATION_QUOTE_COUNT)
+        recommendationService.validateRecommendationCount(
+            currentCount = recommendationHistory.size,
+            nextCount = NEXT_RECOMMENDATION_QUOTE_COUNT,
+        )
 
         val quoteIdHistory = recommendationHistory.map { recommendationQuote -> recommendationQuote.quoteId }
         val nextQuotes =

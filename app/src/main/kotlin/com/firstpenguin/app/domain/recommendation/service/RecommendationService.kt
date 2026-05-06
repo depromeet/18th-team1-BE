@@ -44,12 +44,11 @@ class RecommendationService(
 
     fun getDailyRecommendation(id: Long) =
         dailyRecommendationRepository.findDailyRecommendationByPk(id)
-                    ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
+            ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
 
-    fun getRecommendationHistory(dailyRecommendationId: Long): List<DailyRecommendationQuote> {
-        return dailyRecommendationQuoteRepository
+    fun getRecommendationHistory(dailyRecommendationId: Long): List<DailyRecommendationQuote> =
+        dailyRecommendationQuoteRepository
             .findByDailyRecommendationId(dailyRecommendationId)
-    }
 
     fun hasRecommendedToday(userId: Long): Boolean {
         val today = LocalDate.now()
@@ -63,7 +62,10 @@ class RecommendationService(
         }
     }
 
-    fun validateRecommendationCount(currentCount: Int, nextCount: Int) {
+    fun validateRecommendationCount(
+        currentCount: Int,
+        nextCount: Int,
+    ) {
         if (currentCount + nextCount > MAX_RECOMMENDATION_QUOTE_COUNT) {
             throw CustomException(ErrorCode.EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT)
         }
@@ -75,7 +77,10 @@ class RecommendationService(
         }
     }
 
-    fun validateOwner(userId: Long, dailyRecommendation: DailyRecommendation) {
+    fun validateOwner(
+        userId: Long,
+        dailyRecommendation: DailyRecommendation,
+    ) {
         if (dailyRecommendation.userId != userId) {
             throw CustomException(ErrorCode.FORBIDDEN_DAILY_RECOMMENDATION)
         }
