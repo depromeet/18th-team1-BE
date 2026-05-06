@@ -39,7 +39,7 @@ class DiaryShareImageFontProvider {
     }
 
     private companion object {
-        const val DATE_FONT_PATH = "fonts/GT-Pressura-Extended-Bold-Trial.otf"
+        const val DATE_FONT_PATH = "fonts/GT-Pressura-Bold-Trial.otf"
         const val QUOTE_FONT_PATH = "fonts/Pretendard-ExtraBold.otf"
         const val BOOK_FONT_PATH = "fonts/Pretendard-Bold.otf"
 
