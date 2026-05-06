@@ -2,6 +2,8 @@ package com.firstpenguin.app.domain.recommendation.repository
 
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
 import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationTable
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -18,7 +20,7 @@ class DailyRecommendationRepository(
         quoteId: Long,
         userContext: String?,
         selectedEmotionRangeId: Long,
-    ): Int {
+    ): Long {
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
 
@@ -31,7 +33,9 @@ class DailyRecommendationRepository(
             .set(DailyRecommendationTable.SELECTED_EMOTION_RANGE_ID, selectedEmotionRangeId)
             .set(DailyRecommendationTable.CREATED_AT, now)
             .onConflictDoNothing()
-            .execute()
+            .returning(DailyRecommendationTable.ID)
+            .fetchOne(DailyRecommendationTable.ID)
+            ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
     }
 
     fun existsByUserIdAndRecommendationDate(
@@ -45,12 +49,14 @@ class DailyRecommendationRepository(
                 .and(DailyRecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate)),
         )
 
-    fun findDailyRecommendationByPk(id: Long): DailyRecommendation? =
+    fun findDailyRecommendationByPkForUpdate(id: Long): DailyRecommendation? =
         dsl
             .select(DAILY_RECOMMENDATION_FIELDS)
             .from(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
             .where(DailyRecommendationTable.ID.eq(id))
-            .fetchOne(::toDailyRecommendation)
+            .forUpdate()
+            .fetchOne()
+            ?.let(::toDailyRecommendation)
 
     private fun toDailyRecommendation(record: Record): DailyRecommendation =
         DailyRecommendation(

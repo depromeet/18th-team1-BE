@@ -7,6 +7,9 @@ cd app && ./gradlew build      # 빌드
 cd app && ./gradlew test       # 테스트
 cd app && ./gradlew bootRun    # 실행
 cd app && ./gradlew testClasses # 컴파일 검증만
+cd app && ./gradlew formatKotlin # 코드 포맷 자동 수정 — push 전 반드시 실행
+cd app && ./gradlew lintKotlin   # 포맷 lint 검사 — push 전 반드시 실행
+cd app && ./gradlew detekt       # 정적 분석 — push 전 반드시 실행
 ```
 
 ## 프로젝트 구조
