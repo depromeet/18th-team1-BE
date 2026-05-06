@@ -2,7 +2,7 @@ package com.firstpenguin.app.domain.home.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.home.dto.HomeSummaryResponse
-import com.firstpenguin.app.domain.home.userCase.HomeUserCase
+import com.firstpenguin.app.domain.home.useCase.HomeUseCase
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -23,14 +23,14 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/home")
 @Tag(name = "HOME", description = "홈 API")
 class HomeController(
-    private val homeUserCase: HomeUserCase,
+    private val homeUseCase: HomeUseCase,
 ) {
     @Operation(
         summary = "랜덤 추천 문구 API",
         description = "홈화면 랜덤 추천 문구를 정보를 반환한다.",
     )
     @GetMapping("/random")
-    fun getRandomQuote(): ResponseEntity<QuoteResponse> = ResponseEntity.ok(homeUserCase.getRandomQuote())
+    fun getRandomQuote(): ResponseEntity<QuoteResponse> = ResponseEntity.ok(homeUseCase.getRandomQuote())
 
     @Operation(
         summary = "홈 요약 API",
@@ -55,5 +55,5 @@ class HomeController(
     fun getSummary(
         @Parameter(hidden = true)
         @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-    ): ResponseEntity<HomeSummaryResponse> = ResponseEntity.ok(homeUserCase.getSummary(authenticatedUser.id))
+    ): ResponseEntity<HomeSummaryResponse> = ResponseEntity.ok(homeUseCase.getSummary(authenticatedUser.id))
 }

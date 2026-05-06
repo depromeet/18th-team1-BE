@@ -1,4 +1,4 @@
-package com.firstpenguin.app.domain.home.userCase
+package com.firstpenguin.app.domain.home.useCase
 
 import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.diary.service.DiaryService
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 @Component
-class HomeUserCase(
+class HomeUseCase(
     private val quoteService: QuoteService,
     private val bookService: BookService,
     private val imageService: ImageService,
