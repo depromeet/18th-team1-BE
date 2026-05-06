@@ -80,8 +80,8 @@ gradle:8.13-jdk21                   eclipse-temurin:21-jre
 # 로컬에서 키 생성
 ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/deploy_key
 
-# 공개키를 서버에 등록
-cat ~/.ssh/deploy_key.pub | ssh ubuntu@{서버IP} "cat >> ~/.ssh/authorized_keys"
+# 공개키를 Terraform ssh_public_keys에 등록한 뒤 인프라에 반영
+terraform -chdir=infra/terraform/dev apply
 
 # 개인키를 GitHub Secrets에 등록 (SERVER_SSH_KEY)
 cat ~/.ssh/deploy_key

@@ -35,7 +35,7 @@ class UserRepository(
             .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.CREATED_AT, now)
             .set(UserTable.UPDATED_AT, now)
-            .onConflict(UserTable.PROVIDER, UserTable.PROVIDER_ID)
+            .onConflict(PROVIDER_CONFLICT_TARGET, PROVIDER_ID_CONFLICT_TARGET)
             .doUpdate()
             .set(UserTable.EMAIL, DSL.coalesce(DSL.excluded(UserTable.EMAIL), UserTable.EMAIL))
             .set(UserTable.NICKNAME, DSL.excluded(UserTable.NICKNAME))
@@ -64,6 +64,9 @@ class UserRepository(
         )
 
     private companion object {
+        val PROVIDER_CONFLICT_TARGET = DSL.field(DSL.name("provider"), String::class.java)
+        val PROVIDER_ID_CONFLICT_TARGET = DSL.field(DSL.name("provider_id"), String::class.java)
+
         val USER_FIELDS: List<Field<*>> =
             listOf(
                 UserTable.ID,

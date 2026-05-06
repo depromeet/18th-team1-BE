@@ -110,6 +110,7 @@ class SecurityConfig(
             arrayOf(
                 "/auth/refresh",
                 "/auth/logout",
+                "/auth/dev-token",
                 "/oauth2/**",
                 "/login/oauth2/**",
                 "/swagger-ui/**",
