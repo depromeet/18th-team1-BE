@@ -89,7 +89,7 @@ class RecommendationUseCase(
             )
 
         recommendationService.createDailyRecommendationQuotes(
-            dailyRecommendationId = recommendationHistory.first().dailyRecommendationId,
+            dailyRecommendationId = dailyRecommendationId,
             quoteIds = nextQuotes.map { it.id },
         )
 
