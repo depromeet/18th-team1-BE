@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/recommendations")
-@Tag(name = "RECOMMENDATION", description = "추천 API")
+@Tag(name = "추천", description = "추천 API")
 class RecommendationController(
     private val recommendationUseCase: RecommendationUseCase,
 ) {

@@ -18,7 +18,7 @@ private const val MAX_EMOTION_SCORE = 100L
 
 @RestController
 @RequestMapping("/emotions")
-@Tag(name = "EMOTION", description = "감정 API")
+@Tag(name = "감정", description = "감정 API")
 class EmotionController(
     private val emotionUseCase: EmotionUseCase,
 ) {
