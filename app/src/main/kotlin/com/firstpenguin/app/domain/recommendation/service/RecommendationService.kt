@@ -77,6 +77,30 @@ class RecommendationService(
         }
     }
 
+    fun validateRecommendedQuote(
+        dailyRecommendationId: Long,
+        quoteId: Long,
+    ) {
+        val isRecommendedQuote =
+            dailyRecommendationQuoteRepository.existsByDailyRecommendationIdAndQuoteId(
+                dailyRecommendationId = dailyRecommendationId,
+                quoteId = quoteId,
+            )
+
+        if (!isRecommendedQuote) {
+            throw CustomException(ErrorCode.INVALID_RECOMMENDATION_QUOTE)
+        }
+    }
+
+    fun validateSelectedEmotionRange(
+        dailyRecommendation: DailyRecommendation,
+        emotionRangeId: Long,
+    ) {
+        if (dailyRecommendation.selectedEmotionRangeId != emotionRangeId) {
+            throw CustomException(ErrorCode.INVALID_DIARY_EMOTION_INTENSITY)
+        }
+    }
+
     fun validateOwner(
         userId: Long,
         dailyRecommendation: DailyRecommendation,

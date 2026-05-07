@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.emotion.service
 
 import com.firstpenguin.app.domain.emotion.dto.TagDto
+import com.firstpenguin.app.domain.emotion.model.EmotionRange
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.emotion.repository.EmotionRangeRepository
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
@@ -15,12 +16,14 @@ class EmotionService(
     private val tagRepository: TagRepository,
 ) {
     fun getEmotionTags(value: Int): List<Tag> {
-        val emotionRange =
-            emotionRangeRepository.getEmotionRange(value)
-                ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
+        val emotionRange = getEmotionRange(value)
 
         return tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
     }
+
+    fun getEmotionRange(value: Int): EmotionRange =
+        emotionRangeRepository.getEmotionRange(value)
+            ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
 
     fun getToneTags(): List<Tag> = tagRepository.getToneTags()
 
@@ -52,6 +55,20 @@ class EmotionService(
                 type = it.type,
                 emotionRangeId = it.emotionRangeId,
             )
+        }
+    }
+
+    fun validateEmotionTagsInRange(
+        tagIds: List<Long>,
+        emotionRangeId: Long,
+    ) {
+        val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(tagIds)
+
+        validateEmotionTags(emotionTags, tagIds)
+        validateSameEmotionRange(emotionTags)
+
+        if (emotionTags.any { tag -> tag.emotionRangeId != emotionRangeId }) {
+            throw CustomException(ErrorCode.INVALID_EMOTION_TAG_RANGE)
         }
     }
 
