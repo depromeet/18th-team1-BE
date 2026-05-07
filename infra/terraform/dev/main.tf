@@ -26,6 +26,14 @@ locals {
 }
 
 # ============================================
+# Project APIs
+# ============================================
+resource "google_project_service" "iam_credentials" {
+  service            = "iamcredentials.googleapis.com"
+  disable_on_destroy = false
+}
+
+# ============================================
 # VPC
 # ============================================
 resource "google_compute_network" "vpc" {
