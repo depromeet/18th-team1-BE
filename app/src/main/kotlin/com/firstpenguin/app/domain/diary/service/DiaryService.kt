@@ -16,6 +16,8 @@ class DiaryService(
         diaryRepository.findById(id)
             ?: throw CustomException(ErrorCode.DIARY_NOT_FOUND)
 
+    fun findDiaryImageUrlByDiaryId(id: Long): String? = diaryRepository.findDiaryImageUrlByDiaryId(id)
+
     fun updateContent(
         id: Long,
         userId: Long,
@@ -55,6 +57,8 @@ class DiaryService(
             throw CustomException(ErrorCode.DIARY_DELETE_NOT_ALLOWED)
         }
     }
+
+    fun countByUserId(userId: Long): Int = diaryRepository.countByUserId(userId)
 
     fun findByPeriod(
         userId: Long,
