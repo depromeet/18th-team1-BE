@@ -2,7 +2,7 @@ package com.firstpenguin.app.domain.recommendation.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
-import com.firstpenguin.app.domain.recommendation.dto.RecommendationAvailabilityResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationExistsResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.useCase.RecommendationUseCase
@@ -65,17 +65,17 @@ class RecommendationController(
     }
 
     @Operation(
-        summary = "오늘의 추천 문구 존재 여부 API",
-        description = "오늘의 추천 문구를 받을 수 있는지 결과를 반환한다.",
+        summary = "오늘 추천 문구 생성 여부 조회 API",
+        description = "로그인한 사용자가 오늘 생성한 추천 문구가 있는지 조회한다.",
     )
-    @GetMapping("/availability")
-    fun isDailyRecommendationAvailable(
+    @GetMapping("/today/exists")
+    fun hasTodayRecommendation(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
-    ): ResponseEntity<RecommendationAvailabilityResponse> {
+    ): ResponseEntity<RecommendationExistsResponse> {
         if (authenticatedUser == null) {
             throw CustomException(ErrorCode.UNAUTHORIZED)
         }
 
-        return ResponseEntity.ok(recommendationUseCase.isDailyRecommendationAvailable(authenticatedUser.id))
+        return ResponseEntity.ok(recommendationUseCase.hasTodayRecommendation(authenticatedUser.id))
     }
 }

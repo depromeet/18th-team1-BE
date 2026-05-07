@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/home")
-@Tag(name = "HOME", description = "홈 API")
+@Tag(name = "홈", description = "홈 API")
 class HomeController(
     private val homeUseCase: HomeUseCase,
 ) {

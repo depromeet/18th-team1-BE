@@ -59,6 +59,17 @@ class DailyRecommendationQuoteRepository(
             .where(DailyRecommendationQuoteTable.DAILY_RECOMMENDATION_ID.eq(dailyRecommendationId))
             .fetch(::toDailyRecommendationQuote)
 
+    fun existsByDailyRecommendationIdAndQuoteId(
+        dailyRecommendationId: Long,
+        quoteId: Long,
+    ): Boolean =
+        dsl.fetchExists(
+            DailyRecommendationQuoteTable.DAILY_RECOMMENDATION_QUOTES,
+            DailyRecommendationQuoteTable.DAILY_RECOMMENDATION_ID
+                .eq(dailyRecommendationId)
+                .and(DailyRecommendationQuoteTable.QUOTE_ID.eq(quoteId)),
+        )
+
     private fun toDailyRecommendationQuote(record: Record): DailyRecommendationQuote =
         DailyRecommendationQuote(
             id = record[DailyRecommendationQuoteTable.ID]!!,
