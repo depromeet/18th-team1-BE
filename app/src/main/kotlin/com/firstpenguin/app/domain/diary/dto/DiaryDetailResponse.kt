@@ -20,8 +20,8 @@ data class DiaryDetailResponse(
     val createdAt: LocalDate,
     @field:Schema(description = "일기 내용. 없으면 null", example = "오늘은 책을 읽고 산책을 했다.")
     val content: String?,
-    @field:Schema(description = "감정 온도", example = "72")
-    val emotionIntensity: Int,
+    @field:Schema(description = "감정 선택값", example = "7")
+    val emotionValue: Int,
     @field:Schema(description = "문장 내용", example = "가장 중요한 것은 보이지 않는다.")
     val quoteContent: String,
     @field:Schema(description = "알라딘 링크", example = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1")
@@ -40,7 +40,7 @@ data class DiaryDetailResponse(
                 coverImageUrl = diary.coverImageUrl,
                 createdAt = diary.createdAt.toLocalDate(),
                 content = diary.content,
-                emotionIntensity = diary.emotionIntensity,
+                emotionValue = diary.emotionValue,
                 quoteContent = diary.quoteContent,
                 aladinLink = diary.aladinLink,
             )
