@@ -68,6 +68,8 @@ class DiaryService(
         }
     }
 
+    fun countByUserId(userId: Long): Int = diaryRepository.countByUserId(userId)
+
     fun findByPeriod(
         userId: Long,
         start: LocalDate,

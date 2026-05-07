@@ -1,6 +1,7 @@
 package com.firstpenguin.app.global.exception
 
 import com.firstpenguin.app.global.response.ErrorResponse
+import com.google.cloud.storage.StorageException
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -63,6 +64,14 @@ class GlobalExceptionHandler {
         ResponseEntity
             .status(ErrorCode.EMPTY_REQUEST_BODY.status)
             .body(ErrorResponse.of(ErrorCode.EMPTY_REQUEST_BODY))
+
+    @ExceptionHandler(StorageException::class)
+    fun handleStorageException(e: StorageException): ResponseEntity<ErrorResponse> {
+        log.error("GCS 요청 실패 - code: {}, message: {}", e.code, e.message, e)
+        return ResponseEntity
+            .status(ErrorCode.INTERNAL_SERVER_ERROR.status)
+            .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR))
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {

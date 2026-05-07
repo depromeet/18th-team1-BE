@@ -8,6 +8,7 @@ import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.service.DiaryService
+import com.firstpenguin.app.domain.diary.service.DiaryShareImageService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
@@ -24,7 +25,8 @@ class DiaryUseCase(
     private val imageService: ImageService,
     private val recommendationService: RecommendationService,
     private val emotionService: EmotionService,
-) {
+    private val diaryShareImageService: DiaryShareImageService,
+    ) {
     @Transactional
     fun createDiary(
         userId: Long,
@@ -140,6 +142,17 @@ class DiaryUseCase(
     }
 
     @Transactional(readOnly = true)
+    fun generateShareImage(
+        userId: Long,
+        diaryId: Long,
+    ): ByteArray {
+        val diary = diaryService.getById(diaryId)
+        diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
+
+        return diaryShareImageService.generate(diary)
+    }
+
+    @Transactional(readOnly = true)
     fun hasTodayDiary(userId: Long): DiaryExistsResponse = DiaryExistsResponse(diaryService.hasTodayDiary(userId))
 
     @Transactional(readOnly = true)
@@ -150,8 +163,11 @@ class DiaryUseCase(
         val diary = diaryService.getById(diaryId)
         diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val diaryImageUrl =
-            diaryService
-                .findDiaryImageUrlByDiaryId(diary.id)
+            imageService
+                .findUrlsByOwnerIdAndOwnerType(
+                    ownerType = ImageOwner.DIARY,
+                    ownerId = diary.id,
+                ).firstOrNull()
 
         return DiaryDetailResponse.from(diary, diaryImageUrl)
     }

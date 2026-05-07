@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.image.service
 
 import com.firstpenguin.app.domain.image.model.ImageType
 import com.firstpenguin.app.global.config.GcsProperties
+import com.google.auth.ServiceAccountSigner
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
@@ -17,6 +18,7 @@ private const val PRESIGNED_URL_EXPIRATION_MINUTES = 15L
 class GcsStorageService(
     private val gcsProperties: GcsProperties,
     private val storage: Storage,
+    private val gcsSigner: ServiceAccountSigner,
 ) : CloudStorageService {
     override fun issuePresignedUrl(
         type: ImageType,
@@ -38,6 +40,7 @@ class GcsStorageService(
                     TimeUnit.MINUTES,
                     Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
                     Storage.SignUrlOption.withV4Signature(),
+                    Storage.SignUrlOption.signWith(gcsSigner),
                 ).toString()
 
         val publicUrl = "${gcsProperties.baseUrl}/$objectKey"

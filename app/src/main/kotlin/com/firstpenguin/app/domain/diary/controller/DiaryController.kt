@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -292,6 +293,77 @@ class DiaryController(
         )
     }
 
+    @GetMapping("/{diaryId}/share", produces = [MediaType.IMAGE_PNG_VALUE])
+    @Operation(
+        summary = "일기 공유 이미지 생성",
+        description = SHARE_IMAGE_DESCRIPTION,
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "일기 공유 이미지 생성 성공",
+                content = [
+                    Content(mediaType = MediaType.IMAGE_PNG_VALUE),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "access token이 없거나, 만료되었거나, 유효하지 않습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "다른 사용자의 일기에는 접근할 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "일기를 찾을 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun generateShareImage(
+        @Parameter(hidden = true)
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(description = "일기 ID", example = "1")
+        @PathVariable
+        diaryId: Long,
+    ): ResponseEntity<ByteArray> {
+        if (authenticatedUser == null) {
+            throw CustomException(ErrorCode.UNAUTHORIZED)
+        }
+
+        val image =
+            diaryUseCase.generateShareImage(
+                userId = authenticatedUser.id,
+                diaryId = diaryId,
+            )
+
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"diary-share-$diaryId.png\"")
+            .body(image)
+    }
+
     @GetMapping
     @Operation(
         summary = "기간별 일기 조회",
@@ -367,6 +439,10 @@ class DiaryController(
         const val DETAIL_DESCRIPTION =
             "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
                 "삭제되지 않은 내 일기만 조회합니다."
+
+        const val SHARE_IMAGE_DESCRIPTION =
+            "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
+                "일기의 작성일, 연결된 문장, 책 제목과 저자를 사용해 PNG 공유 이미지를 생성합니다."
 
         const val PERIOD_DESCRIPTION =
             "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
