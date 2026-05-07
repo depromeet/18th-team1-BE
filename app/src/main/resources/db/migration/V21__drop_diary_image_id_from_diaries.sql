@@ -1,2 +1,2 @@
 ALTER TABLE diaries
-    DROP COLUMN diary_image_id;
+    DROP COLUMN IF EXISTS diary_image_id;
