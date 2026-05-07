@@ -26,7 +26,7 @@ class DiaryUseCase(
     private val recommendationService: RecommendationService,
     private val emotionService: EmotionService,
     private val diaryShareImageService: DiaryShareImageService,
-    ) {
+) {
     @Transactional
     fun createDiary(
         userId: Long,
