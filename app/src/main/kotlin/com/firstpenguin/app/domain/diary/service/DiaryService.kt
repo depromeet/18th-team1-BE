@@ -3,7 +3,6 @@ package com.firstpenguin.app.domain.diary.service
 import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.model.Diary
 import com.firstpenguin.app.domain.diary.repository.DiaryRepository
-import com.firstpenguin.app.domain.diary.repository.DiaryTagRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -13,7 +12,6 @@ import java.time.LocalDateTime
 @Service
 class DiaryService(
     private val diaryRepository: DiaryRepository,
-    private val diaryTagRepository: DiaryTagRepository,
 ) {
     fun createDiary(
         userId: Long,
@@ -84,13 +82,6 @@ class DiaryService(
             start = start.atStartOfDay(),
             end = end.plusDays(1).atStartOfDay(),
         )
-    }
-
-    fun createDiaryTags(
-        diaryId: Long,
-        tagIds: List<Long>,
-    ) {
-        diaryTagRepository.createAll(diaryId, tagIds)
     }
 
     fun hasTodayDiary(userId: Long): Boolean {

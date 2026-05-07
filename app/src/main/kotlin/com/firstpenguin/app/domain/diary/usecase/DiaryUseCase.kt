@@ -9,6 +9,7 @@ import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.diary.service.DiaryShareImageService
+import com.firstpenguin.app.domain.diary.service.DiaryTagService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
@@ -26,6 +27,7 @@ class DiaryUseCase(
     private val recommendationService: RecommendationService,
     private val emotionService: EmotionService,
     private val diaryShareImageService: DiaryShareImageService,
+    private val diaryTagService: DiaryTagService,
 ) {
     @Transactional
     fun createDiary(
@@ -90,7 +92,7 @@ class DiaryUseCase(
         diaryId: Long,
         request: CreateDiaryRequest,
     ) {
-        diaryService.createDiaryTags(diaryId, request.tagIds)
+        diaryTagService.createDiaryTags(diaryId, request.tagIds)
         imageService.saveImages(request.imageIds, ImageOwner.DIARY, diaryId)
     }
 
