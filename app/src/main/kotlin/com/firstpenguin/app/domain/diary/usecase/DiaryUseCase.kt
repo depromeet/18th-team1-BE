@@ -4,7 +4,9 @@ import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.service.DiaryService
+import com.firstpenguin.app.domain.diary.service.DiaryShareImageService
 import com.firstpenguin.app.domain.image.service.ImageService
+import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
@@ -15,6 +17,7 @@ import java.time.LocalDate
 class DiaryUseCase(
     private val diaryService: DiaryService,
     private val imageService: ImageService,
+    private val diaryShareImageService: DiaryShareImageService,
 ) {
     @Transactional
     fun deleteDiary(
@@ -64,13 +67,29 @@ class DiaryUseCase(
     }
 
     @Transactional(readOnly = true)
+    fun generateShareImage(
+        userId: Long,
+        diaryId: Long,
+    ): ByteArray {
+        val diary = diaryService.getById(diaryId)
+        validateDiaryOwner(ownerId = diary.userId, userId = userId)
+
+        return diaryShareImageService.generate(diary)
+    }
+
+    @Transactional(readOnly = true)
     fun getDiary(
         userId: Long,
         diaryId: Long,
     ): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
         validateDiaryOwner(ownerId = diary.userId, userId = userId)
-        val diaryImageUrl = diary.diaryImageId?.let(imageService::findUrlById)
+        val diaryImageUrl =
+            imageService
+                .findUrlsByOwnerIdAndOwnerType(
+                    ownerType = ImageOwner.DIARY,
+                    ownerId = diary.id,
+                ).firstOrNull()
 
         return DiaryDetailResponse.from(diary, diaryImageUrl)
     }

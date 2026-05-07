@@ -15,6 +15,8 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+private const val NEXT_RECOMMENDATION_QUOTE_COUNT = 3
+
 @Service
 class RecommendationUseCase(
     private val emotionService: EmotionService,
@@ -28,7 +30,7 @@ class RecommendationUseCase(
         userId: Long,
         request: RecommendationRequest,
     ): RecommendationResponse {
-        recommendationService.validateTodayRecommendation(userId)
+        recommendationService.validateRecommendationAvailable(userId)
 
         val selectEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
         val selectToneTags = emotionService.selectToneTags(request.toneTagIds)
@@ -41,34 +43,78 @@ class RecommendationUseCase(
 
         val userContext = request.userContext.takeIf { it.isNotBlank() }
 
-        recommendationService.createDailyRecommendation(
-            userId = userId,
-            quoteId = randomQuote.id,
-            userContext = userContext,
-            selectedEmotionRangeId = selectedEmotionRangeId,
-        )
-
-        val book = bookService.findBookById(randomQuote.bookId)
-        val bookCoverImage =
-            imageService
-                .findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
-                .firstOrNull()
-                ?: throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
-
-        val quoteResponse =
-            QuoteResponse(
+        val dailyRecommendationId =
+            recommendationService.createDailyRecommendation(
+                userId = userId,
                 quoteId = randomQuote.id,
-                bookId = book.id,
-                content = randomQuote.content,
-                title = book.title,
-                author = book.author,
-                image = bookCoverImage,
+                userContext = userContext,
+                selectedEmotionRangeId = selectedEmotionRangeId,
             )
 
-        return RecommendationResponse(quoteResponse, selectEmotionTags, selectToneTags)
+        recommendationService.createDailyRecommendationQuotes(
+            dailyRecommendationId = dailyRecommendationId,
+            quoteIds = listOf(randomQuote.id),
+        )
+
+        return RecommendationResponse(
+            dailyRecommendationId = dailyRecommendationId,
+            quote = toQuoteResponse(randomQuote),
+            emotionTags = selectEmotionTags,
+            toneTags = selectToneTags,
+        )
+    }
+
+    @Transactional
+    fun getNextRecommendationQuotes(
+        userId: Long,
+        dailyRecommendationId: Long,
+    ): List<QuoteResponse> {
+        val dailyRecommendation = recommendationService.getDailyRecommendation(dailyRecommendationId)
+
+        recommendationService.validateOwner(userId, dailyRecommendation)
+        recommendationService.validateTodayRecommendation(dailyRecommendation.recommendationDate)
+
+        val recommendationHistory = recommendationService.getRecommendationHistory(dailyRecommendation.id)
+
+        recommendationService.validateRecommendationCount(
+            currentCount = recommendationHistory.size,
+            nextCount = NEXT_RECOMMENDATION_QUOTE_COUNT,
+        )
+
+        val quoteIdHistory = recommendationHistory.map { recommendationQuote -> recommendationQuote.quoteId }
+        val nextQuotes =
+            quoteService.getRandomQuotesExcludingIds(
+                excludedQuoteIds = quoteIdHistory,
+                count = NEXT_RECOMMENDATION_QUOTE_COUNT,
+            )
+
+        recommendationService.createDailyRecommendationQuotes(
+            dailyRecommendationId = dailyRecommendationId,
+            quoteIds = nextQuotes.map { it.id },
+        )
+
+        return nextQuotes.map(::toQuoteResponse)
     }
 
     @Transactional(readOnly = true)
     fun isDailyRecommendationAvailable(userId: Long): RecommendationAvailabilityResponse =
         RecommendationAvailabilityResponse(!recommendationService.hasRecommendedToday(userId))
+
+    private fun toQuoteResponse(quote: com.firstpenguin.app.domain.quote.model.Quote): QuoteResponse {
+        val book = bookService.findBookById(quote.bookId)
+        val bookCoverImage =
+            imageService
+                .findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, quote.bookId)
+                .firstOrNull()
+                ?: throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
+
+        return QuoteResponse(
+            quoteId = quote.id,
+            bookId = book.id,
+            content = quote.content,
+            title = book.title,
+            author = book.author,
+            image = bookCoverImage,
+        )
+    }
 }

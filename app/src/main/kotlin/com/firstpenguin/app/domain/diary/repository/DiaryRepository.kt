@@ -2,7 +2,10 @@ package com.firstpenguin.app.domain.diary.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.diary.model.Diary
+import com.firstpenguin.app.domain.image.repository.table.ImageOwnerTable
+import com.firstpenguin.app.domain.image.repository.table.ImageTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.global.enums.ImageOwner
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -43,6 +46,18 @@ class DiaryRepository(
             .where(DiaryTable.ID.eq(id))
             .and(DiaryTable.DELETED_AT.isNull)
             .fetchOne(::toDiary)
+
+    fun findDiaryImageUrlByDiaryId(id: Long): String? =
+        dsl
+            .select(ImageTable.URL)
+            .from(ImageOwnerTable.IMAGE_OWNERS)
+            .join(ImageTable.IMAGES)
+            .on(ImageOwnerTable.IMAGE_ID.eq(ImageTable.ID))
+            .where(ImageOwnerTable.OWNER_TYPE.eq(ImageOwner.DIARY.name))
+            .and(ImageOwnerTable.OWNER_ID.eq(id))
+            .orderBy(ImageOwnerTable.SORT_ORDER.asc(), ImageOwnerTable.IMAGE_ID.asc())
+            .limit(1)
+            .fetchOne(ImageTable.URL)
 
     fun updateContent(
         id: Long,
@@ -95,7 +110,6 @@ class DiaryRepository(
             id = record.get(DiaryTable.ID),
             userId = record.get(DiaryTable.USER_ID),
             quoteId = record.get(DiaryTable.QUOTE_ID),
-            diaryImageId = record.get(DiaryTable.DIARY_IMAGE_ID),
             emotionIntensity = record.get(DiaryTable.EMOTION_INTENSITY),
             content = record.get(DiaryTable.CONTENT),
             createdAt = record.get(DiaryTable.CREATED_AT),
@@ -116,7 +130,6 @@ class DiaryRepository(
                 DiaryTable.ID,
                 DiaryTable.USER_ID,
                 DiaryTable.QUOTE_ID,
-                DiaryTable.DIARY_IMAGE_ID,
                 DiaryTable.EMOTION_INTENSITY,
                 DiaryTable.CONTENT,
                 DiaryTable.CREATED_AT,
