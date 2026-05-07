@@ -18,7 +18,8 @@ docker compose -f docker-compose-dev.yml up -d --force-recreate app
 
 echo "=== 헬스체크 ==="
 for i in $(seq 1 6); do
-  curl -sf http://localhost:8080/api/actuator/health && break
+  curl -sSf --connect-timeout 2 --max-time 3 \
+    http://localhost:8080/api/actuator/health && break
   echo "대기 중... ($i/6)"
   sleep 5
   [ "$i" -eq 6 ] && echo "헬스체크 실패: 앱이 30초 내에 뜨지 않았습니다." && exit 1
