@@ -87,6 +87,19 @@ resource "google_compute_firewall" "allow_app" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+resource "google_compute_firewall" "allow_postgres" {
+  name    = "${var.env}-${var.service_name}-fw-allow-postgres"
+  network = google_compute_network.vpc.id
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5432"]
+  }
+
+  target_tags   = ["db-server"]
+  source_ranges = ["0.0.0.0/0"]
+}
+
 resource "google_compute_firewall" "allow_icmp" {
   name    = "${var.env}-${var.service_name}-fw-allow-icmp"
   network = google_compute_network.vpc.id
@@ -169,7 +182,7 @@ resource "google_compute_instance" "api" {
     scopes = ["cloud-platform"]
   }
 
-  tags = ["api-server"]
+  tags = ["api-server", "db-server"]
 
   labels = {
     env     = var.env
