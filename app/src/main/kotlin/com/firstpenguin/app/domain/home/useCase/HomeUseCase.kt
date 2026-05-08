@@ -4,12 +4,8 @@ import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.home.dto.HomeSummaryResponse
 import com.firstpenguin.app.domain.home.dto.MonthlyDiaryResponse
-import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.service.QuoteService
-import com.firstpenguin.app.global.enums.ImageOwner
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -18,7 +14,6 @@ import java.time.LocalDate
 class HomeUseCase(
     private val quoteService: QuoteService,
     private val bookService: BookService,
-    private val imageService: ImageService,
     private val diaryService: DiaryService,
 ) {
     @Transactional(readOnly = true)
@@ -44,11 +39,6 @@ class HomeUseCase(
         val randomQuote = quoteService.getRandomQuote()
 
         val book = bookService.findBookById(randomQuote.bookId)
-        val bookCoverImage =
-            imageService
-                .findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, randomQuote.bookId)
-                .firstOrNull()
-                ?: throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
 
         return QuoteResponse(
             quoteId = randomQuote.id,
@@ -56,7 +46,7 @@ class HomeUseCase(
             content = randomQuote.content,
             title = book.title,
             author = book.author,
-            image = bookCoverImage,
+            image = book.coverImageUrl,
         )
     }
 }
