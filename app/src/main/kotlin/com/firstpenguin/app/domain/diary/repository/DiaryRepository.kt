@@ -4,6 +4,8 @@ import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.model.Diary
 import com.firstpenguin.app.domain.diary.repository.table.DiaryTable
+import com.firstpenguin.app.domain.diary.repository.table.DiaryTagTable
+import com.firstpenguin.app.domain.emotion.repository.table.TagTable
 import com.firstpenguin.app.domain.image.repository.table.ImageOwnerTable
 import com.firstpenguin.app.domain.image.repository.table.ImageTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
@@ -13,6 +15,7 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -160,11 +163,26 @@ class DiaryRepository(
             author = record.required(BookTable.AUTHOR),
             title = record.required(BookTable.TITLE),
             aladinLink = record.required(BookTable.ALADIN_LINK),
+            tags = record.get(TAGS_FIELD).orEmpty(),
         )
 
     private fun <T : Any> Record.required(field: Field<T>): T = get(field) ?: error("${field.qualifiedName} is null")
 
     private companion object {
+        private val TAGS_FIELD: Field<List<String>> =
+            DSL
+                .multiset(
+                    DSL
+                        .select(TagTable.LABEL)
+                        .from(DiaryTagTable.DIARY_TAGS)
+                        .join(TagTable.TAGS)
+                        .on(DiaryTagTable.TAG_ID.eq(TagTable.ID))
+                        .where(DiaryTagTable.DIARY_ID.eq(DiaryTable.ID))
+                        .orderBy(DiaryTagTable.TAG_ID.asc()),
+                ).convertFrom { records ->
+                    records.map { record -> record.get(TagTable.LABEL) }
+                }
+
         val DIARY_JOIN_FIELDS: List<Field<*>> =
             listOf(
                 DiaryTable.ID,
@@ -180,6 +198,7 @@ class DiaryRepository(
                 BookTable.AUTHOR,
                 BookTable.TITLE,
                 BookTable.ALADIN_LINK,
+                TAGS_FIELD,
             )
     }
 }

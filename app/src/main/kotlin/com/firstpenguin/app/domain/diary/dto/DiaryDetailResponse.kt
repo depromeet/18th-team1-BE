@@ -24,6 +24,8 @@ data class DiaryDetailResponse(
     val emotionIntensity: Int,
     @field:Schema(description = "문장 내용", example = "가장 중요한 것은 보이지 않는다.")
     val quoteContent: String,
+    @field:Schema(description = "일기 생성 시 선택한 감정 태그명 목록", example = "[\"불안\", \"기대\"]")
+    val tags: List<String>,
     @field:Schema(description = "알라딘 링크", example = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1")
     val aladinLink: String,
 ) {
@@ -42,6 +44,7 @@ data class DiaryDetailResponse(
                 content = diary.content,
                 emotionIntensity = diary.emotionIntensity,
                 quoteContent = diary.quoteContent,
+                tags = diary.tags,
                 aladinLink = diary.aladinLink,
             )
     }

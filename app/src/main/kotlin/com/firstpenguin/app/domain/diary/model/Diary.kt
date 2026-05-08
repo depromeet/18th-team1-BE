@@ -16,4 +16,5 @@ data class Diary(
     val author: String,
     val title: String,
     val aladinLink: String,
+    val tags: List<String>,
 )
