@@ -97,7 +97,7 @@ class RecommendationService(
         emotionRangeId: Long,
     ) {
         if (dailyRecommendation.selectedEmotionRangeId != emotionRangeId) {
-            throw CustomException(ErrorCode.INVALID_DIARY_EMOTION_INTENSITY)
+            throw CustomException(ErrorCode.INVALID_DIARY_EMOTION_VALUE)
         }
     }
 

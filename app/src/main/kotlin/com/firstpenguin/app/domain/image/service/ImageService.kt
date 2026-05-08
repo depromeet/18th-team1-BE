@@ -16,6 +16,10 @@ class ImageService(
 ) {
     fun findUrlById(id: Long): String? = imageRepository.findUrlById(id)
 
+    fun validateExists(id: Long) {
+        if (!imageRepository.existsById(id)) throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
+    }
+
     fun findUrlsByOwnerIdAndOwnerType(
         ownerType: ImageOwner,
         ownerId: Long,

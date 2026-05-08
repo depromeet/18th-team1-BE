@@ -80,6 +80,7 @@ class SecurityConfig(
     ) {
         response.status = errorCode.status.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
+        response.characterEncoding = "UTF-8"
         jsonMapper.writeValue(response.writer, ErrorResponse.of(errorCode))
     }
 

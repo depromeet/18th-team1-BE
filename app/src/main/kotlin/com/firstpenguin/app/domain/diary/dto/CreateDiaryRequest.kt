@@ -5,14 +5,14 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
 
-private const val MIN_EMOTION_SCORE = 0L
-private const val MAX_EMOTION_SCORE = 100L
+private const val MIN_EMOTION_VALUE = 1L
+private const val MAX_EMOTION_VALUE = 9L
 
 @Schema(description = "일기 생성 요청")
 data class CreateDiaryRequest(
-    @field:Min(MIN_EMOTION_SCORE)
-    @field:Max(MAX_EMOTION_SCORE)
-    val emotionIntensity: Int,
+    @field:Min(MIN_EMOTION_VALUE)
+    @field:Max(MAX_EMOTION_VALUE)
+    val emotionValue: Int,
     val tagIds: List<Long>,
     val dailyRecommendationId: Long,
     val quoteId: Long,

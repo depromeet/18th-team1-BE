@@ -2,14 +2,12 @@ package com.firstpenguin.app.domain.recommendation.useCase
 
 import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
-import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.service.QuoteService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationExistsResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
-import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -23,7 +21,6 @@ class RecommendationUseCase(
     private val quoteService: QuoteService,
     private val recommendationService: RecommendationService,
     private val bookService: BookService,
-    private val imageService: ImageService,
 ) {
     @Transactional
     fun recommendQuote(
@@ -102,11 +99,6 @@ class RecommendationUseCase(
 
     private fun toQuoteResponse(quote: com.firstpenguin.app.domain.quote.model.Quote): QuoteResponse {
         val book = bookService.findBookById(quote.bookId)
-        val bookCoverImage =
-            imageService
-                .findUrlsByOwnerIdAndOwnerType(ImageOwner.BOOK, quote.bookId)
-                .firstOrNull()
-                ?: throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
 
         return QuoteResponse(
             quoteId = quote.id,
@@ -114,7 +106,7 @@ class RecommendationUseCase(
             content = quote.content,
             title = book.title,
             author = book.author,
-            image = bookCoverImage,
+            image = book.coverImageUrl,
         )
     }
 }

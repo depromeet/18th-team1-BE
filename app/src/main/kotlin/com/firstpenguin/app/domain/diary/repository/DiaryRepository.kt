@@ -108,14 +108,14 @@ class DiaryRepository(
 
     fun create(
         userId: Long,
-        emotionIntensity: Int,
+        emotionValue: Int,
         quoteId: Long,
         content: String?,
     ): CreatedDiary =
         dsl
             .insertInto(DiaryTable.DIARIES)
             .set(DiaryTable.USER_ID, userId)
-            .set(DiaryTable.EMOTION_INTENSITY, emotionIntensity)
+            .set(DiaryTable.EMOTION_VALUE, emotionValue)
             .set(DiaryTable.QUOTE_ID, quoteId)
             .set(DiaryTable.CONTENT, content)
             .returning(DiaryTable.ID, DiaryTable.CREATED_AT)
@@ -153,7 +153,7 @@ class DiaryRepository(
             id = record.get(DiaryTable.ID),
             userId = record.get(DiaryTable.USER_ID),
             quoteId = record.get(DiaryTable.QUOTE_ID),
-            emotionIntensity = record.get(DiaryTable.EMOTION_INTENSITY),
+            emotionValue = record.get(DiaryTable.EMOTION_VALUE),
             content = record.get(DiaryTable.CONTENT),
             createdAt = record.get(DiaryTable.CREATED_AT),
             updatedAt = record.get(DiaryTable.UPDATED_AT),
@@ -188,7 +188,7 @@ class DiaryRepository(
                 DiaryTable.ID,
                 DiaryTable.USER_ID,
                 DiaryTable.QUOTE_ID,
-                DiaryTable.EMOTION_INTENSITY,
+                DiaryTable.EMOTION_VALUE,
                 DiaryTable.CONTENT,
                 DiaryTable.CREATED_AT,
                 DiaryTable.UPDATED_AT,
