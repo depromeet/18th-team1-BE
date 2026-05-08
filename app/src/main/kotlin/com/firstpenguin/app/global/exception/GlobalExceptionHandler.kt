@@ -19,10 +19,16 @@ class GlobalExceptionHandler {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(CustomException::class)
-    fun handleCustomException(e: CustomException): ResponseEntity<ErrorResponse> =
-        ResponseEntity
+    fun handleCustomException(e: CustomException): ResponseEntity<ErrorResponse> {
+        if (e.errorCode.status.is5xxServerError) {
+            log.error("CustomException: {}", e.errorCode, e)
+        } else {
+            log.warn("CustomException: {}", e.errorCode)
+        }
+        return ResponseEntity
             .status(e.errorCode.status)
             .body(ErrorResponse.of(e.errorCode))
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
