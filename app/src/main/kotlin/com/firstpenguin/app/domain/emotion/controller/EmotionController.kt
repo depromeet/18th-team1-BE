@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-private const val MIN_EMOTION_SCORE = 0L
-private const val MAX_EMOTION_SCORE = 100L
+private const val MIN_EMOTION_VALUE = 1L
+private const val MAX_EMOTION_VALUE = 9L
 
 @RestController
 @RequestMapping("/emotions")
-@Tag(name = "감정", description = "감정온도 및 감정/톤 태그 API")
+@Tag(name = "감정", description = "감정 선택값 및 감정/톤 태그 API")
 class EmotionController(
     private val emotionUseCase: EmotionUseCase,
 ) {
@@ -29,7 +29,7 @@ class EmotionController(
     @GetMapping("/emotion-tags")
     @Validated
     fun getEmotionTags(
-        @RequestParam @Min(MIN_EMOTION_SCORE) @Max(MAX_EMOTION_SCORE) value: Int,
+        @RequestParam @Min(MIN_EMOTION_VALUE) @Max(MAX_EMOTION_VALUE) value: Int,
     ): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getEmotionTags(value))
 
     @Operation(

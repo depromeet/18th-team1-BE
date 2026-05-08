@@ -47,7 +47,7 @@ enum class ErrorCode(
     DIARY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 삭제할 수 있습니다"),
     DIARY_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일기 생성에 실패했습니다."),
     DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘 작성한 일기가 존재합니다."),
-    INVALID_DIARY_EMOTION_INTENSITY(HttpStatus.BAD_REQUEST, "추천받은 감정 범위와 일기 감정 온도가 일치하지 않습니다."),
+    INVALID_DIARY_EMOTION_VALUE(HttpStatus.BAD_REQUEST, "추천받은 감정 태그 범위와 일기 감정 선택값이 일치하지 않습니다."),
 
     // Recommendation
     DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),

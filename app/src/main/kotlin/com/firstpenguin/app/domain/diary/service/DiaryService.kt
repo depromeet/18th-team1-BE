@@ -15,10 +15,10 @@ class DiaryService(
 ) {
     fun createDiary(
         userId: Long,
-        emotionIntensity: Int,
+        emotionValue: Int,
         quoteId: Long,
         content: String?,
-    ): CreatedDiary = diaryRepository.create(userId, emotionIntensity, quoteId, content)
+    ): CreatedDiary = diaryRepository.create(userId, emotionValue, quoteId, content)
 
     fun getById(id: Long): Diary =
         diaryRepository.findById(id)
