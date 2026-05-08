@@ -4,8 +4,6 @@ import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.user.dto.UpdateUserRequest
 import com.firstpenguin.app.domain.user.dto.UserResponse
 import com.firstpenguin.app.domain.user.usecase.UserUseCase
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
 import com.firstpenguin.app.global.response.ErrorResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -61,14 +59,8 @@ class UserController(
     )
     fun me(
         @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
-    ): UserResponse {
-        if (authenticatedUser == null) {
-            throw CustomException(ErrorCode.UNAUTHORIZED)
-        }
-
-        return userUseCase.getMe(authenticatedUser.id)
-    }
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+    ): UserResponse = userUseCase.getMe(authenticatedUser.id)
 
     @PatchMapping("/me")
     @Operation(
@@ -112,15 +104,9 @@ class UserController(
     )
     fun updateMe(
         @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @RequestBody request: UpdateUserRequest,
-    ): UserResponse {
-        if (authenticatedUser == null) {
-            throw CustomException(ErrorCode.UNAUTHORIZED)
-        }
-
-        return userUseCase.updateMe(authenticatedUser.id, request)
-    }
+    ): UserResponse = userUseCase.updateMe(authenticatedUser.id, request)
 
     private companion object {
         const val ME_DESCRIPTION =
