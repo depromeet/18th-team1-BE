@@ -18,6 +18,11 @@ class ImageRepository(
             .where(ImageTable.ID.eq(id))
             .fetchOne(ImageTable.URL)
 
+    fun existsById(id: Long): Boolean =
+        dsl.fetchExists(
+            dsl.selectOne().from(ImageTable.IMAGES).where(ImageTable.ID.eq(id)),
+        )
+
     fun findUrlsByOwnerTypeAndOwnerId(
         ownerType: ImageOwner,
         ownerId: Long,

@@ -48,6 +48,18 @@ class UserRepository(
             ?: error("Failed to upsert OAuth user")
     }
 
+    fun update(
+        id: Long,
+        nickname: String?,
+        profileImageId: Long?,
+    ) {
+        val now = LocalDateTime.now()
+        var step = dsl.update(UserTable.USERS).set(UserTable.UPDATED_AT, now)
+        nickname?.let { step = step.set(UserTable.NICKNAME, it) }
+        profileImageId?.let { step = step.set(UserTable.PROFILE_IMAGE_ID, it) }
+        step.where(UserTable.ID.eq(id)).execute()
+    }
+
     private fun toUser(record: Record): User =
         User(
             id = record.get(UserTable.ID),

@@ -71,8 +71,8 @@ class ImageController(
     private companion object {
         const val PRESIGNED_URL_DESCRIPTION =
             "GCS에 이미지를 직접 업로드하기 위한 presigned URL과 imageId를 반환합니다. " +
-                "클라이언트는 presigned URL로 GCS에 PUT 업로드한 뒤, " +
-                "도메인 생성 API 호출 시 imageId를 함께 전달합니다. " +
+                "클라이언트는 presigned URL로 GCS에 PUT 업로드한 뒤, 도메인 생성/수정 API 호출 시 imageId를 함께 전달합니다. " +
+                "type은 DIARY(일기), USER_PROFILE(프로필 이미지), REPORT(신고) 중 하나를 지정합니다. " +
                 "contentType은 image/jpeg, image/png, image/webp만 허용합니다."
     }
 }

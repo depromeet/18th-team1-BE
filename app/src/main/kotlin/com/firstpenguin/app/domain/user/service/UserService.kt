@@ -21,6 +21,15 @@ class UserService(
 
     fun upsertOAuthUser(profile: OAuthUserProfile): User = userRepository.upsertOAuthUser(profile)
 
+    fun updateProfile(
+        userId: Long,
+        nickname: String?,
+        profileImageId: Long?,
+    ) {
+        if (nickname != null && nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
+        userRepository.update(userId, nickname, profileImageId)
+    }
+
     private fun validateAuthenticatableStatus(user: User) {
         val errorCode =
             when {
