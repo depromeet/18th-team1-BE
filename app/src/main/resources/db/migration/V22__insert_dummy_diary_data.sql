@@ -22,7 +22,7 @@ INSERT INTO users (
     NULL,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-);
+) ON CONFLICT DO NOTHING;
 
 INSERT INTO images (
     id,
@@ -32,7 +32,7 @@ INSERT INTO images (
     9002,
     'https://cdn.example.com/dummy-diary-image.png',
     CURRENT_TIMESTAMP
-);
+) ON CONFLICT DO NOTHING;
 
 INSERT INTO diaries (
     id,
@@ -52,7 +52,7 @@ INSERT INTO diaries (
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
     NULL
-);
+) ON CONFLICT DO NOTHING;
 
 INSERT INTO image_owners (
     image_id,
@@ -64,7 +64,7 @@ INSERT INTO image_owners (
     'DIARY',
     9003,
     0
-);
+) ON CONFLICT DO NOTHING;
 
 SELECT setval('users_id_seq', (SELECT COALESCE(MAX(id), 1) FROM users), true);
 SELECT setval('images_id_seq', (SELECT COALESCE(MAX(id), 1) FROM images), true);

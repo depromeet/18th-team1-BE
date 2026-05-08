@@ -26,6 +26,14 @@ locals {
 }
 
 # ============================================
+# Project APIs
+# ============================================
+resource "google_project_service" "iam_credentials" {
+  service            = "iamcredentials.googleapis.com"
+  disable_on_destroy = false
+}
+
+# ============================================
 # VPC
 # ============================================
 resource "google_compute_network" "vpc" {
@@ -76,6 +84,19 @@ resource "google_compute_firewall" "allow_app" {
   }
 
   target_tags   = ["api-server"]
+  source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "allow_postgres" {
+  name    = "${var.env}-${var.service_name}-fw-allow-postgres"
+  network = google_compute_network.vpc.id
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5432"]
+  }
+
+  target_tags   = ["db-server"]
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -161,7 +182,7 @@ resource "google_compute_instance" "api" {
     scopes = ["cloud-platform"]
   }
 
-  tags = ["api-server"]
+  tags = ["api-server", "db-server"]
 
   labels = {
     env     = var.env
@@ -194,7 +215,7 @@ resource "google_storage_bucket" "images" {
   uniform_bucket_level_access = true
 
   cors {
-    origin          = ["https://dev.senti.today"]
+    origin          = ["https://dev.senti.today", "http://localhost:3000"]
     method          = ["GET", "PUT"]
     response_header = ["Content-Type", "Access-Control-Allow-Origin"]
     max_age_seconds = 3600
