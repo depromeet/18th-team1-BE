@@ -30,7 +30,7 @@ class HomeController(
         description = "홈화면 랜덤 추천 문구를 정보를 반환한다.",
     )
     @GetMapping("/random")
-    fun getRandomQuote(): ResponseEntity<QuoteResponse> = ResponseEntity.ok(homeUseCase.getRandomQuote())
+    fun getRandomQuotes(): ResponseEntity<List<QuoteResponse>> = ResponseEntity.ok(homeUseCase.getRandomQuotes())
 
     @Operation(
         summary = "홈 요약 API",
