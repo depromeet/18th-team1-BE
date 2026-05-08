@@ -163,7 +163,6 @@ class DiaryUseCase(
         diaryId: Long,
     ): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
-        diaryService.validateDiaryOwner(ownerId = diary.userId, userId = userId)
         val diaryImageUrl =
             imageService
                 .findUrlsByOwnerIdAndOwnerType(
