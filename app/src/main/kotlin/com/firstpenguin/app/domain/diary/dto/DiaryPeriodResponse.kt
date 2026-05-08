@@ -39,6 +39,8 @@ data class DiaryResponse(
     val emotionValue: Int,
     @field:Schema(description = "문장 내용", example = "가장 중요한 것은 보이지 않는다.")
     val quoteContent: String,
+    @field:Schema(description = "일기 생성 시 선택한 감정 태그명 목록", example = "[\"불안\", \"기대\"]")
+    val tags: List<String>,
     @field:Schema(description = "책 표지 이미지 URL", example = "https://image.aladin.co.kr/product/1/23/cover.jpg")
     val coverImageUrl: String,
     @field:Schema(description = "저자", example = "앙투안 드 생텍쥐페리")
@@ -54,6 +56,7 @@ data class DiaryResponse(
                 content = diary.content,
                 emotionValue = diary.emotionValue,
                 quoteContent = diary.quoteContent,
+                tags = diary.tags,
                 coverImageUrl = diary.coverImageUrl,
                 author = diary.author,
                 title = diary.title,
