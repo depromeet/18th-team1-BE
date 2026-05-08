@@ -63,7 +63,7 @@ class DiaryUseCase(
         dailyRecommendation: DailyRecommendation,
         request: CreateDiaryRequest,
     ) {
-        val emotionRange = emotionService.getEmotionRange(request.emotionIntensity)
+        val emotionRange = emotionService.getEmotionRange(request.emotionValue)
         recommendationService.validateSelectedEmotionRange(
             dailyRecommendation = dailyRecommendation,
             emotionRangeId = emotionRange.id,
@@ -82,7 +82,7 @@ class DiaryUseCase(
 
         return diaryService.createDiary(
             userId = userId,
-            emotionIntensity = request.emotionIntensity,
+            emotionValue = request.emotionValue,
             quoteId = request.quoteId,
             content = content,
         )
