@@ -287,10 +287,7 @@ class DiaryController(
             throw CustomException(ErrorCode.UNAUTHORIZED)
         }
 
-        return diaryUseCase.getDiary(
-            userId = authenticatedUser.id,
-            diaryId = diaryId,
-        )
+        return diaryUseCase.getDiary(diaryId)
     }
 
     @GetMapping("/{diaryId}/share", produces = [MediaType.IMAGE_PNG_VALUE])

@@ -140,7 +140,7 @@ class DiaryUseCase(
             start = today.atStartOfDay(),
             end = today.plusDays(1).atStartOfDay(),
         )
-        return getDiary(userId = userId, diaryId = diaryId)
+        return getDiary(diaryId)
     }
 
     @Transactional(readOnly = true)
@@ -158,10 +158,7 @@ class DiaryUseCase(
     fun hasTodayDiary(userId: Long): DiaryExistsResponse = DiaryExistsResponse(diaryService.hasTodayDiary(userId))
 
     @Transactional(readOnly = true)
-    fun getDiary(
-        userId: Long,
-        diaryId: Long,
-    ): DiaryDetailResponse {
+    fun getDiary(diaryId: Long): DiaryDetailResponse {
         val diary = diaryService.getById(diaryId)
         val diaryImageUrl =
             imageService
