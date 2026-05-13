@@ -4,7 +4,6 @@ import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.service.QuoteService
-import com.firstpenguin.app.domain.recommendation.dto.RecommendationExistsResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
@@ -92,10 +91,6 @@ class RecommendationUseCase(
 
         return nextQuotes.map(::toQuoteResponse)
     }
-
-    @Transactional(readOnly = true)
-    fun hasTodayRecommendation(userId: Long): RecommendationExistsResponse =
-        RecommendationExistsResponse(exists = recommendationService.hasRecommendedToday(userId))
 
     private fun toQuoteResponse(quote: com.firstpenguin.app.domain.quote.model.Quote): QuoteResponse {
         val book = bookService.findBookById(quote.bookId)

@@ -50,14 +50,14 @@ class RecommendationService(
         dailyRecommendationQuoteRepository
             .findByDailyRecommendationId(dailyRecommendationId)
 
-    fun hasRecommendedToday(userId: Long): Boolean {
+    fun findByUserIdAndRecommendationDate(userId: Long): DailyRecommendation? {
         val today = LocalDate.now()
 
-        return dailyRecommendationRepository.existsByUserIdAndRecommendationDate(userId, today)
+        return dailyRecommendationRepository.findByUserIdAndRecommendationDate(userId, today)
     }
 
     fun validateRecommendationAvailable(userId: Long) {
-        if (hasRecommendedToday(userId)) {
+        findByUserIdAndRecommendationDate(userId)?.let {
             throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
         }
     }

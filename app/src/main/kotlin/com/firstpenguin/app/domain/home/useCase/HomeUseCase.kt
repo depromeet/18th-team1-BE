@@ -4,9 +4,11 @@ import com.firstpenguin.app.domain.book.service.BookService
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.home.dto.HomeSummaryResponse
 import com.firstpenguin.app.domain.home.dto.MonthlyDiaryResponse
+import com.firstpenguin.app.domain.home.dto.TodayStatusResponse
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quote.service.QuoteService
+import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -18,6 +20,7 @@ class HomeUseCase(
     private val quoteService: QuoteService,
     private val bookService: BookService,
     private val diaryService: DiaryService,
+    private val recommendationService: RecommendationService,
 ) {
     @Transactional(readOnly = true)
     fun getSummary(userId: Long): HomeSummaryResponse {
@@ -46,6 +49,20 @@ class HomeUseCase(
             )
 
         return randomQuotes.map(::toQuoteResponse)
+    }
+
+    @Transactional(readOnly = true)
+    fun getTodayStatus(userId: Long): TodayStatusResponse {
+        val dailyRecommendation = recommendationService.findByUserIdAndRecommendationDate(userId)
+        val hasTodayDiary = diaryService.hasTodayDiary(userId)
+
+        return TodayStatusResponse(
+            hasTodayRecommendation = dailyRecommendation != null,
+            hasTodayDiary = hasTodayDiary,
+            dailyRecommendationId = dailyRecommendation
+                ?.takeIf { !hasTodayDiary }
+                ?.id,
+        )
     }
 
     private fun toQuoteResponse(quote: Quote): QuoteResponse {
