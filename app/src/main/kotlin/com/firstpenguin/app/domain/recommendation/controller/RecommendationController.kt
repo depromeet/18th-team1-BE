@@ -35,7 +35,7 @@ class RecommendationController(
         ResponseEntity.ok(
             recommendationUseCase.recommendQuote(
                 userId = authenticatedUser.id,
-                request = request
+                request = request,
             ),
         )
 
