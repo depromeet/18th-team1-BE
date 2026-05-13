@@ -32,11 +32,11 @@ class RecommendationController(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @Valid @RequestBody request: RecommendationRequest,
     ): ResponseEntity<RecommendationResponse> =
-        ResponseEntity.ok(recommendationUseCase
-            .recommendQuote(
+        ResponseEntity.ok(
+            recommendationUseCase.recommendQuote(
                 userId = authenticatedUser.id,
-                request = request,
-            )
+                request = request
+            ),
         )
 
     @Operation(
