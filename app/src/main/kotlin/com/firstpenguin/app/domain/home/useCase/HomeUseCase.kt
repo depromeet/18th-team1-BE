@@ -59,9 +59,10 @@ class HomeUseCase(
         return TodayStatusResponse(
             hasTodayRecommendation = dailyRecommendation != null,
             hasTodayDiary = hasTodayDiary,
-            dailyRecommendationId = dailyRecommendation
-                ?.takeIf { !hasTodayDiary }
-                ?.id,
+            dailyRecommendationId =
+                dailyRecommendation
+                    ?.takeIf { !hasTodayDiary }
+                    ?.id,
         )
     }
 

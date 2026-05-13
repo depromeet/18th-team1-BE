@@ -32,7 +32,12 @@ class RecommendationController(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @Valid @RequestBody request: RecommendationRequest,
     ): ResponseEntity<RecommendationResponse> =
-        ResponseEntity.ok(recommendationUseCase.recommendQuote(authenticatedUser.id, request))
+        ResponseEntity.ok(recommendationUseCase
+            .recommendQuote(
+                userId = authenticatedUser.id,
+                request = request,
+            )
+        )
 
     @Operation(
         summary = "문장 더보기 조회 API",

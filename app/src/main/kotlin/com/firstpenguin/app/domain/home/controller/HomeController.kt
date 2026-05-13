@@ -42,8 +42,7 @@ class HomeController(
     fun getTodayStatus(
         @Parameter(hidden = true)
         @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-    ): ResponseEntity<TodayStatusResponse> =
-        ResponseEntity.ok(homeUseCase.getTodayStatus(authenticatedUser.id))
+    ): ResponseEntity<TodayStatusResponse> = ResponseEntity.ok(homeUseCase.getTodayStatus(authenticatedUser.id))
 
     @Operation(
         summary = "홈 요약 API",
