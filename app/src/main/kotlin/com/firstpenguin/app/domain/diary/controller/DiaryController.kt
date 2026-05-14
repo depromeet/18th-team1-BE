@@ -47,15 +47,12 @@ class DiaryController(
     )
     @PostMapping
     fun createDiary(
-        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @Valid @RequestBody request: CreateDiaryRequest,
-    ): ResponseEntity<CreateDiaryResponse> {
-        if (authenticatedUser == null) {
-            throw CustomException(ErrorCode.UNAUTHORIZED)
-        }
-
-        return ResponseEntity.ok(diaryUseCase.createDiary(authenticatedUser.id, request))
-    }
+    ): ResponseEntity<CreateDiaryResponse> =
+        ResponseEntity.ok(
+            diaryUseCase.createDiary(authenticatedUser.id, request),
+        )
 
     @DeleteMapping("/{diaryId}")
     @Operation(
