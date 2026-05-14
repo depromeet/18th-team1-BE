@@ -4,7 +4,6 @@ import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.diary.dto.CreateDiaryRequest
 import com.firstpenguin.app.domain.diary.dto.CreateDiaryResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
-import com.firstpenguin.app.domain.diary.dto.DiaryExistsResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
 import com.firstpenguin.app.domain.diary.usecase.DiaryUseCase
@@ -207,23 +206,6 @@ class DiaryController(
             diaryId = diaryId,
             request = request,
         )
-    }
-
-    @GetMapping("/today/exists")
-    @Operation(
-        summary = "오늘 일기 작성 여부 조회 API",
-        description = "로그인한 사용자가 오늘 작성한 일기가 있는지 조회한다.",
-        security = [SecurityRequirement(name = "bearerAuth")],
-    )
-    fun hasTodayDiary(
-        @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser?,
-    ): ResponseEntity<DiaryExistsResponse> {
-        if (authenticatedUser == null) {
-            throw CustomException(ErrorCode.UNAUTHORIZED)
-        }
-
-        return ResponseEntity.ok(diaryUseCase.hasTodayDiary(authenticatedUser.id))
     }
 
     @GetMapping("/{diaryId}")
