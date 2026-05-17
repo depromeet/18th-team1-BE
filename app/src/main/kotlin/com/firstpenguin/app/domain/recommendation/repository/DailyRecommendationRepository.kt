@@ -38,16 +38,17 @@ class DailyRecommendationRepository(
             ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
     }
 
-    fun existsByUserIdAndRecommendationDate(
+    fun findByUserIdAndRecommendationDate(
         userId: Long,
         recommendationDate: LocalDate,
-    ): Boolean =
-        dsl.fetchExists(
-            DailyRecommendationTable.DAILY_RECOMMENDATIONS,
-            DailyRecommendationTable.USER_ID
-                .eq(userId)
-                .and(DailyRecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate)),
-        )
+    ): DailyRecommendation? =
+        dsl
+            .select(DAILY_RECOMMENDATION_FIELDS)
+            .from(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
+            .where(DailyRecommendationTable.USER_ID.eq(userId))
+            .and(DailyRecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate))
+            .fetchOne()
+            ?.let(::toDailyRecommendation)
 
     fun findDailyRecommendationByPkForUpdate(id: Long): DailyRecommendation? =
         dsl

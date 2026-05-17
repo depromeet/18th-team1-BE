@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.home.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.home.dto.HomeSummaryResponse
+import com.firstpenguin.app.domain.home.dto.TodayStatusResponse
 import com.firstpenguin.app.domain.home.useCase.HomeUseCase
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -31,6 +32,17 @@ class HomeController(
     )
     @GetMapping("/random")
     fun getRandomQuotes(): ResponseEntity<List<QuoteResponse>> = ResponseEntity.ok(homeUseCase.getRandomQuotes())
+
+    @GetMapping("/today/status")
+    @Operation(
+        summary = "오늘 진행 상태 조회 API",
+        description = "로그인한 사용자의 오늘 추천 문구 생성 여부와 일기 작성 여부를 조회한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    fun getTodayStatus(
+        @Parameter(hidden = true)
+        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+    ): ResponseEntity<TodayStatusResponse> = ResponseEntity.ok(homeUseCase.getTodayStatus(authenticatedUser.id))
 
     @Operation(
         summary = "홈 요약 API",
