@@ -69,13 +69,9 @@ class HomeUseCase(
     private fun toQuoteResponse(quote: Quote): QuoteResponse {
         val book = bookService.findBookById(quote.bookId)
 
-        return QuoteResponse(
-            quoteId = quote.id,
-            bookId = book.id,
-            content = quote.content,
-            title = book.title,
-            author = book.author,
-            image = book.coverImageUrl,
+        return QuoteResponse.from(
+            quote = quote,
+            book = book,
         )
     }
 }

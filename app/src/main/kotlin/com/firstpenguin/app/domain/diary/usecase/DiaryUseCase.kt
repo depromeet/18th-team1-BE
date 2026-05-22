@@ -5,13 +5,11 @@ import com.firstpenguin.app.domain.diary.dto.CreateDiaryResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryDetailResponse
 import com.firstpenguin.app.domain.diary.dto.DiaryPeriodResponse
 import com.firstpenguin.app.domain.diary.dto.UpdateDiaryContentRequest
-import com.firstpenguin.app.domain.diary.model.CreatedDiary
 import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.diary.service.DiaryShareImageService
 import com.firstpenguin.app.domain.diary.service.DiaryTagService
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.image.service.ImageService
-import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import com.firstpenguin.app.global.enums.ImageOwner
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -34,65 +32,36 @@ class DiaryUseCase(
         request: CreateDiaryRequest,
     ): CreateDiaryResponse {
         diaryService.validateCanCreateTodayDiary(userId)
-        val dailyRecommendation = validateRecommendation(userId, request)
-        validateEmotion(dailyRecommendation, request)
-        val createdDiary = persistDiary(userId, request)
-        persistAssociations(createdDiary.diaryId, request)
-        return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
-    }
-
-    private fun validateRecommendation(
-        userId: Long,
-        request: CreateDiaryRequest,
-    ): DailyRecommendation {
         val dailyRecommendation =
-            recommendationService.getDailyRecommendation(request.dailyRecommendationId)
-
-        recommendationService.validateOwner(userId, dailyRecommendation)
-        recommendationService.validateTodayRecommendation(dailyRecommendation.recommendationDate)
-        recommendationService.validateRecommendedQuote(
-            dailyRecommendationId = dailyRecommendation.id,
-            quoteId = request.quoteId,
-        )
-
-        return dailyRecommendation
-    }
-
-    private fun validateEmotion(
-        dailyRecommendation: DailyRecommendation,
-        request: CreateDiaryRequest,
-    ) {
+            recommendationService.validateDailyRecommendationQuote(
+                userId = userId,
+                dailyRecommendationId = request.dailyRecommendationId,
+                quoteId = request.quoteId,
+            )
         val emotionRange = emotionService.getEmotionRange(request.emotionValue)
+
         recommendationService.validateSelectedEmotionRange(
             dailyRecommendation = dailyRecommendation,
             emotionRangeId = emotionRange.id,
         )
-        emotionService.validateEmotionTagsInRange(
-            tagIds = request.tagIds,
-            emotionRangeId = emotionRange.id,
-        )
-    }
 
-    private fun persistDiary(
-        userId: Long,
-        request: CreateDiaryRequest,
-    ): CreatedDiary {
-        val content = request.content?.takeIf { it.isNotBlank() }
+        val createdDiary =
+            diaryService.createDiary(
+                userId = userId,
+                emotionValue = request.emotionValue,
+                quoteId = request.quoteId,
+                content = request.content?.takeIf { it.isNotBlank() },
+            )
 
-        return diaryService.createDiary(
-            userId = userId,
-            emotionValue = request.emotionValue,
-            quoteId = request.quoteId,
-            content = content,
-        )
-    }
+        val recommendationTagIds =
+            recommendationService
+                .getRecommendationTags(request.dailyRecommendationId)
+                .map { recommendationTag -> recommendationTag.tagId }
 
-    private fun persistAssociations(
-        diaryId: Long,
-        request: CreateDiaryRequest,
-    ) {
-        diaryTagService.createDiaryTags(diaryId, request.tagIds)
-        imageService.saveImages(request.imageIds, ImageOwner.DIARY, diaryId)
+        diaryTagService.createDiaryTags(createdDiary.diaryId, recommendationTagIds)
+        imageService.saveImages(request.imageIds, ImageOwner.DIARY, createdDiary.diaryId)
+
+        return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
     }
 
     @Transactional
