@@ -2,8 +2,10 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
 import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationQuote
+import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationTag
 import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationQuoteRepository
 import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationRepository
+import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationTagRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -15,6 +17,7 @@ private const val MAX_RECOMMENDATION_QUOTE_COUNT = 10
 class RecommendationService(
     private val dailyRecommendationRepository: DailyRecommendationRepository,
     private val dailyRecommendationQuoteRepository: DailyRecommendationQuoteRepository,
+    private val dailyRecommendationTagRepository: DailyRecommendationTagRepository,
 ) {
     fun createDailyRecommendation(
         userId: Long,
@@ -42,9 +45,15 @@ class RecommendationService(
         )
     }
 
-    fun getDailyRecommendation(id: Long) =
-        dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(id)
-            ?: throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
+    fun createDailyRecommendationTags(
+        dailyRecommendationId: Long,
+        tagIds: List<Long>,
+    ) {
+        dailyRecommendationTagRepository.insertDailyRecommendationTag(
+            dailyRecommendationId = dailyRecommendationId,
+            tagIds = tagIds,
+        )
+    }
 
     fun getRecommendationHistory(dailyRecommendationId: Long): List<DailyRecommendationQuote> =
         dailyRecommendationQuoteRepository
@@ -54,6 +63,52 @@ class RecommendationService(
         val today = LocalDate.now()
 
         return dailyRecommendationRepository.findByUserIdAndRecommendationDate(userId, today)
+    }
+
+    fun getRecommendationTags(dailyRecommendationId: Long): List<DailyRecommendationTag> =
+        dailyRecommendationTagRepository.findByDailyRecommendationId(dailyRecommendationId)
+
+    fun validateDailyRecommendationQuote(
+        userId: Long,
+        dailyRecommendationId: Long,
+        quoteId: Long,
+    ): DailyRecommendation {
+        val dailyRecommendation = validateDailyRecommendation(userId, dailyRecommendationId)
+        val isRecommendedQuote =
+            dailyRecommendationQuoteRepository.existsByDailyRecommendationIdAndQuoteId(
+                dailyRecommendationId = dailyRecommendationId,
+                quoteId = quoteId,
+            )
+
+        if (!isRecommendedQuote) {
+            throw CustomException(ErrorCode.INVALID_RECOMMENDATION_QUOTE)
+        }
+
+        return dailyRecommendation
+    }
+
+    fun validateDailyRecommendation(
+        userId: Long,
+        dailyRecommendationId: Long,
+        lockForUpdate: Boolean = true,
+    ): DailyRecommendation {
+        val dailyRecommendation =
+            if (lockForUpdate) {
+                dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(dailyRecommendationId)
+            } else {
+                dailyRecommendationRepository.findDailyRecommendationById(dailyRecommendationId)
+            }
+                ?: notFound()
+
+        if (dailyRecommendation.userId != userId) {
+            forbidden()
+        }
+
+        if (dailyRecommendation.recommendationDate != LocalDate.now()) {
+            invalidDate()
+        }
+
+        return dailyRecommendation
     }
 
     fun validateRecommendationAvailable(userId: Long) {
@@ -71,27 +126,6 @@ class RecommendationService(
         }
     }
 
-    fun validateTodayRecommendation(dailyRecommendationDate: LocalDate) {
-        if (dailyRecommendationDate != LocalDate.now()) {
-            throw CustomException(ErrorCode.INVALID_DAILY_RECOMMENDATION)
-        }
-    }
-
-    fun validateRecommendedQuote(
-        dailyRecommendationId: Long,
-        quoteId: Long,
-    ) {
-        val isRecommendedQuote =
-            dailyRecommendationQuoteRepository.existsByDailyRecommendationIdAndQuoteId(
-                dailyRecommendationId = dailyRecommendationId,
-                quoteId = quoteId,
-            )
-
-        if (!isRecommendedQuote) {
-            throw CustomException(ErrorCode.INVALID_RECOMMENDATION_QUOTE)
-        }
-    }
-
     fun validateSelectedEmotionRange(
         dailyRecommendation: DailyRecommendation,
         emotionRangeId: Long,
@@ -100,13 +134,10 @@ class RecommendationService(
             throw CustomException(ErrorCode.INVALID_DIARY_EMOTION_VALUE)
         }
     }
-
-    fun validateOwner(
-        userId: Long,
-        dailyRecommendation: DailyRecommendation,
-    ) {
-        if (dailyRecommendation.userId != userId) {
-            throw CustomException(ErrorCode.FORBIDDEN_DAILY_RECOMMENDATION)
-        }
-    }
 }
+
+private fun notFound(): Nothing = throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
+
+private fun forbidden(): Nothing = throw CustomException(ErrorCode.FORBIDDEN_DAILY_RECOMMENDATION)
+
+private fun invalidDate(): Nothing = throw CustomException(ErrorCode.INVALID_DAILY_RECOMMENDATION)

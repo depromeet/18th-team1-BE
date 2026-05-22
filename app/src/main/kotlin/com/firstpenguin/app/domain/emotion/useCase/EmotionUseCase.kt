@@ -16,14 +16,7 @@ class EmotionUseCase(
 
         return TagResponse(
             tags =
-                emotionTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                        emotionRangeId = it.emotionRangeId,
-                    )
-                },
+                emotionTags.map(TagDto::from),
         )
     }
 
@@ -33,14 +26,7 @@ class EmotionUseCase(
 
         return TagResponse(
             tags =
-                toneTags.map {
-                    TagDto(
-                        id = it.id,
-                        label = it.label,
-                        type = it.type,
-                        emotionRangeId = it.emotionRangeId,
-                    )
-                },
+                toneTags.map(TagDto::from),
         )
     }
 }
