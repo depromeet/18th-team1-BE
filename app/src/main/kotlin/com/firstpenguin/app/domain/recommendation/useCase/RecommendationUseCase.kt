@@ -1,11 +1,15 @@
 package com.firstpenguin.app.domain.recommendation.useCase
 
 import com.firstpenguin.app.domain.book.service.BookService
+import com.firstpenguin.app.domain.emotion.dto.TagDto
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
+import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quote.service.QuoteService
+import com.firstpenguin.app.domain.recommendation.dto.DailyRecommendationResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
+import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationTag
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -28,22 +32,19 @@ class RecommendationUseCase(
     ): RecommendationResponse {
         recommendationService.validateRecommendationAvailable(userId)
 
-        val selectEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
-        val selectToneTags = emotionService.selectToneTags(request.toneTagIds)
-
-        val randomQuote = quoteService.getRandomQuote()
-
+        val selectedEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
+        emotionService.selectToneTags(request.toneTagIds)
         val selectedEmotionRangeId =
-            selectEmotionTags.first().emotionRangeId
+            selectedEmotionTags.first().emotionRangeId
                 ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
 
-        val userContext = request.userContext.takeIf { it.isNotBlank() }
+        val randomQuote = quoteService.getRandomQuote()
 
         val dailyRecommendationId =
             recommendationService.createDailyRecommendation(
                 userId = userId,
                 quoteId = randomQuote.id,
-                userContext = userContext,
+                userContext = request.userContext.takeIf { it.isNotBlank() },
                 selectedEmotionRangeId = selectedEmotionRangeId,
             )
 
@@ -52,11 +53,37 @@ class RecommendationUseCase(
             quoteIds = listOf(randomQuote.id),
         )
 
+        recommendationService.createDailyRecommendationTags(
+            dailyRecommendationId = dailyRecommendationId,
+            tagIds = request.emotionTagIds + request.toneTagIds,
+        )
+
         return RecommendationResponse(
             dailyRecommendationId = dailyRecommendationId,
             quote = toQuoteResponse(randomQuote),
-            emotionTags = selectEmotionTags,
-            toneTags = selectToneTags,
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getDailyRecommendationDetail(
+        userId: Long,
+        dailyRecommendationId: Long,
+    ): DailyRecommendationResponse {
+        val dailyRecommendation =
+            recommendationService.validateDailyRecommendation(
+                userId = userId,
+                dailyRecommendationId = dailyRecommendationId,
+            )
+
+        val quote = quoteService.findQuoteById(dailyRecommendation.quoteId)
+        val recommendationTags = recommendationService.getRecommendationTags(dailyRecommendationId)
+        val (emotionTags, toneTags) = toTagDtos(recommendationTags)
+
+        return DailyRecommendationResponse(
+            dailyRecommendationId = dailyRecommendationId,
+            quote = toQuoteResponse(quote),
+            emotionTags = emotionTags,
+            toneTags = toneTags,
         )
     }
 
@@ -65,12 +92,9 @@ class RecommendationUseCase(
         userId: Long,
         dailyRecommendationId: Long,
     ): List<QuoteResponse> {
-        val dailyRecommendation = recommendationService.getDailyRecommendation(dailyRecommendationId)
+        recommendationService.validateDailyRecommendation(userId, dailyRecommendationId)
 
-        recommendationService.validateOwner(userId, dailyRecommendation)
-        recommendationService.validateTodayRecommendation(dailyRecommendation.recommendationDate)
-
-        val recommendationHistory = recommendationService.getRecommendationHistory(dailyRecommendation.id)
+        val recommendationHistory = recommendationService.getRecommendationHistory(dailyRecommendationId)
 
         recommendationService.validateRecommendationCount(
             currentCount = recommendationHistory.size,
@@ -92,16 +116,19 @@ class RecommendationUseCase(
         return nextQuotes.map(::toQuoteResponse)
     }
 
-    private fun toQuoteResponse(quote: com.firstpenguin.app.domain.quote.model.Quote): QuoteResponse {
+    private fun toQuoteResponse(quote: Quote): QuoteResponse {
         val book = bookService.findBookById(quote.bookId)
 
-        return QuoteResponse(
-            quoteId = quote.id,
-            bookId = book.id,
-            content = quote.content,
-            title = book.title,
-            author = book.author,
-            image = book.coverImageUrl,
+        return QuoteResponse.from(
+            quote = quote,
+            book = book,
         )
+    }
+
+    private fun toTagDtos(recommendationTags: List<DailyRecommendationTag>): Pair<List<TagDto>, List<TagDto>> {
+        val tagIds = recommendationTags.map { recommendationTag -> recommendationTag.tagId }
+        val (emotionTags, toneTags) = emotionService.getTagsByIds(tagIds)
+
+        return emotionTags.map(TagDto::from) to toneTags.map(TagDto::from)
     }
 }

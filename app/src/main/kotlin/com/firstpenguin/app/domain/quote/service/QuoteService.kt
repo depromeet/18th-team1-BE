@@ -42,6 +42,10 @@ class QuoteService(
         throw CustomException(ErrorCode.NOT_ENOUGH_QUOTES)
     }
 
+    fun findQuoteById(id: Long) =
+        quoteRepository.findQuoteById(id)
+            ?: throw CustomException(ErrorCode.QUOTE_NOT_FOUND)
+
     private fun findRandomQuoteExcludingIds(excludedQuoteIds: Set<Long>): Quote? {
         val maxQuoteId = quoteRepository.getMaxQuoteId()
         if (maxQuoteId == 0L) return null
