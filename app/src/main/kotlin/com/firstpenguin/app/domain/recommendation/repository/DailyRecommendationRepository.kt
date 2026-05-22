@@ -50,6 +50,14 @@ class DailyRecommendationRepository(
             .fetchOne()
             ?.let(::toDailyRecommendation)
 
+    fun findDailyRecommendationById(id: Long): DailyRecommendation? =
+        dsl
+            .select(DAILY_RECOMMENDATION_FIELDS)
+            .from(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
+            .where(DailyRecommendationTable.ID.eq(id))
+            .fetchOne()
+            ?.let(::toDailyRecommendation)
+
     fun findDailyRecommendationByPkForUpdate(id: Long): DailyRecommendation? =
         dsl
             .select(DAILY_RECOMMENDATION_FIELDS)

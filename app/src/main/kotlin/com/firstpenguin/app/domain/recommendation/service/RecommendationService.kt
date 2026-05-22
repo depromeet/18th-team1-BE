@@ -90,9 +90,14 @@ class RecommendationService(
     fun validateDailyRecommendation(
         userId: Long,
         dailyRecommendationId: Long,
+        lockForUpdate: Boolean = true,
     ): DailyRecommendation {
         val dailyRecommendation =
-            dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(dailyRecommendationId)
+            if (lockForUpdate) {
+                dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(dailyRecommendationId)
+            } else {
+                dailyRecommendationRepository.findDailyRecommendationById(dailyRecommendationId)
+            }
                 ?: notFound()
 
         if (dailyRecommendation.userId != userId) {

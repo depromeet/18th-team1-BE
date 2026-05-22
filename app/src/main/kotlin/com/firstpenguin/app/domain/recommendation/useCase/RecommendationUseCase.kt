@@ -73,6 +73,7 @@ class RecommendationUseCase(
             recommendationService.validateDailyRecommendation(
                 userId = userId,
                 dailyRecommendationId = dailyRecommendationId,
+                lockForUpdate = false,
             )
 
         val quote = quoteService.findQuoteById(dailyRecommendation.quoteId)
