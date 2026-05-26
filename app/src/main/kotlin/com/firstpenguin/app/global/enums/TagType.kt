@@ -10,7 +10,7 @@ enum class TagType {
     CONTEXT,
     MOOD,
     ROLE,
-    AVOID
+    AVOID,
     ;
 
     companion object {
