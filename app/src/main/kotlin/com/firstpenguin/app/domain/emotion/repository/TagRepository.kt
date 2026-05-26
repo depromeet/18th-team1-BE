@@ -23,7 +23,7 @@ class TagRepository(
                     .and(TagTable.EMOTION_RANGE_ID.isNotNull),
             ).fetch(::toTag)
 
-    fun getToneTags(): List<Tag> =
+    fun getNeedTags(): List<Tag> =
         dsl
             .select(tagFields())
             .from(TagTable.TAGS)
@@ -47,7 +47,7 @@ class TagRepository(
             ).fetch(::toTag)
     }
 
-    fun getToneTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
+    fun getNeedTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
 
         return dsl

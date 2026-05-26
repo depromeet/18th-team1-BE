@@ -125,15 +125,6 @@ class RecommendationService(
             throw CustomException(ErrorCode.EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT)
         }
     }
-
-    fun validateSelectedEmotionRange(
-        dailyRecommendation: DailyRecommendation,
-        emotionRangeId: Long,
-    ) {
-        if (dailyRecommendation.selectedEmotionRangeId != emotionRangeId) {
-            throw CustomException(ErrorCode.INVALID_DIARY_EMOTION_VALUE)
-        }
-    }
 }
 
 private fun notFound(): Nothing = throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)

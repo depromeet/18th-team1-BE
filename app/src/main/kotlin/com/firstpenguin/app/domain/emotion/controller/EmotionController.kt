@@ -18,7 +18,7 @@ private const val MAX_EMOTION_VALUE = 9L
 
 @RestController
 @RequestMapping("/emotions")
-@Tag(name = "감정", description = "감정 선택값 및 감정/톤 태그 API")
+@Tag(name = "감정", description = "감정 선택값 및 감정/기대 태그 API")
 class EmotionController(
     private val emotionUseCase: EmotionUseCase,
 ) {
@@ -33,9 +33,9 @@ class EmotionController(
     ): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getEmotionTags(value))
 
     @Operation(
-        summary = "톤 태그 목록 조회 API",
-        description = "톤 태그 목록을 반환한다.",
+        summary = "기대 태그 목록 조회 API",
+        description = "기대 태그 목록을 반환한다.",
     )
-    @GetMapping("/tone-tags")
-    fun getToneTags(): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getToneTags())
+    @GetMapping("/need-tags")
+    fun getNeedTags(): ResponseEntity<TagResponse> = ResponseEntity.ok(emotionUseCase.getNeedTags())
 }

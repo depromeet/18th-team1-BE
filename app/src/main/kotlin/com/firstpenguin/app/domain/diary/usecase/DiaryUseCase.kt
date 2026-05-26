@@ -32,17 +32,19 @@ class DiaryUseCase(
         request: CreateDiaryRequest,
     ): CreateDiaryResponse {
         diaryService.validateCanCreateTodayDiary(userId)
-        val dailyRecommendation =
-            recommendationService.validateDailyRecommendationQuote(
-                userId = userId,
-                dailyRecommendationId = request.dailyRecommendationId,
-                quoteId = request.quoteId,
-            )
-        val emotionRange = emotionService.getEmotionRange(request.emotionValue)
+        recommendationService.validateDailyRecommendationQuote(
+            userId = userId,
+            dailyRecommendationId = request.dailyRecommendationId,
+            quoteId = request.quoteId,
+        )
+        val recommendationTagIds =
+            recommendationService
+                .getRecommendationTags(request.dailyRecommendationId)
+                .map { recommendationTag -> recommendationTag.tagId }
 
-        recommendationService.validateSelectedEmotionRange(
-            dailyRecommendation = dailyRecommendation,
-            emotionRangeId = emotionRange.id,
+        validateEmotionTags(
+            emotionValue = request.emotionValue,
+            tagIds = recommendationTagIds,
         )
 
         val createdDiary =
@@ -53,15 +55,26 @@ class DiaryUseCase(
                 content = request.content?.takeIf { it.isNotBlank() },
             )
 
-        val recommendationTagIds =
-            recommendationService
-                .getRecommendationTags(request.dailyRecommendationId)
-                .map { recommendationTag -> recommendationTag.tagId }
-
         diaryTagService.createDiaryTags(createdDiary.diaryId, recommendationTagIds)
         imageService.saveImages(request.imageIds, ImageOwner.DIARY, createdDiary.diaryId)
 
         return CreateDiaryResponse(createdDiary.diaryId, createdDiary.createdAt)
+    }
+
+    private fun validateEmotionTags(
+        emotionValue: Int,
+        tagIds: List<Long>,
+    ) {
+        val emotionTagIds =
+            emotionService
+                .getTagsByIds(tagIds)
+                .first
+                .map { tag -> tag.id }
+
+        emotionService.validateEmotionTags(
+            emotionValue = emotionValue,
+            tagIds = emotionTagIds,
+        )
     }
 
     @Transactional

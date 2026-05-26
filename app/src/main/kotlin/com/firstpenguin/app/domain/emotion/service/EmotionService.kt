@@ -23,7 +23,7 @@ class EmotionService(
         emotionRangeRepository.getEmotionRange(value)
             ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
 
-    fun getToneTags(): List<Tag> = tagRepository.getToneTags()
+    fun getNeedTags(): List<Tag> = tagRepository.getNeedTags()
 
     fun selectEmotionTags(emotionTagIds: List<Long>): List<Tag> {
         val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
@@ -34,16 +34,16 @@ class EmotionService(
         return emotionTags
     }
 
-    fun selectToneTags(toneTagIds: List<Long>): List<Tag> {
-        val toneTags = tagRepository.getToneTagsByTagIdsIn(toneTagIds)
+    fun selectNeedTags(needTagIds: List<Long>): List<Tag> {
+        val needTags = tagRepository.getNeedTagsByTagIdsIn(needTagIds)
 
-        validateToneTags(toneTags, toneTagIds)
+        validateNeedTags(needTags, needTagIds)
 
-        return toneTags
+        return needTags
     }
 
     fun getTagsByIds(tagIds: List<Long>): Pair<List<Tag>, List<Tag>> =
-        tagRepository.getEmotionTagsByTagIdsIn(tagIds) to tagRepository.getToneTagsByTagIdsIn(tagIds)
+        tagRepository.getEmotionTagsByTagIdsIn(tagIds) to tagRepository.getNeedTagsByTagIdsIn(tagIds)
 
     fun validateEmotionTags(
         emotionValue: Int,
@@ -80,12 +80,12 @@ class EmotionService(
         }
     }
 
-    private fun validateToneTags(
-        toneTags: List<Tag>,
-        toneTagIds: List<Long>,
+    private fun validateNeedTags(
+        needTags: List<Tag>,
+        needTagIds: List<Long>,
     ) {
-        if (toneTags.size != toneTagIds.distinct().size) {
-            throw CustomException(ErrorCode.INVALID_TONE_TAG)
+        if (needTags.size != needTagIds.distinct().size) {
+            throw CustomException(ErrorCode.INVALID_NEED_TAG)
         }
     }
 

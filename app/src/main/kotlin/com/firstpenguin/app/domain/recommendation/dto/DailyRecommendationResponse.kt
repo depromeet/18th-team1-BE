@@ -7,5 +7,5 @@ data class DailyRecommendationResponse(
     val dailyRecommendationId: Long,
     val quote: QuoteResponse,
     val emotionTags: List<TagDto>,
-    val toneTags: List<TagDto>,
+    val needTags: List<TagDto>,
 )
