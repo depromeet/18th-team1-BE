@@ -35,4 +35,3 @@ ALTER TABLE tags
 
 CREATE UNIQUE INDEX IF NOT EXISTS tags_type_code_uidx
     ON tags (type, code);
-

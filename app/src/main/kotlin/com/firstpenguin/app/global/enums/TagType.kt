@@ -5,7 +5,12 @@ import com.firstpenguin.app.global.exception.ErrorCode
 
 enum class TagType {
     EMOTION,
-    TONE,
+    NEED,
+    SITUATION,
+    CONTEXT,
+    MOOD,
+    ROLE,
+    AVOID,
     ;
 
     companion object {

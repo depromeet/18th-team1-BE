@@ -29,7 +29,7 @@ class TagRepository(
             .from(TagTable.TAGS)
             .where(
                 TagTable.TYPE
-                    .eq(TagType.TONE.name)
+                    .eq(TagType.NEED.name)
                     .and(TagTable.EMOTION_RANGE_ID.isNull),
             ).fetch(::toTag)
 
@@ -56,7 +56,7 @@ class TagRepository(
             .where(
                 TagTable.ID
                     .`in`(tagIds)
-                    .and(TagTable.TYPE.eq(TagType.TONE.name))
+                    .and(TagTable.TYPE.eq(TagType.NEED.name))
                     .and(TagTable.EMOTION_RANGE_ID.isNull),
             ).fetch(::toTag)
     }
