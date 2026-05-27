@@ -63,6 +63,10 @@ enum class ErrorCode(
     NOT_ENOUGH_QUOTES(HttpStatus.CONFLICT, "추천 가능한 문장이 부족합니다."),
     QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장을 찾을 수 없습니다."),
 
+    // QuoteMetadataBatch
+    INVALID_QUOTE_METADATA_BATCH_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 상태가 올바르지 않습니다."),
+    INVALID_QUOTE_METADATA_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 대상 상태가 올바르지 않습니다."),
+
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "이미지가 존재하지 않습니다."),
