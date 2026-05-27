@@ -33,7 +33,7 @@ class RecommendationUseCase(
         recommendationService.validateRecommendationAvailable(userId)
 
         val selectedEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
-        emotionService.selectToneTags(request.toneTagIds)
+        emotionService.selectNeedTags(request.needTagIds)
         val selectedEmotionRangeId =
             selectedEmotionTags.first().emotionRangeId
                 ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
@@ -55,7 +55,7 @@ class RecommendationUseCase(
 
         recommendationService.createDailyRecommendationTags(
             dailyRecommendationId = dailyRecommendationId,
-            tagIds = request.emotionTagIds + request.toneTagIds,
+            tagIds = request.emotionTagIds + request.needTagIds,
         )
 
         return RecommendationResponse(
@@ -78,13 +78,13 @@ class RecommendationUseCase(
 
         val quote = quoteService.findQuoteById(dailyRecommendation.quoteId)
         val recommendationTags = recommendationService.getRecommendationTags(dailyRecommendationId)
-        val (emotionTags, toneTags) = toTagDtos(recommendationTags)
+        val (emotionTags, needTags) = toTagDtos(recommendationTags)
 
         return DailyRecommendationResponse(
             dailyRecommendationId = dailyRecommendationId,
             quote = toQuoteResponse(quote),
             emotionTags = emotionTags,
-            toneTags = toneTags,
+            needTags = needTags,
         )
     }
 
@@ -128,8 +128,8 @@ class RecommendationUseCase(
 
     private fun toTagDtos(recommendationTags: List<DailyRecommendationTag>): Pair<List<TagDto>, List<TagDto>> {
         val tagIds = recommendationTags.map { recommendationTag -> recommendationTag.tagId }
-        val (emotionTags, toneTags) = emotionService.getTagsByIds(tagIds)
+        val (emotionTags, needTags) = emotionService.getTagsByIds(tagIds)
 
-        return emotionTags.map(TagDto::from) to toneTags.map(TagDto::from)
+        return emotionTags.map(TagDto::from) to needTags.map(TagDto::from)
     }
 }

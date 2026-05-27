@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:17
+    image: pgvector/pgvector:pg17
     container_name: firstpenguin-db
     ports:
       - "5432:5432"

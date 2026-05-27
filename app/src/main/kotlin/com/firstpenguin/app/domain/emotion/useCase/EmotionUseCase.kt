@@ -21,12 +21,12 @@ class EmotionUseCase(
     }
 
     @Transactional(readOnly = true)
-    fun getToneTags(): TagResponse {
-        val toneTags = emotionService.getToneTags()
+    fun getNeedTags(): TagResponse {
+        val needTags = emotionService.getNeedTags()
 
         return TagResponse(
             tags =
-                toneTags.map(TagDto::from),
+                needTags.map(TagDto::from),
         )
     }
 }

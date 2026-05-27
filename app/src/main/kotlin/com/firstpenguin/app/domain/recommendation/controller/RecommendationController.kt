@@ -45,8 +45,8 @@ class RecommendationController(
         )
 
     @Operation(
-        summary = "감정/톤 태그 선택, 사용자 문장을 받아 추천된 문장 반환 API",
-        description = "사용자가 선택한 감정 태그와 톤 태그를 검증하고, 추천된 문장을 반환한다.",
+        summary = "감정/기대 태그 선택, 사용자 문장을 받아 추천된 문장 반환 API",
+        description = "사용자가 선택한 감정 태그와 기대 태그를 검증하고, 추천된 문장을 반환한다.",
     )
     @PostMapping("/quotes")
     fun recommendationQuote(

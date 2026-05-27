@@ -20,18 +20,22 @@ class TagRepository(
                 TagTable.TYPE
                     .eq(TagType.EMOTION.name)
                     .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
-                    .and(TagTable.EMOTION_RANGE_ID.isNotNull),
-            ).fetch(::toTag)
+                    .and(TagTable.EMOTION_RANGE_ID.isNotNull)
+                    .and(TagTable.IS_ACTIVE.isTrue),
+            ).orderBy(TagTable.SORT_ORDER.asc())
+            .fetch(::toTag)
 
-    fun getToneTags(): List<Tag> =
+    fun getNeedTags(): List<Tag> =
         dsl
             .select(tagFields())
             .from(TagTable.TAGS)
             .where(
                 TagTable.TYPE
-                    .eq(TagType.TONE.name)
-                    .and(TagTable.EMOTION_RANGE_ID.isNull),
-            ).fetch(::toTag)
+                    .eq(TagType.NEED.name)
+                    .and(TagTable.EMOTION_RANGE_ID.isNull)
+                    .and(TagTable.IS_ACTIVE.isTrue),
+            ).orderBy(TagTable.SORT_ORDER.asc())
+            .fetch(::toTag)
 
     fun getEmotionTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
@@ -43,11 +47,12 @@ class TagRepository(
                 TagTable.ID
                     .`in`(tagIds)
                     .and(TagTable.TYPE.eq(TagType.EMOTION.name))
-                    .and(TagTable.EMOTION_RANGE_ID.isNotNull),
+                    .and(TagTable.EMOTION_RANGE_ID.isNotNull)
+                    .and(TagTable.IS_ACTIVE.isTrue),
             ).fetch(::toTag)
     }
 
-    fun getToneTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
+    fun getNeedTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
         if (tagIds.isEmpty()) return emptyList()
 
         return dsl
@@ -56,8 +61,9 @@ class TagRepository(
             .where(
                 TagTable.ID
                     .`in`(tagIds)
-                    .and(TagTable.TYPE.eq(TagType.TONE.name))
-                    .and(TagTable.EMOTION_RANGE_ID.isNull),
+                    .and(TagTable.TYPE.eq(TagType.NEED.name))
+                    .and(TagTable.EMOTION_RANGE_ID.isNull)
+                    .and(TagTable.IS_ACTIVE.isTrue),
             ).fetch(::toTag)
     }
 
