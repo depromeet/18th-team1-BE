@@ -40,7 +40,11 @@ class QuoteMetadataRepository(
                 .selectOne()
                 .from(QuoteMetadataBatchItemTable.QUOTE_METADATA_BATCH_ITEMS)
                 .where(QuoteMetadataBatchItemTable.QUOTE_ID.eq(QuoteTable.ID))
-                .and(QuoteMetadataBatchItemTable.STATUS.eq(BatchItemStatus.SUBMITTED.name)),
+                .and(
+                    QuoteMetadataBatchItemTable.STATUS.`in`(
+                        BatchItemStatus.activeStatuses().map { status -> status.name },
+                    ),
+                ),
         )
 
     private fun toQuote(record: Record): Quote =

@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.emotion.repository
 
+import com.firstpenguin.app.domain.batch.dto.TagOption
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
 import com.firstpenguin.app.global.enums.TagType
@@ -67,6 +68,19 @@ class TagRepository(
             ).fetch(::toTag)
     }
 
+    fun getActiveTagsByType(): Map<TagType, List<TagOption>> =
+        dsl
+            .select(
+                TagTable.ID,
+                TagTable.TYPE,
+                TagTable.CODE,
+                TagTable.LABEL,
+            ).from(TagTable.TAGS)
+            .where(TagTable.IS_ACTIVE.isTrue)
+            .orderBy(TagTable.TYPE.asc(), TagTable.SORT_ORDER.asc(), TagTable.ID.asc())
+            .fetch(::toTagOption)
+            .groupBy { tag -> tag.type }
+
     private fun toTag(record: Record): Tag =
         Tag(
             id = record[TagTable.ID]!!,
@@ -74,6 +88,14 @@ class TagRepository(
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
             createdAt = record[TagTable.CREATED_AT]!!,
+        )
+
+    private fun toTagOption(record: Record): TagOption =
+        TagOption(
+            id = record[TagTable.ID]!!,
+            type = TagType.from(record[TagTable.TYPE]!!),
+            code = record[TagTable.CODE]!!,
+            label = record[TagTable.LABEL]!!,
         )
 
     private fun tagFields(): List<Field<*>> =

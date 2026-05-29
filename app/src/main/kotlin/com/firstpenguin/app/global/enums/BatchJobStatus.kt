@@ -4,6 +4,7 @@ import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 
 enum class BatchJobStatus {
+    PREPARING,
     SUBMITTED,
     VALIDATING,
     IN_PROGRESS,
@@ -17,7 +18,17 @@ enum class BatchJobStatus {
 
     companion object {
         fun from(value: String): BatchJobStatus =
-            entries.find { it.name == value }
+            entries.find { it.name == value.uppercase() }
                 ?: throw CustomException(ErrorCode.INVALID_QUOTE_METADATA_BATCH_STATUS)
+
+        fun runningStatuses(): List<BatchJobStatus> =
+            listOf(
+                PREPARING,
+                SUBMITTED,
+                VALIDATING,
+                IN_PROGRESS,
+                FINALIZING,
+                CANCELLING,
+            )
     }
 }

@@ -4,10 +4,10 @@ import java.time.LocalDateTime
 
 data class QuoteMetadata(
     val id: Long,
-    val quote_id: Long,
-    val embedding_text: String,
-    val metadata_model: String,
-    val metadata_version: Int,
-    val updated_at: LocalDateTime,
-    val completed_at: LocalDateTime?,
+    val quoteId: Long,
+    val embeddingText: String,
+    val metadataModel: String,
+    val metadataVersion: Int,
+    val updatedAt: LocalDateTime,
+    val completedAt: LocalDateTime?,
 )

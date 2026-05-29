@@ -1,10 +1,13 @@
 package com.firstpenguin.app.domain.batch.dto
 
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 
-private const val MAX_LIMIT: Long = 1000L
+private const val MIN_LIMIT = 1L
+private const val MAX_LIMIT = 10L
 
 data class QuoteMetadataBatchSubmitRequest(
-    @field:Min(MAX_LIMIT)
-    val limit: Long,
+    @field:Min(MIN_LIMIT)
+    @field:Max(MAX_LIMIT)
+    val limit: Int,
 )
