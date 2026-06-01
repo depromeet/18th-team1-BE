@@ -7,4 +7,5 @@ data class TagOption(
     val type: TagType,
     val code: String,
     val label: String,
+    val description: String?,
 )

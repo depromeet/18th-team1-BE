@@ -69,6 +69,7 @@ enum class ErrorCode(
     QUOTE_METADATA_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 문구 메타정보 배치 작업이 진행 중 입니다."),
     QUOTE_METADATA_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "문구 메타정보 배치 대상이 존재하지 않습니다."),
     QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 요청에 실패했습니다."),
+    INVALID_TAG_PRIORITY(HttpStatus.INTERNAL_SERVER_ERROR, "태그 우선순위 데이터가 올바르지 않습니다."),
 
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),

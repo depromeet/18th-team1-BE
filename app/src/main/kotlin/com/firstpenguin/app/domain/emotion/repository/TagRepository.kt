@@ -75,6 +75,7 @@ class TagRepository(
                 TagTable.TYPE,
                 TagTable.CODE,
                 TagTable.LABEL,
+                TagTable.DESCRIPTION,
             ).from(TagTable.TAGS)
             .where(TagTable.IS_ACTIVE.isTrue)
             .orderBy(TagTable.TYPE.asc(), TagTable.SORT_ORDER.asc(), TagTable.ID.asc())
@@ -96,6 +97,7 @@ class TagRepository(
             type = TagType.from(record[TagTable.TYPE]!!),
             code = record[TagTable.CODE]!!,
             label = record[TagTable.LABEL]!!,
+            description = record[TagTable.DESCRIPTION],
         )
 
     private fun tagFields(): List<Field<*>> =
