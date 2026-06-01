@@ -7,8 +7,10 @@ import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 
-private const val TAG_MAX_ITEMS = 3
-private const val EMBEDDING_TEXT_MAX_LENGTH = 120
+private const val TAG_MAX_ITEMS = 2
+private const val CORE_TAG_MIN_ITEMS = 1
+private const val STRICT_TAG_MAX_ITEMS = 1
+private const val EMBEDDING_TEXT_MAX_LENGTH = 80
 
 private val QUOTE_METADATA_PROMPT_GUIDE =
     """
@@ -21,21 +23,17 @@ private val QUOTE_METADATA_PROMPT_GUIDE =
     중요 규칙:
     1. 새로운 태그를 만들지 마라.
     2. 반드시 제공된 tagCode 중에서만 선택하라.
-    3. roleTagCode는 반드시 1개만 선택하라.
-    4. emotionTagCodes, needTagCodes, contextTagCodes, situationTagCodes, moodTagCodes, avoidTagCodes는 각각 최대 2개까지만 선택하라.
-    5. 태그를 억지로 채우지 마라. 관련성이 약하면 빈 배열을 반환하라.
-    6. label과 description은 의미 이해용으로만 사용한다.
-    7. emotionTagCodes, needTagCodes, moodTagCodes는 인용구의 핵심 의미와 강하게 맞는 경우에만 선택하라.
-    8. contextTagCodes는 장소, 날씨, 시간, 활동, 장면이 인용구에 직접 드러나거나 매우 명확하게 연상될 때만 선택하라.
-    9. situationTagCodes는 실패/실수, 일/커리어, 관계, 이별, 학업처럼 구체적인 삶의 문제나 사건이 명확할 때만 선택하라.
-    10. 추상적 은유만으로 contextTagCodes나 situationTagCodes를 선택하지 마라.
-    11. avoidTagCodes는 문장 자체가 훈계, 비난, 과한 긍정, 성공 압박처럼 특정 사용자 상태에서 부담이 될 수 있을 때만 선택하라.
-    12. embeddingText는 80자 이내의 한국어 한 문장으로 작성하라.
-    13. 출력은 반드시 JSON schema를 따른다.
-    14. JSON 외의 설명 문장은 출력하지 마라.
+    3. label과 description은 태그 선택 기준이다. description의 선택/제외 조건을 우선한다.
+    4. roleTagCode는 반드시 1개만 선택하라.
+    5. emotionTagCodes, needTagCodes, moodTagCodes는 추천 매칭의 핵심 태그이므로 각각 1~2개를 선택하라.
+    6. contextTagCodes, situationTagCodes, avoidTagCodes는 보조 태그이므로 description 기준에 명확히 맞을 때만 선택하라.
+    7. 추상적 은유를 구체적인 장소, 사건, 직업, 학업, 관계 문제로 확장하지 마라.
+    8. 표현이 단호하거나 희망적이라는 이유만으로 avoidTagCodes를 선택하지 마라.
+    9. embeddingText는 50자 이내로, 핵심 의미와 필요/역할, 분위기만 담아라.
+    10. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
     
     [태그 기준]
-    - emotionTagCodes: 이 인용구가 강하게 어울리는 감정 상태
+    - emotionTagCodes: 이 인용구가 추천되기 좋은 사용자 마음 상태
     - needTagCodes: 이 인용구가 사용자에게 줄 수 있는 문장 역할 또는 필요
     - contextTagCodes: 인용구에 직접 드러나거나 매우 명확한 장소, 날씨, 시간, 활동, 장면
     - situationTagCodes: 인용구에 명확히 연결되는 삶의 문제, 사건, 관계, 주제
@@ -50,23 +48,11 @@ private val QUOTE_METADATA_PROMPT_GUIDE =
     - 생각을 바꿔주는 문장: 관점 전환, 성찰, 마음 정리를 돕는 문장
     - 다시 움직이게 하는 문장: 용기, 재시작, 행동으로 이어지게 하는 문장
     
-    [선택 기준 예시]
-    - “새로운 시작”, “다시 나아감”, “껍질을 깨고 나옴”처럼 변화와 성장의 의미가 강하면 needTagCodes에는 용기/재시작 계열을 선택할 수 있다.
-    - “자기 자신을 찾는 길”, “나를 이해하는 과정”처럼 성찰의 의미가 강하면 roleTagCode는 생각을 바꿔주는 문장에 가깝다.
-    - “비”, “밤”, “바다”, “카페”, “출근길”처럼 장소/날씨/시간/활동이 직접 나오지 않으면 contextTagCodes는 비워도 된다.
-    - “회사”, “시험”, “친구”, “이별”, “실수”처럼 구체 사건이나 관계가 직접 나오지 않으면 situationTagCodes는 비워도 된다.
-    - 문장이 단순히 희망적이라고 해서 과한 긍정으로 보지 마라. avoidTagCodes는 부담스러운 표현이 명확할 때만 선택한다.
-    
     [embeddingText 작성 기준]
-    embeddingText는 인용구 원문을 추천 검색에 잘 걸리도록 설명한 짧은 문장이다.
-    아래 정보를 자연스럽게 포함하라.
-    
-    - 인용구의 핵심 의미
-    - 어울리는 감정
-    - 어울리는 필요/역할
-    - 문장의 분위기
-    
-    단, context나 situation이 명확하지 않으면 embeddingText에 억지로 장소/상황을 넣지 마라.
+    - 인용구 원문을 추천 검색에 잘 걸리도록 설명한 짧은 한국어 문장이다.
+    - tagCode, label을 그대로 나열하지 마라.
+    - “문장”, “느낌”, “촉구”, “필요할 때”, “어울리는” 같은 설명형 표현은 쓰지 마라.
+    - context나 situation이 명확하지 않으면 장소/상황을 넣지 마라.
     """.trimIndent()
 
 @Component
@@ -137,12 +123,24 @@ class QuoteMetadataBatchJsonlBuilder(
                                     "enum" to listOf(quote.id),
                                 ),
                             "roleTagCode" to codeSchema(tagGroups.getValue(TagType.ROLE)),
-                            "emotionTagCodes" to codeArraySchema(tagGroups.getValue(TagType.EMOTION)),
-                            "needTagCodes" to codeArraySchema(tagGroups.getValue(TagType.NEED)),
-                            "situationTagCodes" to codeArraySchema(tagGroups.getValue(TagType.SITUATION)),
-                            "contextTagCodes" to codeArraySchema(tagGroups.getValue(TagType.CONTEXT)),
-                            "moodTagCodes" to codeArraySchema(tagGroups.getValue(TagType.MOOD)),
-                            "avoidTagCodes" to codeArraySchema(tagGroups.getValue(TagType.AVOID)),
+                            "emotionTagCodes" to coreCodeArraySchema(tagGroups.getValue(TagType.EMOTION)),
+                            "needTagCodes" to coreCodeArraySchema(tagGroups.getValue(TagType.NEED)),
+                            "situationTagCodes" to
+                                codeArraySchema(
+                                    options = tagGroups.getValue(TagType.SITUATION),
+                                    maxItems = STRICT_TAG_MAX_ITEMS,
+                                ),
+                            "contextTagCodes" to
+                                codeArraySchema(
+                                    options = tagGroups.getValue(TagType.CONTEXT),
+                                    maxItems = STRICT_TAG_MAX_ITEMS,
+                                ),
+                            "moodTagCodes" to coreCodeArraySchema(tagGroups.getValue(TagType.MOOD)),
+                            "avoidTagCodes" to
+                                codeArraySchema(
+                                    options = tagGroups.getValue(TagType.AVOID),
+                                    maxItems = STRICT_TAG_MAX_ITEMS,
+                                ),
                             "embeddingText" to
                                 mapOf(
                                     "type" to "string",
@@ -158,15 +156,26 @@ class QuoteMetadataBatchJsonlBuilder(
             "enum" to options.map { option -> option.code },
         )
 
-    private fun codeArraySchema(options: List<TagOption>): Map<String, Any> =
+    private fun codeArraySchema(
+        options: List<TagOption>,
+        maxItems: Int = TAG_MAX_ITEMS,
+        minItems: Int = 0,
+    ): Map<String, Any> =
         mapOf(
             "type" to "array",
-            "maxItems" to TAG_MAX_ITEMS,
+            "minItems" to minItems,
+            "maxItems" to maxItems,
             "items" to
                 mapOf(
                     "type" to "string",
                     "enum" to options.map { option -> option.code },
                 ),
+        )
+
+    private fun coreCodeArraySchema(options: List<TagOption>): Map<String, Any> =
+        codeArraySchema(
+            options = options,
+            minItems = CORE_TAG_MIN_ITEMS,
         )
 
     private fun buildPrompt(
