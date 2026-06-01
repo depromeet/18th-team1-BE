@@ -3,12 +3,12 @@ package com.firstpenguin.app.domain.batch.service
 import com.firstpenguin.app.domain.batch.dto.TagOption
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.global.enums.QuoteMetadataBatchModelVersion
-import com.firstpenguin.app.global.enums.TagPriority
 import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 
 private const val TAG_MAX_ITEMS = 3
+private const val EMBEDDING_TEXT_MAX_LENGTH = 120
 
 private val QUOTE_METADATA_PROMPT_GUIDE =
     """
@@ -21,48 +21,29 @@ private val QUOTE_METADATA_PROMPT_GUIDE =
     중요 규칙:
     1. 새로운 태그를 만들지 마라.
     2. 반드시 제공된 tagCode 중에서만 선택하라.
-    3. 출력에는 tagCode만 사용하라.
+    3. 각 태그 배열은 최대 3개까지만 선택하라.
     4. label과 description은 의미 이해용으로만 사용한다.
-    5. evidence는 인용구에서 근거가 되는 짧은 표현을 그대로 적어라.
+    5. roleTagCode는 반드시 1개만 선택하라.
     6. 인용구에 직접 드러나지 않더라도, 문장이 강하게 어울리는 감정/상황/맥락이면 선택할 수 있다.
-    7. 단, 근거가 약한 태그를 억지로 많이 붙이지 마라.
-    8. confidence는 0.0~1.0 사이로 둔다.
-    9. priority는 primary, secondary, background 중 하나만 사용한다.
-    10. roleTag는 반드시 1개만 선택한다.
-    11. emotionTag, needTag, contextTag, situationTag, moodTag, avoidTag는 각각 0~3개까지만 선택한다.
-    12. 출력은 반드시 JSON schema를 따른다.
-    13. JSON 외의 설명 문장은 출력하지 마라.
+    7. 근거가 약한 태그를 억지로 붙이지 마라.
+    8. embeddingText는 80자 이내 한국어 한 문장으로 작성하라.
+    9. JSON schema만 반환하라.
 
     [태그 기준]
-    - emotionTag: 이 인용구가 어울리는 감정 상태
-    - needTag: 이 인용구가 사용자에게 줄 수 있는 문장 역할 또는 필요
-    - contextTag: 이 인용구가 어울리는 장소, 날씨, 시간, 활동, 장면
-    - situationTag: 이 인용구가 어울리는 삶의 문제, 사건, 관계, 주제
-    - moodTag: 이 인용구 자체의 분위기, 말투, 정서적 톤
-    - avoidTag: 이 인용구가 특정 사용자 상태에서 부담이 될 수 있는 요소
-    - roleTag: 추천 결과에서 이 인용구가 담당할 대표 역할
+    - emotionTagCodes: 이 인용구가 어울리는 감정 상태
+    - needTagCodes: 이 인용구가 사용자에게 줄 수 있는 문장 역할 또는 필요
+    - contextTagCodes: 이 인용구가 어울리는 장소, 날씨, 시간, 활동, 장면
+    - situationTagCodes: 이 인용구가 어울리는 삶의 문제, 사건, 관계, 주제
+    - moodTagCodes: 이 인용구 자체의 분위기, 말투, 정서적 톤
+    - avoidTagCodes: 이 인용구가 특정 사용자 상태에서 부담이 될 수 있는 요소
+    - roleTagCode: 추천 결과에서 이 인용구가 담당할 대표 역할
 
-    [roleTag 선택 기준]
-    roleTag는 반드시 아래 관점 중 가장 강한 역할 1개만 선택한다.
+    [roleTagCode 선택 기준]
+    아래 세 관점 중 가장 강한 역할 1개만 선택한다.
 
     - 지금 마음을 알아주는 문장: 감정을 인정하거나 공감하는 문장
     - 생각을 바꿔주는 문장: 관점 전환, 성찰, 마음 정리를 돕는 문장
     - 다시 움직이게 하는 문장: 용기, 재시작, 행동으로 이어지게 하는 문장
-
-    [priority 기준]
-    - primary: 인용구의 핵심 의미와 직접적으로 맞는 태그
-    - secondary: 핵심은 아니지만 충분히 관련 있는 태그
-    - background: 약하게 어울리는 배경성 태그
-
-    [embeddingText 작성 기준]
-    embeddingText는 인용구 원문을 추천 검색에 잘 걸리도록 설명한 짧은 문장이다.
-    아래 정보를 자연스럽게 포함하라.
-
-    - 인용구의 핵심 의미
-    - 어울리는 감정
-    - 어울리는 필요/역할
-    - 어울리는 상황이나 맥락
-    - 문장의 분위기
     """.trimIndent()
 
 @Component
@@ -82,6 +63,10 @@ class QuoteMetadataBatchJsonlBuilder(
                     "body" to
                         mapOf(
                             "model" to QuoteMetadataBatchModelVersion.V1.model,
+                            "reasoning" to
+                                mapOf(
+                                    "effort" to "minimal",
+                                ),
                             "input" to buildPrompt(quote, tagGroups),
                             "text" to
                                 mapOf(
@@ -90,6 +75,7 @@ class QuoteMetadataBatchJsonlBuilder(
                                             quote = quote,
                                             tagGroups = tagGroups,
                                         ),
+                                    "verbosity" to "low",
                                 ),
                         ),
                 ),
@@ -111,81 +97,52 @@ class QuoteMetadataBatchJsonlBuilder(
                     "required" to
                         listOf(
                             "quoteId",
-                            "roleTag",
-                            "emotionTags",
-                            "needTags",
-                            "contextTags",
-                            "situationTags",
-                            "moodTags",
-                            "avoidTags",
+                            "roleTagCode",
+                            "emotionTagCodes",
+                            "needTagCodes",
+                            "situationTagCodes",
+                            "contextTagCodes",
+                            "moodTagCodes",
+                            "avoidTagCodes",
                             "embeddingText",
                         ),
                     "properties" to
                         mapOf(
                             "quoteId" to
                                 mapOf(
-                                    "type" to "string",
-                                    "enum" to listOf(quote.id.toString()),
+                                    "type" to "integer",
+                                    "enum" to listOf(quote.id),
                                 ),
-                            "roleTag" to
-                                roleTagResultSchema(tagGroups.getValue(TagType.ROLE)),
-                            "emotionTags" to tagResultArraySchema(tagGroups.getValue(TagType.EMOTION)),
-                            "needTags" to tagResultArraySchema(tagGroups.getValue(TagType.NEED)),
-                            "contextTags" to tagResultArraySchema(tagGroups.getValue(TagType.CONTEXT)),
-                            "situationTags" to tagResultArraySchema(tagGroups.getValue(TagType.SITUATION)),
-                            "moodTags" to tagResultArraySchema(tagGroups.getValue(TagType.MOOD)),
-                            "avoidTags" to tagResultArraySchema(tagGroups.getValue(TagType.AVOID)),
-                            "embeddingText" to mapOf("type" to "string"),
+                            "roleTagCode" to codeSchema(tagGroups.getValue(TagType.ROLE)),
+                            "emotionTagCodes" to codeArraySchema(tagGroups.getValue(TagType.EMOTION)),
+                            "needTagCodes" to codeArraySchema(tagGroups.getValue(TagType.NEED)),
+                            "situationTagCodes" to codeArraySchema(tagGroups.getValue(TagType.SITUATION)),
+                            "contextTagCodes" to codeArraySchema(tagGroups.getValue(TagType.CONTEXT)),
+                            "moodTagCodes" to codeArraySchema(tagGroups.getValue(TagType.MOOD)),
+                            "avoidTagCodes" to codeArraySchema(tagGroups.getValue(TagType.AVOID)),
+                            "embeddingText" to
+                                mapOf(
+                                    "type" to "string",
+                                    "maxLength" to EMBEDDING_TEXT_MAX_LENGTH,
+                                ),
                         ),
                 ),
         )
 
-    private fun roleTagResultSchema(options: List<TagOption>): Map<String, Any> =
-        tagResultSchema(
-            options = options,
-            priorityCodes = listOf(TagPriority.PRIMARY.code),
+    private fun codeSchema(options: List<TagOption>): Map<String, Any> =
+        mapOf(
+            "type" to "string",
+            "enum" to options.map { option -> option.code },
         )
 
-    private fun tagResultArraySchema(options: List<TagOption>): Map<String, Any> =
+    private fun codeArraySchema(options: List<TagOption>): Map<String, Any> =
         mapOf(
             "type" to "array",
             "maxItems" to TAG_MAX_ITEMS,
-            "items" to tagResultSchema(options),
-        )
-
-    private fun tagResultSchema(
-        options: List<TagOption>,
-        priorityCodes: List<String> = TagPriority.codes(),
-    ): Map<String, Any> =
-        mapOf(
-            "type" to "object",
-            "additionalProperties" to false,
-            "required" to
-                listOf(
-                    "tagCode",
-                    "evidence",
-                    "confidence",
-                    "priority",
-                ),
-            "properties" to
+            "items" to
                 mapOf(
-                    "tagCode" to
-                        mapOf(
-                            "type" to "string",
-                            "enum" to options.map { option -> option.code },
-                        ),
-                    "evidence" to mapOf("type" to "string"),
-                    "confidence" to
-                        mapOf(
-                            "type" to "number",
-                            "minimum" to 0.0,
-                            "maximum" to 1.0,
-                        ),
-                    "priority" to
-                        mapOf(
-                            "type" to "string",
-                            "enum" to priorityCodes,
-                        ),
+                    "type" to "string",
+                    "enum" to options.map { option -> option.code },
                 ),
         )
 
@@ -237,6 +194,8 @@ class QuoteMetadataBatchJsonlBuilder(
 
     private fun List<TagOption>.joinTags(): String = joinToString(separator = "\n", transform = ::tagOptionText)
 
-    private fun tagOptionText(option: TagOption): String =
-        "- tagCode: ${option.code}, label: ${option.label}, description: ${option.description.orEmpty()}"
+    private fun tagOptionText(option: TagOption): String {
+        val description = option.description.orEmpty()
+        return "- ${option.code}: ${option.label} - $description"
+    }
 }

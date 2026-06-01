@@ -8,8 +8,5 @@ internal object QuoteMetadataTagTable {
     val ID = DSL.field(DSL.name("quote_metadata_tags", "id"), Long::class.java)
     val QUOTE_METADATA_ID = DSL.field(DSL.name("quote_metadata_tags", "quote_metadata_id"), Long::class.java)
     val TAG_ID = DSL.field(DSL.name("quote_metadata_tags", "tag_id"), Long::class.java)
-    val EVIDENCE = DSL.field(DSL.name("quote_metadata_tags", "evidence"), String::class.java)
-    val CONFIDENCE = DSL.field(DSL.name("quote_metadata_tags", "confidence"), Double::class.javaObjectType)
-    val PRIORITY = DSL.field(DSL.name("quote_metadata_tags", "priority"), String::class.java)
     val CREATED_AT = DSL.field(DSL.name("quote_metadata_tags", "created_at"), LocalDateTime::class.java)
 }
