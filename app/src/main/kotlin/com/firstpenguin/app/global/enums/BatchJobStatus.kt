@@ -16,6 +16,23 @@ enum class BatchJobStatus {
     CANCELLED,
     ;
 
+    fun isTerminal(): Boolean =
+        this in
+            listOf(
+                COMPLETED,
+                FAILED,
+                EXPIRED,
+                CANCELLED,
+            )
+
+    fun isFailedTerminal(): Boolean =
+        this in
+            listOf(
+                FAILED,
+                EXPIRED,
+                CANCELLED,
+            )
+
     companion object {
         fun from(value: String): BatchJobStatus =
             entries.find { it.name == value.uppercase() }

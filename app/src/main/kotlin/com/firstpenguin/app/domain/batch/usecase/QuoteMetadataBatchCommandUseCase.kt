@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.batch.usecase
 
 import com.firstpenguin.app.domain.batch.dto.OpenAiBatchResponse
+import com.firstpenguin.app.domain.batch.dto.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataService
 import com.firstpenguin.app.domain.quote.model.Quote
@@ -61,6 +62,17 @@ class QuoteMetadataBatchCommandUseCase(
         quoteMetadataService.markQuoteMetadataBatchFailed(
             jobId = jobId,
             errorMessage = errorMessage,
+        )
+    }
+
+    @Transactional
+    fun syncBatchStatus(
+        jobId: Long,
+        batch: OpenAiBatchStatusResponse,
+    ) {
+        quoteMetadataService.updateQuoteMetadataBatchJobStatus(
+            jobId = jobId,
+            batch = batch,
         )
     }
 }

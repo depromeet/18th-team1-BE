@@ -1,7 +1,9 @@
 package com.firstpenguin.app.domain.batch.service
 
 import com.firstpenguin.app.domain.batch.dto.OpenAiBatchResponse
+import com.firstpenguin.app.domain.batch.dto.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.OpenAiFileResponse
+import com.firstpenguin.app.global.enums.BatchJobStatus
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
@@ -46,16 +48,42 @@ class OpenAiBatchClient(
         }
     }
 
-    fun createBatch(inputFileId: String): OpenAiBatchResponse =
-        restClient
-            .post()
-            .uri("/batches")
-            .body(
-                mapOf(
-                    "input_file_id" to inputFileId,
-                    "endpoint" to "/v1/responses",
-                    "completion_window" to "24h",
-                ),
-            ).retrieve()
-            .body<OpenAiBatchResponse>()!!
+    fun createBatch(inputFileId: String): OpenAiBatchResponse {
+        val response =
+            restClient
+                .post()
+                .uri("/batches")
+                .body(
+                    mapOf(
+                        "input_file_id" to inputFileId,
+                        "endpoint" to "/v1/responses",
+                        "completion_window" to "24h",
+                    ),
+                ).retrieve()
+                .body<Map<String, Any?>>()!!
+
+        return response.toOpenAiBatchResponse()
+    }
+
+    fun getStatus(batchId: String): OpenAiBatchStatusResponse {
+        val response =
+            restClient
+                .get()
+                .uri("/batches/{batchId}", batchId)
+                .retrieve()
+                .body<Map<String, Any?>>()!!
+
+        return OpenAiBatchStatusResponse(
+            id = response.getValue("id").toString(),
+            status = BatchJobStatus.from(response.getValue("status").toString()),
+            outputFileId = response["output_file_id"] as? String,
+            errorFileId = response["error_file_id"] as? String,
+        )
+    }
+
+    private fun Map<String, Any?>.toOpenAiBatchResponse(): OpenAiBatchResponse =
+        OpenAiBatchResponse(
+            id = getValue("id").toString(),
+            status = BatchJobStatus.from(getValue("status").toString()),
+        )
 }

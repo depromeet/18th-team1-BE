@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.batch.controller
 
+import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitRequest
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitResponse
 import com.firstpenguin.app.domain.batch.usecase.QuoteMetadataBatchUseCase
@@ -7,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -35,5 +37,17 @@ class QuoteMetaBatchController(
                 adminSecret = adminSecret,
                 request = request,
             ),
+        )
+
+    @Operation(
+        summary = "현재 진행 중인 문장 메타정보 처리 현황 및 배치 상태 조회 API",
+        description = "문장 메타정보 처리 현황과 llm 분석 배치 상태를 보여준다.",
+    )
+    @GetMapping("/quote-metadata/status")
+    fun getStatus(
+        @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
+    ): ResponseEntity<QuoteMetadataBatchStatusResponse> =
+        ResponseEntity.ok(
+            quoteMetadataBatchUseCase.getStatus(adminSecret = adminSecret),
         )
 }

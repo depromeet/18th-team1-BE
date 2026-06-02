@@ -64,6 +64,31 @@ class QuoteMetadataBatchJobRepository(
             .execute()
     }
 
+    fun updateQuoteMetadataBatchJobStatus(
+        jobId: Long,
+        status: BatchJobStatus,
+        outputFileId: String?,
+        errorFileId: String?,
+    ) {
+        val now = LocalDateTime.now()
+
+        dsl
+            .update(QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS)
+            .set(QuoteMetadataBatchJobTable.STATUS, status.name)
+            .set(QuoteMetadataBatchJobTable.OUTPUT_FILE_ID, outputFileId)
+            .set(QuoteMetadataBatchJobTable.ERROR_FILE_ID, errorFileId)
+            .set(QuoteMetadataBatchJobTable.UPDATED_AT, now)
+            .apply {
+                if (status.isTerminal()) {
+                    set(QuoteMetadataBatchJobTable.COMPLETED_AT, now)
+                }
+                if (status.isFailedTerminal()) {
+                    set(QuoteMetadataBatchJobTable.FAILED_COUNT, QuoteMetadataBatchJobTable.SUBMITTED_COUNT)
+                }
+            }.where(QuoteMetadataBatchJobTable.ID.eq(jobId))
+            .execute()
+    }
+
     fun isRunningJQuoteMetadataJob(): Boolean =
         dsl.fetchExists(
             QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS,
@@ -71,6 +96,28 @@ class QuoteMetadataBatchJobRepository(
                 BatchJobStatus.runningStatuses().map { status -> status.name },
             ),
         )
+
+    fun countRunningJobs(): Int =
+        dsl
+            .selectCount()
+            .from(QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS)
+            .where(
+                QuoteMetadataBatchJobTable.STATUS.`in`(
+                    BatchJobStatus.runningStatuses().map { status -> status.name },
+                ),
+            ).fetchOne(0, Int::class.java) ?: 0
+
+    fun findActiveJob(): QuoteMetadataBatchJob? =
+        dsl
+            .select(QUOTE_METADATA_BATCH_JOBS_FIELDS)
+            .from(QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS)
+            .where(
+                QuoteMetadataBatchJobTable.STATUS.`in`(
+                    BatchJobStatus.runningStatuses().map { status -> status.name },
+                ),
+            ).orderBy(QuoteMetadataBatchJobTable.CREATED_AT.desc())
+            .limit(1)
+            .fetchOne(::toQuoteMetadataBatchJob)
 
     private fun toQuoteMetadataBatchJob(record: Record): QuoteMetadataBatchJob =
         QuoteMetadataBatchJob(

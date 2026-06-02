@@ -1,6 +1,8 @@
 package com.firstpenguin.app.domain.batch.repository
 
 import com.firstpenguin.app.domain.batch.repository.table.QuoteMetadataBatchItemTable
+import com.firstpenguin.app.domain.batch.repository.table.QuoteMetadataTable
+import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -11,6 +13,10 @@ import java.time.LocalDateTime
 class QuoteMetadataBatchItemRepository(
     private val dsl: DSLContext,
 ) {
+    fun countActiveItemsWithoutMetadata(): Int = countItemsWithoutMetadata(statuses = BatchItemStatus.activeStatuses())
+
+    fun countFailedItemsWithoutMetadata(): Int = countItemsWithoutMetadata(statuses = listOf(BatchItemStatus.FAILED))
+
     fun insertQuoteMetadataBatchItems(
         jobId: Long,
         quoteIds: List<Long>,
@@ -49,4 +55,23 @@ class QuoteMetadataBatchItemRepository(
             .where(QuoteMetadataBatchItemTable.JOB_ID.eq(jobId))
             .execute()
     }
+
+    private fun countItemsWithoutMetadata(statuses: List<BatchItemStatus>): Int =
+        dsl
+            .select(DSL.countDistinct(QuoteMetadataBatchItemTable.QUOTE_ID))
+            .from(QuoteMetadataBatchItemTable.QUOTE_METADATA_BATCH_ITEMS)
+            .join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(QuoteMetadataBatchItemTable.QUOTE_ID))
+            .where(QuoteTable.DELETED_AT.isNull)
+            .and(QuoteMetadataBatchItemTable.STATUS.`in`(statuses.map { status -> status.name }))
+            .and(metadataNotExists())
+            .fetchOne(0, Int::class.java) ?: 0
+
+    private fun metadataNotExists() =
+        DSL.notExists(
+            DSL
+                .selectOne()
+                .from(QuoteMetadataTable.QUOTE_METADATA)
+                .where(QuoteMetadataTable.QUOTE_ID.eq(QuoteMetadataBatchItemTable.QUOTE_ID)),
+        )
 }

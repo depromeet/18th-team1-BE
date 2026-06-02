@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.batch.usecase
 
+import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitRequest
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitResponse
 import com.firstpenguin.app.domain.batch.service.AdminBatchSecretValidator
@@ -57,11 +58,35 @@ class QuoteMetadataBatchUseCase(
                     errorMessage = exception.message,
                 )
             }
-            throw exception.toSubmitBatchException()
+            throw exception.toOpenAiBatchException()
         }
     }
 
-    private fun Throwable.toSubmitBatchException(): Throwable {
+    fun getStatus(adminSecret: String?): QuoteMetadataBatchStatusResponse {
+        adminBatchSecretValidator.validate(adminSecret)
+        syncActiveJobStatus()
+
+        return quoteMetadataService.getStatus()
+    }
+
+    private fun syncActiveJobStatus() {
+        val activeJob = quoteMetadataService.getActiveJob() ?: return
+        val openAiBatchId = activeJob.openAiBatchId ?: return
+
+        val batch =
+            runCatching {
+                openAiBatchClient.getStatus(openAiBatchId)
+            }.getOrElse { exception ->
+                throw exception.toOpenAiBatchException()
+            }
+
+        quoteMetadataBatchCommandUseCase.syncBatchStatus(
+            jobId = activeJob.id,
+            batch = batch,
+        )
+    }
+
+    private fun Throwable.toOpenAiBatchException(): Throwable {
         if (this is RestClientResponseException) {
             return CustomException(ErrorCode.QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED)
         }

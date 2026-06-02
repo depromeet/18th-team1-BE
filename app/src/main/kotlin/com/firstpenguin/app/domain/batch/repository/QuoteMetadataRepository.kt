@@ -15,6 +15,31 @@ import org.springframework.stereotype.Repository
 class QuoteMetadataRepository(
     private val dsl: DSLContext,
 ) {
+    fun countTotalQuotes(): Int =
+        dsl
+            .selectCount()
+            .from(QuoteTable.QUOTES)
+            .where(QuoteTable.DELETED_AT.isNull)
+            .fetchOne(0, Int::class.java) ?: 0
+
+    fun countCreatedMetadata(): Int =
+        dsl
+            .select(DSL.countDistinct(QuoteMetadataTable.QUOTE_ID))
+            .from(QuoteMetadataTable.QUOTE_METADATA)
+            .join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(QuoteMetadataTable.QUOTE_ID))
+            .where(QuoteTable.DELETED_AT.isNull)
+            .fetchOne(0, Int::class.java) ?: 0
+
+    fun countPendingQuotes(): Int =
+        dsl
+            .selectCount()
+            .from(QuoteTable.QUOTES)
+            .where(QuoteTable.DELETED_AT.isNull)
+            .and(metadataNotExists())
+            .and(activeBatchItemNotExists())
+            .fetchOne(0, Int::class.java) ?: 0
+
     fun findPendingQuotes(limit: Int): List<Quote> =
         dsl
             .select(QUOTE_FIELDS)
