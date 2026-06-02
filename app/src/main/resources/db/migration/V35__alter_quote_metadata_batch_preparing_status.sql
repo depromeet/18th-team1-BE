@@ -20,7 +20,7 @@ ALTER TABLE quote_metadata_batch_jobs
             'CANCELLED'
         ));
 
-CREATE UNIQUE INDEX quote_metadata_batch_jobs_single_running_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS quote_metadata_batch_jobs_single_running_uidx
     ON quote_metadata_batch_jobs ((1))
     WHERE status IN (
         'PREPARING',
@@ -40,6 +40,6 @@ ALTER TABLE quote_metadata_batch_items
 
 DROP INDEX quote_metadata_batch_items_active_quote_uidx;
 
-CREATE UNIQUE INDEX quote_metadata_batch_items_active_quote_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS quote_metadata_batch_items_active_quote_uidx
     ON quote_metadata_batch_items (quote_id)
     WHERE status IN ('PREPARING', 'SUBMITTED');

@@ -1,4 +1,4 @@
-CREATE TABLE quote_metadata_batch_jobs (
+CREATE TABLE IF NOT EXISTS quote_metadata_batch_jobs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     openai_batch_id VARCHAR(100) NOT NULL,
     input_file_id VARCHAR(100) NOT NULL,
@@ -34,13 +34,13 @@ CREATE TABLE quote_metadata_batch_jobs (
         )
 );
 
-CREATE UNIQUE INDEX quote_metadata_batch_jobs_openai_batch_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS quote_metadata_batch_jobs_openai_batch_id_uidx
     ON quote_metadata_batch_jobs (openai_batch_id);
 
-CREATE INDEX quote_metadata_batch_jobs_status_idx
+CREATE INDEX IF NOT EXISTS quote_metadata_batch_jobs_status_idx
     ON quote_metadata_batch_jobs (status);
 
-CREATE TABLE quote_metadata_batch_items (
+CREATE TABLE IF NOT EXISTS quote_metadata_batch_items (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     job_id BIGINT NOT NULL,
     quote_id BIGINT NOT NULL,
@@ -52,15 +52,15 @@ CREATE TABLE quote_metadata_batch_items (
         CHECK (status IN ('SUBMITTED', 'SUCCEEDED', 'FAILED'))
 );
 
-CREATE UNIQUE INDEX quote_metadata_batch_items_job_quote_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS quote_metadata_batch_items_job_quote_uidx
     ON quote_metadata_batch_items (job_id, quote_id);
 
-CREATE UNIQUE INDEX quote_metadata_batch_items_active_quote_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS quote_metadata_batch_items_active_quote_uidx
     ON quote_metadata_batch_items (quote_id)
     WHERE status = 'SUBMITTED';
 
-CREATE INDEX quote_metadata_batch_items_job_id_idx
+CREATE INDEX IF NOT EXISTS quote_metadata_batch_items_job_id_idx
     ON quote_metadata_batch_items (job_id);
 
-CREATE INDEX quote_metadata_batch_items_quote_id_idx
+CREATE INDEX IF NOT EXISTS quote_metadata_batch_items_quote_id_idx
     ON quote_metadata_batch_items (quote_id);
