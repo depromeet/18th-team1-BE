@@ -4,6 +4,8 @@ import com.firstpenguin.app.domain.batch.dto.ParsedBatchQuoteResult
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
+import com.firstpenguin.app.domain.batch.service.QuoteMetadataBatchResultService
+import com.firstpenguin.app.domain.batch.service.QuoteMetadataBatchStatusService
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataService
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.global.enums.BatchItemStatus
@@ -15,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class QuoteMetadataBatchCommandUseCase(
     private val quoteMetadataService: QuoteMetadataService,
+    private val quoteMetadataBatchStatusService: QuoteMetadataBatchStatusService,
+    private val quoteMetadataBatchResultService: QuoteMetadataBatchResultService,
 ) {
     @Transactional
     fun prepareBatch(limit: Int): PreparedQuoteMetadataBatch {
@@ -71,7 +75,7 @@ class QuoteMetadataBatchCommandUseCase(
         jobId: Long,
         batch: OpenAiBatchStatusResponse,
     ) {
-        quoteMetadataService.updateQuoteMetadataBatchJobStatus(
+        quoteMetadataBatchStatusService.updateQuoteMetadataBatchJobStatus(
             jobId = jobId,
             batch = batch,
         )
@@ -82,7 +86,7 @@ class QuoteMetadataBatchCommandUseCase(
         jobId: Long,
         results: List<ParsedBatchQuoteResult>,
     ) {
-        quoteMetadataService.saveBatchResults(
+        quoteMetadataBatchResultService.saveBatchResults(
             jobId = jobId,
             results = results,
         )
