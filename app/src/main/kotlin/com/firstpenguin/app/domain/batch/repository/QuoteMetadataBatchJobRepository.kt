@@ -151,7 +151,7 @@ class QuoteMetadataBatchJobRepository(
             inputFileId = record[QuoteMetadataBatchJobTable.INPUT_FILE_ID],
             outputFileId = record[QuoteMetadataBatchJobTable.OUTPUT_FILE_ID],
             errorFileId = record[QuoteMetadataBatchJobTable.ERROR_FILE_ID],
-            status = record[QuoteMetadataBatchJobTable.STATUS]!!,
+            status = BatchJobStatus.from(record[QuoteMetadataBatchJobTable.STATUS]!!),
             metadataModel = record[QuoteMetadataBatchJobTable.METADATA_MODEL]!!,
             metadataVersion = record[QuoteMetadataBatchJobTable.METADATA_VERSION]!!,
             submittedCount = record[QuoteMetadataBatchJobTable.SUBMITTED_COUNT]!!,

@@ -66,7 +66,7 @@ enum class ErrorCode(
     // QuoteMetadataBatch
     INVALID_QUOTE_METADATA_BATCH_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 상태가 올바르지 않습니다."),
     INVALID_QUOTE_METADATA_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 대상 상태가 올바르지 않습니다."),
-    QUOTE_METADATA_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 문구 메타정보 배치 작업이 진행 중 입니다."),
+    QUOTE_METADATA_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 문구 메타정보 배치 작업이 진행 중입니다."),
     QUOTE_METADATA_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "문구 메타정보 배치 대상이 존재하지 않습니다."),
     QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 요청에 실패했습니다."),
 

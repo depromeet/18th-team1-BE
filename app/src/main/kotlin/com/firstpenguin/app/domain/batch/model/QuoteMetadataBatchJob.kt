@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.batch.model
 
+import com.firstpenguin.app.global.enums.BatchJobStatus
 import java.time.LocalDateTime
 
 data class QuoteMetadataBatchJob(
@@ -8,7 +9,7 @@ data class QuoteMetadataBatchJob(
     val inputFileId: String?,
     val outputFileId: String?,
     val errorFileId: String?,
-    val status: String,
+    val status: BatchJobStatus,
     val metadataModel: String,
     val metadataVersion: Int,
     val submittedCount: Int,

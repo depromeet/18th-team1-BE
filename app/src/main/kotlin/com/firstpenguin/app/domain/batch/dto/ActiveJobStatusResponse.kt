@@ -1,8 +1,10 @@
 package com.firstpenguin.app.domain.batch.dto
 
+import com.firstpenguin.app.global.enums.BatchJobStatus
+
 data class ActiveJobStatusResponse(
     val jobId: Long,
     val openAiBatchId: String?,
     val submittedCount: Int,
-    val status: String,
+    val status: BatchJobStatus,
 )
