@@ -120,6 +120,7 @@ private fun codeArraySchema(
         "type" to "array",
         "minItems" to minItems,
         "maxItems" to maxItems,
+        "uniqueItems" to true,
         "items" to
             mapOf(
                 "type" to "string",
