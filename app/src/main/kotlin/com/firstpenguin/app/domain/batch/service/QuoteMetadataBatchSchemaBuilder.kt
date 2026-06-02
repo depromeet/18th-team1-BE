@@ -7,7 +7,7 @@ import com.firstpenguin.app.global.enums.TagType
 private const val TAG_MAX_ITEMS = 2
 private const val CORE_TAG_MIN_ITEMS = 1
 private const val STRICT_TAG_MAX_ITEMS = 1
-private const val EMBEDDING_TEXT_MAX_LENGTH = 160
+private const val EMBEDDING_TEXT_MAX_LENGTH = 80
 
 internal fun quoteMetadataSchema(
     quote: Quote,
