@@ -22,25 +22,24 @@ class CustomOidcUserService(
                 provider = Provider.GOOGLE,
                 providerId = externalId,
                 email = oidcUser.email,
-                nickname = normalizeNickname(nickname, externalId),
+                providerDisplayName = providerDisplayName(nickname, externalId),
             )
         val user = oAuthUserUseCase.upsertOAuthUser(profile)
 
         return OidcAuthenticatedUser(user = user, idToken = oidcUser.idToken, userInfo = oidcUser.userInfo)
     }
 
-    private fun normalizeNickname(
-        nickname: String?,
+    private fun providerDisplayName(
+        displayName: String?,
         externalId: String,
     ): String {
-        val normalized = nickname.orEmpty().replace(WHITESPACE_REGEX, "").take(NICKNAME_MAX_LENGTH)
-        if (normalized.isNotBlank()) return normalized
-        return "google${externalId.takeLast(FALLBACK_SUFFIX_LENGTH)}".take(NICKNAME_MAX_LENGTH)
+        val normalized = displayName?.trim()?.take(PROVIDER_DISPLAY_NAME_MAX_LENGTH)
+        if (!normalized.isNullOrBlank()) return normalized
+        return "google${externalId.takeLast(FALLBACK_SUFFIX_LENGTH)}"
     }
 
     private companion object {
-        const val NICKNAME_MAX_LENGTH = 15
+        const val PROVIDER_DISPLAY_NAME_MAX_LENGTH = 100
         const val FALLBACK_SUFFIX_LENGTH = 6
-        val WHITESPACE_REGEX = Regex("\\s+")
     }
 }

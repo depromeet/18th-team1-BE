@@ -46,7 +46,7 @@ class CustomOAuth2UserService(
             provider = Provider.KAKAO,
             providerId = externalId,
             email = null,
-            nickname = normalizeNickname(Provider.KAKAO, nickname, externalId),
+            providerDisplayName = providerDisplayName(Provider.KAKAO, nickname, externalId),
         )
     }
 
@@ -58,22 +58,22 @@ class CustomOAuth2UserService(
             provider = Provider.GOOGLE,
             providerId = externalId,
             email = attributes["email"] as? String,
-            nickname = normalizeNickname(Provider.GOOGLE, nickname, externalId),
+            providerDisplayName = providerDisplayName(Provider.GOOGLE, nickname, externalId),
         )
     }
 
-    private fun normalizeNickname(
+    private fun providerDisplayName(
         provider: Provider,
-        nickname: String?,
+        displayName: String?,
         externalId: String,
     ): String {
-        val normalized = nickname.orEmpty().replace(WHITESPACE_REGEX, "").take(NICKNAME_MAX_LENGTH)
+        val normalized = displayName?.trim()?.take(PROVIDER_DISPLAY_NAME_MAX_LENGTH)
 
-        if (normalized.isNotBlank()) {
+        if (!normalized.isNullOrBlank()) {
             return normalized
         }
 
-        return "${provider.name.lowercase()}${externalId.takeLast(FALLBACK_SUFFIX_LENGTH)}".take(NICKNAME_MAX_LENGTH)
+        return "${provider.name.lowercase()}${externalId.takeLast(FALLBACK_SUFFIX_LENGTH)}"
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -83,8 +83,7 @@ class CustomOAuth2UserService(
         OAuth2AuthenticationException(OAuth2Error("unsupported_oauth_provider"))
 
     private companion object {
-        const val NICKNAME_MAX_LENGTH = 15
+        const val PROVIDER_DISPLAY_NAME_MAX_LENGTH = 100
         const val FALLBACK_SUFFIX_LENGTH = 6
-        val WHITESPACE_REGEX = Regex("\\s+")
     }
 }

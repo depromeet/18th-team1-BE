@@ -4,5 +4,5 @@ data class OAuthUserProfile(
     val provider: Provider,
     val providerId: String,
     val email: String?,
-    val nickname: String,
+    val providerDisplayName: String,
 )
