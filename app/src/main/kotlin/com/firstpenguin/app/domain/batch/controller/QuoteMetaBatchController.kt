@@ -56,7 +56,7 @@ class QuoteMetaBatchController(
         summary = "문장 메타정보 배치 결과 저장 API",
         description = "완료된 OpenAI 배치 결과를 파싱해 문장 메타정보와 태그를 저장하고 처리 상태를 갱신한다.",
     )
-    @GetMapping("/quote-metadata/{jobId}/sync-result")
+    @PostMapping("/quote-metadata/{jobId}/sync-result")
     fun saveQuoteMetadataBatchResult(
         @PathVariable jobId: Long,
         @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
