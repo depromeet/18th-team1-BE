@@ -1,4 +1,4 @@
-package com.firstpenguin.app.domain.batch.dto
+package com.firstpenguin.app.domain.batch.dto.ai
 
 import com.firstpenguin.app.global.enums.BatchJobStatus
 

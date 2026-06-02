@@ -1,11 +1,11 @@
 package com.firstpenguin.app.domain.batch.service
 
 import com.firstpenguin.app.domain.batch.dto.ActiveJobStatusResponse
-import com.firstpenguin.app.domain.batch.dto.OpenAiBatchResponse
-import com.firstpenguin.app.domain.batch.dto.OpenAiBatchStatusResponse
-import com.firstpenguin.app.domain.batch.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.TagOption
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
 import com.firstpenguin.app.domain.batch.model.QuoteMetadataBatchJob
 import com.firstpenguin.app.domain.batch.repository.QuoteMetadataBatchItemRepository
 import com.firstpenguin.app.domain.batch.repository.QuoteMetadataBatchJobRepository

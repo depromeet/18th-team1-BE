@@ -1,8 +1,8 @@
 package com.firstpenguin.app.domain.batch.service
 
-import com.firstpenguin.app.domain.batch.dto.OpenAiBatchResponse
-import com.firstpenguin.app.domain.batch.dto.OpenAiBatchStatusResponse
-import com.firstpenguin.app.domain.batch.dto.OpenAiFileResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
 import com.firstpenguin.app.global.enums.BatchJobStatus
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
