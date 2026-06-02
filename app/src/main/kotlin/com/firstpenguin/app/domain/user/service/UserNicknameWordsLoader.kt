@@ -26,16 +26,12 @@ class UserNicknameWordsLoader {
             require(it.isNotEmpty()) { "$key must not be empty" }
         }
 
-    private fun Properties.indexedValues(key: String): List<String> {
-        val values = mutableListOf<String>()
-        var index = 0
-        while (true) {
-            val value = getProperty("$key[$index]") ?: break
-            values += value
-            index += 1
-        }
-        return values
-    }
+    private fun Properties.indexedValues(key: String): List<String> =
+        generateSequence(0) { index -> index + 1 }
+            .map { index -> getProperty("$key[$index]") }
+            .takeWhile { value -> value != null }
+            .filterNotNull()
+            .toList()
 
     private fun validate(words: UserNicknameWords) {
         validateWords(MODIFIERS_KEY, words.modifiers)
