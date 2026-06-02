@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.batch.dto
 
 import com.firstpenguin.app.domain.batch.model.QuoteMetadata
 import com.firstpenguin.app.domain.batch.model.QuoteMetadataTag
-import com.firstpenguin.app.global.enums.QuoteMetadataBatchModelVersion
 
 data class ParsedBatchQuoteResult(
     val customId: String,
@@ -16,12 +15,15 @@ data class ParsedBatchQuoteResult(
     val embeddingText: String?,
     val errorMessage: String?,
 ) {
-    fun toQuoteMetadata(modelVersion: QuoteMetadataBatchModelVersion): QuoteMetadata =
+    fun toQuoteMetadata(
+        metadataModel: String,
+        metadataVersion: Int,
+    ): QuoteMetadata =
         QuoteMetadata(
             quoteId = requireValue(quoteId, "quoteId"),
             embeddingText = requireValue(embeddingText, "embeddingText"),
-            metadataModel = modelVersion.model,
-            metadataVersion = modelVersion.version,
+            metadataModel = metadataModel,
+            metadataVersion = metadataVersion,
         )
 
     fun toQuoteMetadataTags(
