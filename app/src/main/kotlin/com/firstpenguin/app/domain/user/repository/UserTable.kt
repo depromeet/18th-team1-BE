@@ -9,6 +9,7 @@ internal object UserTable {
     val PROVIDER = DSL.field(DSL.name("users", "provider"), String::class.java)
     val PROVIDER_ID = DSL.field(DSL.name("users", "provider_id"), String::class.java)
     val EMAIL = DSL.field(DSL.name("users", "email"), String::class.java)
+    val PROVIDER_DISPLAY_NAME = DSL.field(DSL.name("users", "provider_display_name"), String::class.java)
     val NICKNAME = DSL.field(DSL.name("users", "nickname"), String::class.java)
     val PROFILE_IMAGE_ID = DSL.field(DSL.name("users", "profile_image_id"), Long::class.java)
     val STATUS = DSL.field(DSL.name("users", "status"), String::class.java)

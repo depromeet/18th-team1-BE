@@ -7,6 +7,7 @@ data class User(
     val provider: Provider,
     val providerId: String,
     val email: String?,
+    val providerDisplayName: String?,
     val nickname: String,
     val profileImageId: Long?,
     val status: UserStatus,
