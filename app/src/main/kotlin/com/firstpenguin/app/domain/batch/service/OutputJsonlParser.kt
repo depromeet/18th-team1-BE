@@ -124,7 +124,8 @@ private fun toErrorParsedBatchQuoteResult(
 private fun JsonNode.longOrNull(fieldName: String): Long? =
     path(fieldName)
         .takeUnless { node -> node.isMissingNode || node.isNull }
-        ?.asLong()
+        ?.asString()
+        ?.toLongOrNull()
 
 private fun JsonNode.stringOrNull(fieldName: String): String? =
     path(fieldName)
