@@ -86,34 +86,26 @@ private fun quoteIdSchema(quote: Quote): Map<String, Any> =
         "enum" to listOf(quote.id),
     )
 
-private fun codeSchema(
-    options: List<TagOption>,
-): Map<String, Any> =
+private fun codeSchema(options: List<TagOption>): Map<String, Any> =
     mapOf(
         "type" to "string",
         "enum" to options.map { option -> option.code },
     )
 
-private fun requiredOneCodeArraySchema(
-    options: List<TagOption>,
-): Map<String, Any> =
+private fun requiredOneCodeArraySchema(options: List<TagOption>): Map<String, Any> =
     codeArraySchema(
         options = options,
         maxItems = STRICT_TAG_MAX_ITEMS,
         minItems = CORE_TAG_MIN_ITEMS,
     )
 
-private fun requiredCodeArraySchema(
-    options: List<TagOption>,
-): Map<String, Any> =
+private fun requiredCodeArraySchema(options: List<TagOption>): Map<String, Any> =
     codeArraySchema(
         options = options,
         minItems = CORE_TAG_MIN_ITEMS,
     )
 
-private fun optionalOneCodeArraySchema(
-    options: List<TagOption>,
-): Map<String, Any> =
+private fun optionalOneCodeArraySchema(options: List<TagOption>): Map<String, Any> =
     codeArraySchema(
         options = options,
         maxItems = STRICT_TAG_MAX_ITEMS,

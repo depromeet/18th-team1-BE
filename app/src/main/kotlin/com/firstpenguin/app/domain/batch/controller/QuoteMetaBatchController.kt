@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -41,7 +42,7 @@ class QuoteMetaBatchController(
 
     @Operation(
         summary = "현재 진행 중인 문장 메타정보 처리 현황 및 배치 상태 조회 API",
-        description = "문장 메타정보 처리 현황과 llm 분석 배치 상태를 보여준다.",
+        description = "진행 중인 OpenAI 배치 상태를 조회해 DB 상태를 갱신한 뒤 문장 메타정보 처리 현황을 보여준다.",
     )
     @GetMapping("/quote-metadata/status")
     fun getStatus(
@@ -49,5 +50,21 @@ class QuoteMetaBatchController(
     ): ResponseEntity<QuoteMetadataBatchStatusResponse> =
         ResponseEntity.ok(
             quoteMetadataBatchUseCase.getStatus(adminSecret = adminSecret),
+        )
+
+    @Operation(
+        summary = "문장 메타정보 배치 결과 저장 API",
+        description = "완료된 OpenAI 배치 결과를 파싱해 문장 메타정보와 태그를 저장하고 처리 상태를 갱신한다.",
+    )
+    @GetMapping("/quote-metadata/{jobId}/sync-result")
+    fun saveQuoteMetadataBatchResult(
+        @PathVariable jobId: Long,
+        @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
+    ): ResponseEntity<QuoteMetadataBatchStatusResponse> =
+        ResponseEntity.ok(
+            quoteMetadataBatchUseCase.syncBatchResult(
+                adminSecret = adminSecret,
+                jobId = jobId,
+            ),
         )
 }

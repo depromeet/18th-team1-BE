@@ -3,10 +3,14 @@ package com.firstpenguin.app.domain.batch.usecase
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitRequest
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitResponse
+import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
+import com.firstpenguin.app.domain.batch.model.QuoteMetadataBatchJob
 import com.firstpenguin.app.domain.batch.service.AdminBatchSecretValidator
 import com.firstpenguin.app.domain.batch.service.OpenAiBatchClient
+import com.firstpenguin.app.domain.batch.service.OutputJsonlParser
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataBatchJsonlBuilder
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataService
+import com.firstpenguin.app.global.enums.BatchJobStatus
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
@@ -18,6 +22,7 @@ class QuoteMetadataBatchUseCase(
     private val quoteMetadataService: QuoteMetadataService,
     private val quoteMetadataBatchJsonlBuilder: QuoteMetadataBatchJsonlBuilder,
     private val openAiBatchClient: OpenAiBatchClient,
+    private val outputJsonlParser: OutputJsonlParser,
     private val quoteMetadataBatchCommandUseCase: QuoteMetadataBatchCommandUseCase,
 ) {
     fun submitBatch(
@@ -69,9 +74,39 @@ class QuoteMetadataBatchUseCase(
         return quoteMetadataService.getStatus()
     }
 
+    fun syncBatchResult(
+        adminSecret: String?,
+        jobId: Long,
+    ): QuoteMetadataBatchStatusResponse {
+        adminBatchSecretValidator.validate(adminSecret)
+
+        val job =
+            quoteMetadataService.getJob(jobId)
+                ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+        val batch = syncJobStatus(job) ?: return quoteMetadataService.getStatus()
+
+        if (batch.status != BatchJobStatus.COMPLETED || batch.outputFileId == null) {
+            return quoteMetadataService.getStatus()
+        }
+
+        val outputJsonl = openAiBatchClient.fetchBatchOutputJsonl(batch.outputFileId)
+        val parsedResults = outputJsonlParser.parseBatchOutputJsonl(outputJsonl)
+
+        quoteMetadataBatchCommandUseCase.saveBatchResults(
+            jobId = job.id,
+            results = parsedResults,
+        )
+
+        return quoteMetadataService.getStatus()
+    }
+
     private fun syncActiveJobStatus() {
         val activeJob = quoteMetadataService.getActiveJob() ?: return
-        val openAiBatchId = activeJob.openAiBatchId ?: return
+        syncJobStatus(activeJob)
+    }
+
+    private fun syncJobStatus(job: QuoteMetadataBatchJob): OpenAiBatchStatusResponse? {
+        val openAiBatchId = job.openAiBatchId ?: return null
 
         val batch =
             runCatching {
@@ -81,9 +116,11 @@ class QuoteMetadataBatchUseCase(
             }
 
         quoteMetadataBatchCommandUseCase.syncBatchStatus(
-            jobId = activeJob.id,
+            jobId = job.id,
             batch = batch,
         )
+
+        return batch
     }
 
     private fun Throwable.toOpenAiBatchException(): Throwable {

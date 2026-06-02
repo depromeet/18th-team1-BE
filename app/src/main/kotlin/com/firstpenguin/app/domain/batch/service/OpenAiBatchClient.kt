@@ -62,7 +62,10 @@ class OpenAiBatchClient(
                 ).retrieve()
                 .body<Map<String, Any?>>()!!
 
-        return response.toOpenAiBatchResponse()
+        return OpenAiBatchResponse(
+            id = response.getValue("id").toString(),
+            status = BatchJobStatus.from(response.getValue("status").toString()),
+        )
     }
 
     fun getStatus(batchId: String): OpenAiBatchStatusResponse {
@@ -81,9 +84,11 @@ class OpenAiBatchClient(
         )
     }
 
-    private fun Map<String, Any?>.toOpenAiBatchResponse(): OpenAiBatchResponse =
-        OpenAiBatchResponse(
-            id = getValue("id").toString(),
-            status = BatchJobStatus.from(getValue("status").toString()),
-        )
+    fun fetchBatchOutputJsonl(outputFileId: String): String =
+        restClient
+            .get()
+            .uri("/files/{outputFileId}/content", outputFileId)
+            .retrieve()
+            .body<String>()
+            ?: ""
 }

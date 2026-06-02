@@ -56,6 +56,22 @@ class QuoteMetadataBatchItemRepository(
             .execute()
     }
 
+    fun updateQuoteMetadataBatchItemStatus(
+        jobId: Long,
+        quoteId: Long,
+        status: BatchItemStatus,
+        errorMessage: String? = null,
+    ) {
+        dsl
+            .update(QuoteMetadataBatchItemTable.QUOTE_METADATA_BATCH_ITEMS)
+            .set(QuoteMetadataBatchItemTable.STATUS, status.name)
+            .set(QuoteMetadataBatchItemTable.ERROR_MESSAGE, errorMessage)
+            .set(QuoteMetadataBatchItemTable.UPDATED_AT, LocalDateTime.now())
+            .where(QuoteMetadataBatchItemTable.JOB_ID.eq(jobId))
+            .and(QuoteMetadataBatchItemTable.QUOTE_ID.eq(quoteId))
+            .execute()
+    }
+
     private fun countItemsWithoutMetadata(statuses: List<BatchItemStatus>): Int =
         dsl
             .select(DSL.countDistinct(QuoteMetadataBatchItemTable.QUOTE_ID))

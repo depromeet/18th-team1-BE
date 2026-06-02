@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.batch.usecase
 
+import com.firstpenguin.app.domain.batch.dto.ParsedBatchQuoteResult
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
@@ -73,6 +74,17 @@ class QuoteMetadataBatchCommandUseCase(
         quoteMetadataService.updateQuoteMetadataBatchJobStatus(
             jobId = jobId,
             batch = batch,
+        )
+    }
+
+    @Transactional
+    fun saveBatchResults(
+        jobId: Long,
+        results: List<ParsedBatchQuoteResult>,
+    ) {
+        quoteMetadataService.saveBatchResults(
+            jobId = jobId,
+            results = results,
         )
     }
 }

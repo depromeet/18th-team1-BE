@@ -8,6 +8,7 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -80,12 +81,29 @@ class QuoteMetadataBatchJobRepository(
             .set(QuoteMetadataBatchJobTable.UPDATED_AT, now)
             .apply {
                 if (status.isTerminal()) {
-                    set(QuoteMetadataBatchJobTable.COMPLETED_AT, now)
+                    set(
+                        QuoteMetadataBatchJobTable.COMPLETED_AT,
+                        DSL.coalesce(QuoteMetadataBatchJobTable.COMPLETED_AT, now),
+                    )
                 }
                 if (status.isFailedTerminal()) {
                     set(QuoteMetadataBatchJobTable.FAILED_COUNT, QuoteMetadataBatchJobTable.SUBMITTED_COUNT)
                 }
             }.where(QuoteMetadataBatchJobTable.ID.eq(jobId))
+            .execute()
+    }
+
+    fun updateQuoteMetadataBatchJobCounts(
+        jobId: Long,
+        succeededCount: Int,
+        failedCount: Int,
+    ) {
+        dsl
+            .update(QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS)
+            .set(QuoteMetadataBatchJobTable.SUCCEEDED_COUNT, succeededCount)
+            .set(QuoteMetadataBatchJobTable.FAILED_COUNT, failedCount)
+            .set(QuoteMetadataBatchJobTable.UPDATED_AT, LocalDateTime.now())
+            .where(QuoteMetadataBatchJobTable.ID.eq(jobId))
             .execute()
     }
 
@@ -117,6 +135,13 @@ class QuoteMetadataBatchJobRepository(
                 ),
             ).orderBy(QuoteMetadataBatchJobTable.CREATED_AT.desc())
             .limit(1)
+            .fetchOne(::toQuoteMetadataBatchJob)
+
+    fun findById(jobId: Long): QuoteMetadataBatchJob? =
+        dsl
+            .select(QUOTE_METADATA_BATCH_JOBS_FIELDS)
+            .from(QuoteMetadataBatchJobTable.QUOTE_METADATA_BATCH_JOBS)
+            .where(QuoteMetadataBatchJobTable.ID.eq(jobId))
             .fetchOne(::toQuoteMetadataBatchJob)
 
     private fun toQuoteMetadataBatchJob(record: Record): QuoteMetadataBatchJob =
