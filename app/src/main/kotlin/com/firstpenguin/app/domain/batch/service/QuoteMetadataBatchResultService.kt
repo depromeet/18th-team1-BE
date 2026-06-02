@@ -1,12 +1,14 @@
 package com.firstpenguin.app.domain.batch.service
 
 import com.firstpenguin.app.domain.batch.dto.ParsedBatchQuoteResult
+import com.firstpenguin.app.domain.batch.model.QuoteMetadataBatchJob
 import com.firstpenguin.app.domain.batch.repository.QuoteMetadataBatchItemRepository
 import com.firstpenguin.app.domain.batch.repository.QuoteMetadataBatchJobRepository
 import com.firstpenguin.app.domain.batch.repository.QuoteMetadataRepository
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
-import com.firstpenguin.app.global.enums.QuoteMetadataBatchModelVersion
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,8 +22,13 @@ class QuoteMetadataBatchResultService(
         jobId: Long,
         results: List<ParsedBatchQuoteResult>,
     ) {
+        val job = findJob(jobId)
+        if (markFailedWhenQuoteIdMissing(jobId, results)) {
+            return
+        }
+
         val tagIdByCode = getTagIdByCode()
-        val statuses = results.map { result -> saveBatchResult(jobId, result, tagIdByCode) }
+        val statuses = results.map { result -> saveBatchResult(job, result, tagIdByCode) }
 
         quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobCounts(
             jobId = jobId,
@@ -31,40 +38,74 @@ class QuoteMetadataBatchResultService(
     }
 
     private fun saveBatchResult(
-        jobId: Long,
+        job: QuoteMetadataBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus =
         when {
-            result.quoteId == null -> BatchItemStatus.FAILED
-            result.errorMessage != null -> saveFailedBatchResult(jobId, result.quoteId, result.errorMessage)
-            else -> saveParsedBatchResult(jobId, result, tagIdByCode)
+            result.errorMessage != null -> {
+                saveFailedBatchResult(
+                    jobId = job.id,
+                    quoteId = requireNotNull(result.quoteId),
+                    errorMessage = result.errorMessage,
+                )
+            }
+
+            else -> {
+                saveParsedBatchResult(job, result, tagIdByCode)
+            }
         }
 
     private fun saveParsedBatchResult(
-        jobId: Long,
+        job: QuoteMetadataBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus =
         runCatching {
-            saveSucceededBatchResult(jobId, result, tagIdByCode)
+            saveSucceededBatchResult(job, result, tagIdByCode)
         }.getOrElse { exception ->
-            saveFailedBatchResult(jobId, requireNotNull(result.quoteId), exception.message)
+            saveFailedBatchResult(job.id, requireNotNull(result.quoteId), exception.message)
         }
 
     private fun saveSucceededBatchResult(
-        jobId: Long,
+        job: QuoteMetadataBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus {
-        val metadata = result.toQuoteMetadata(QuoteMetadataBatchModelVersion.V1)
+        val metadata = result.toQuoteMetadata(job.metadataModel, job.metadataVersion)
         val metadataId = quoteMetadataRepository.upsertQuoteMetadata(metadata)
         val tags = result.toQuoteMetadataTags(metadataId, tagIdByCode)
 
         quoteMetadataRepository.replaceQuoteMetadataTags(metadataId, tags)
-        updateBatchItemStatus(jobId, requireNotNull(result.quoteId), BatchItemStatus.SUCCEEDED)
+        updateBatchItemStatus(job.id, requireNotNull(result.quoteId), BatchItemStatus.SUCCEEDED)
 
         return BatchItemStatus.SUCCEEDED
+    }
+
+    private fun findJob(jobId: Long): QuoteMetadataBatchJob =
+        quoteMetadataBatchJobRepository.findById(jobId)
+            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+
+    private fun markFailedWhenQuoteIdMissing(
+        jobId: Long,
+        results: List<ParsedBatchQuoteResult>,
+    ): Boolean {
+        val result = results.firstOrNull { batchResult -> batchResult.quoteId == null }
+        result?.let { missingResult -> markWholeJobFailed(jobId, missingResult) }
+        return result != null
+    }
+
+    private fun markWholeJobFailed(
+        jobId: Long,
+        result: ParsedBatchQuoteResult,
+    ) {
+        val errorMessage = "Batch output has no quoteId: ${result.customId}"
+        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobAsFailed(jobId)
+        quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
+            jobId = jobId,
+            status = BatchItemStatus.FAILED,
+            errorMessage = errorMessage,
+        )
     }
 
     private fun saveFailedBatchResult(
