@@ -8,19 +8,33 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
 import java.nio.file.Files
+import java.time.Duration
+
+private const val OPENAI_BASE_URL = "https://api.openai.com/v1"
+private const val API_KEY_REQUIRED_MESSAGE = "openai.api-key must not be blank"
+private const val OPENAI_CONNECT_TIMEOUT_SECONDS = 5L
+private const val OPENAI_READ_TIMEOUT_MINUTES = 5L
+private val OPENAI_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(OPENAI_CONNECT_TIMEOUT_SECONDS)
+private val OPENAI_READ_TIMEOUT: Duration = Duration.ofMinutes(OPENAI_READ_TIMEOUT_MINUTES)
 
 @Component
 class OpenAiBatchClient(
     @Value("\${openai.api-key:}") private val apiKey: String,
 ) {
+    init {
+        require(apiKey.isNotBlank()) { API_KEY_REQUIRED_MESSAGE }
+    }
+
     private val restClient =
         RestClient
             .builder()
-            .baseUrl("https://api.openai.com/v1")
+            .baseUrl(OPENAI_BASE_URL)
+            .requestFactory(openAiRequestFactory())
             .defaultHeader("Authorization", "Bearer $apiKey")
             .build()
 
@@ -91,4 +105,10 @@ class OpenAiBatchClient(
             .retrieve()
             .body<String>()
             ?: ""
+
+    private fun openAiRequestFactory(): SimpleClientHttpRequestFactory =
+        SimpleClientHttpRequestFactory().apply {
+            setConnectTimeout(OPENAI_CONNECT_TIMEOUT)
+            setReadTimeout(OPENAI_READ_TIMEOUT)
+        }
 }
