@@ -22,7 +22,10 @@ class UserRepository(
             .where(UserTable.ID.eq(id))
             .fetchOne(::toUser)
 
-    fun upsertOAuthUser(profile: OAuthUserProfile): User {
+    fun upsertOAuthUser(
+        profile: OAuthUserProfile,
+        nickname: String,
+    ): User {
         val now = LocalDateTime.now()
 
         return dsl
@@ -30,7 +33,8 @@ class UserRepository(
             .set(UserTable.PROVIDER, profile.provider.name)
             .set(UserTable.PROVIDER_ID, profile.providerId)
             .set(UserTable.EMAIL, profile.email)
-            .set(UserTable.NICKNAME, profile.nickname)
+            .set(UserTable.PROVIDER_DISPLAY_NAME, profile.providerDisplayName)
+            .set(UserTable.NICKNAME, nickname)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
             .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.CREATED_AT, now)
@@ -38,7 +42,7 @@ class UserRepository(
             .onConflict(PROVIDER_CONFLICT_TARGET, PROVIDER_ID_CONFLICT_TARGET)
             .doUpdate()
             .set(UserTable.EMAIL, DSL.coalesce(DSL.excluded(UserTable.EMAIL), UserTable.EMAIL))
-            .set(UserTable.NICKNAME, DSL.excluded(UserTable.NICKNAME))
+            .set(UserTable.PROVIDER_DISPLAY_NAME, DSL.excluded(UserTable.PROVIDER_DISPLAY_NAME))
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
             .set(UserTable.DELETED_AT, null as LocalDateTime?)
             .set(UserTable.LAST_LOGIN_AT, now)
@@ -60,12 +64,26 @@ class UserRepository(
         step.where(UserTable.ID.eq(id)).execute()
     }
 
+    fun existsByNickname(
+        nickname: String,
+        excludedUserId: Long,
+    ): Boolean =
+        dsl.fetchExists(
+            dsl
+                .selectOne()
+                .from(UserTable.USERS)
+                .where(UserTable.NICKNAME.eq(nickname))
+                .and(UserTable.ID.ne(excludedUserId))
+                .and(UserTable.DELETED_AT.isNull),
+        )
+
     private fun toUser(record: Record): User =
         User(
             id = record.get(UserTable.ID),
             provider = Provider.valueOf(record.get(UserTable.PROVIDER)),
             providerId = record.get(UserTable.PROVIDER_ID),
             email = record.get(UserTable.EMAIL),
+            providerDisplayName = record.get(UserTable.PROVIDER_DISPLAY_NAME),
             nickname = record.get(UserTable.NICKNAME),
             profileImageId = record.get(UserTable.PROFILE_IMAGE_ID),
             status = UserStatus.valueOf(record.get(UserTable.STATUS)),
@@ -85,6 +103,7 @@ class UserRepository(
                 UserTable.PROVIDER,
                 UserTable.PROVIDER_ID,
                 UserTable.EMAIL,
+                UserTable.PROVIDER_DISPLAY_NAME,
                 UserTable.NICKNAME,
                 UserTable.PROFILE_IMAGE_ID,
                 UserTable.STATUS,

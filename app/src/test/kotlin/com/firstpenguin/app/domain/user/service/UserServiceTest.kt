@@ -9,6 +9,7 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -67,6 +68,49 @@ class UserServiceTest {
         userService.validateAuthenticatableUser(USER_ID)
     }
 
+    @Test
+    fun `프로필 수정 시 닉네임이 이미 존재하면 실패한다`() {
+        Mockito.`when`(userRepository.existsByNickname(DUPLICATE_NICKNAME, USER_ID)).thenReturn(true)
+
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateProfile(USER_ID, DUPLICATE_NICKNAME, null)
+            }
+
+        assertEquals(ErrorCode.NICKNAME_ALREADY_EXISTS, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).update(USER_ID, DUPLICATE_NICKNAME, null)
+    }
+
+    @Test
+    fun `프로필 수정 중 닉네임 unique 충돌이 발생하면 닉네임 중복 예외로 변환한다`() {
+        Mockito
+            .doThrow(nicknameDuplicateException())
+            .`when`(userRepository)
+            .update(USER_ID, DUPLICATE_NICKNAME, null)
+
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateProfile(USER_ID, DUPLICATE_NICKNAME, null)
+            }
+
+        assertEquals(ErrorCode.NICKNAME_ALREADY_EXISTS, exception.errorCode)
+    }
+
+    @Test
+    fun `닉네임 수정 요청이 아니면 중복 예외를 변환하지 않는다`() {
+        Mockito
+            .doThrow(DuplicateKeyException("unexpected_unique_idx"))
+            .`when`(userRepository)
+            .update(USER_ID, null, PROFILE_IMAGE_ID)
+
+        assertFailsWith<DuplicateKeyException> {
+            userService.updateProfile(USER_ID, null, PROFILE_IMAGE_ID)
+        }
+    }
+
+    private fun nicknameDuplicateException(): DuplicateKeyException =
+        DuplicateKeyException("duplicate key value violates unique constraint \"$USER_NICKNAME_UNIQUE_INDEX_NAME\"")
+
     private fun user(
         status: UserStatus = UserStatus.ACTIVE,
         deletedAt: LocalDateTime? = null,
@@ -78,6 +122,7 @@ class UserServiceTest {
             provider = Provider.KAKAO,
             providerId = "provider-id",
             email = "user@example.com",
+            providerDisplayName = "provider user",
             nickname = "penguin",
             profileImageId = null,
             status = status,
@@ -90,5 +135,8 @@ class UserServiceTest {
 
     private companion object {
         const val USER_ID = 1L
+        const val PROFILE_IMAGE_ID = 10L
+        const val DUPLICATE_NICKNAME = "조용한토끼"
+        const val USER_NICKNAME_UNIQUE_INDEX_NAME = "users_nickname_unique_idx"
     }
 }

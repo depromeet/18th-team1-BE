@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.user.model.UserStatus
 import com.firstpenguin.app.domain.user.repository.UserRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
 @Service
@@ -19,15 +20,32 @@ class UserService(
         validateAuthenticatableStatus(user)
     }
 
-    fun upsertOAuthUser(profile: OAuthUserProfile): User = userRepository.upsertOAuthUser(profile)
+    fun upsertOAuthUser(
+        profile: OAuthUserProfile,
+        nickname: String,
+    ): User = userRepository.upsertOAuthUser(profile, nickname)
 
     fun updateProfile(
         userId: Long,
         nickname: String?,
         profileImageId: Long?,
     ) {
-        if (nickname != null && nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
-        userRepository.update(userId, nickname, profileImageId)
+        nickname?.let { validateNicknameAvailable(userId, it) }
+
+        try {
+            userRepository.update(userId, nickname, profileImageId)
+        } catch (e: DuplicateKeyException) {
+            if (nickname == null) throw e
+            throw CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS).also { it.initCause(e) }
+        }
+    }
+
+    private fun validateNicknameAvailable(
+        userId: Long,
+        nickname: String,
+    ) {
+        if (nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
+        if (userRepository.existsByNickname(nickname, userId)) throw CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS)
     }
 
     private fun validateAuthenticatableStatus(user: User) {

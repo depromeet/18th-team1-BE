@@ -13,17 +13,18 @@ class DevAuthUseCase(
     private val jwtTokenProvider: JwtTokenProvider,
 ) {
     fun issueDevToken(): AccessTokenResponse {
-        val devUser = userRepository.upsertOAuthUser(DEV_USER_PROFILE)
+        val devUser = userRepository.upsertOAuthUser(DEV_USER_PROFILE, DEV_USER_NICKNAME)
         return AccessTokenResponse(jwtTokenProvider.createAccessToken(devUser))
     }
 
     private companion object {
+        const val DEV_USER_NICKNAME = "개발자"
         val DEV_USER_PROFILE =
             OAuthUserProfile(
                 provider = Provider.KAKAO,
                 providerId = "dev-user",
                 email = "dev@firstpenguin.com",
-                nickname = "개발자",
+                providerDisplayName = "개발자",
             )
     }
 }

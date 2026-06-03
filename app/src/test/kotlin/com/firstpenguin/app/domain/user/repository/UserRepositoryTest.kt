@@ -30,7 +30,7 @@ class UserRepositoryTest {
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
 
-        UserRepository(dsl).upsertOAuthUser(OAUTH_USER_PROFILE)
+        UserRepository(dsl).upsertOAuthUser(OAUTH_USER_PROFILE, OAUTH_USER_NICKNAME)
 
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
         assertTrue(
@@ -56,6 +56,7 @@ class UserRepositoryTest {
             set(UserTable.PROVIDER, Provider.KAKAO.name)
             set(UserTable.PROVIDER_ID, "dev-user")
             set(UserTable.EMAIL, "dev@firstpenguin.com")
+            set(UserTable.PROVIDER_DISPLAY_NAME, "개발자")
             set(UserTable.NICKNAME, "개발자")
             set(UserTable.PROFILE_IMAGE_ID, null as Long?)
             set(UserTable.STATUS, UserStatus.ACTIVE.name)
@@ -68,12 +69,13 @@ class UserRepositoryTest {
 
     private companion object {
         const val USER_ID = 1L
+        const val OAUTH_USER_NICKNAME = "랜덤펭귄"
         val OAUTH_USER_PROFILE =
             OAuthUserProfile(
                 provider = Provider.KAKAO,
                 providerId = "dev-user",
                 email = "dev@firstpenguin.com",
-                nickname = "개발자",
+                providerDisplayName = "개발자",
             )
         val USER_FIELDS: Array<Field<*>> =
             arrayOf(
@@ -81,6 +83,7 @@ class UserRepositoryTest {
                 UserTable.PROVIDER,
                 UserTable.PROVIDER_ID,
                 UserTable.EMAIL,
+                UserTable.PROVIDER_DISPLAY_NAME,
                 UserTable.NICKNAME,
                 UserTable.PROFILE_IMAGE_ID,
                 UserTable.STATUS,
