@@ -7,9 +7,18 @@ spring:
   jooq:
     sql-dialect: postgres
 
+  flyway:
+    enabled: false
+
 auth:
   jwt:
     secret: test-jwt-secret
+
+openai:
+  api-key: test-openai-api-key
+
+batch:
+  admin-secret: test-admin-batch-secret
 
 cloud:
   provider: none
