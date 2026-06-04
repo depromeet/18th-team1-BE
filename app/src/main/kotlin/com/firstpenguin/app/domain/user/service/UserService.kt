@@ -20,10 +20,28 @@ class UserService(
         validateAuthenticatableStatus(user)
     }
 
-    fun upsertOAuthUser(
+    fun findOAuthUser(profile: OAuthUserProfile): User? =
+        userRepository.findByProviderAndProviderId(
+            profile.provider,
+            profile.providerId,
+        )
+
+    fun createOAuthUser(
         profile: OAuthUserProfile,
         nickname: String,
-    ): User = userRepository.upsertOAuthUser(profile, nickname)
+    ): User? = userRepository.createOAuthUser(profile, nickname)
+
+    fun updateOAuthLogin(
+        user: User,
+        profile: OAuthUserProfile,
+    ): User {
+        validateOAuthUserMatchesProfile(user, profile)
+        validateAuthenticatableStatus(user)
+        return updateOAuthLogin(profile)
+    }
+
+    private fun updateOAuthLogin(profile: OAuthUserProfile): User =
+        userRepository.updateOAuthLogin(profile) ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
 
     fun updateProfile(
         userId: Long,
@@ -46,6 +64,14 @@ class UserService(
     ) {
         if (nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
         if (userRepository.existsByNickname(nickname, userId)) throw CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS)
+    }
+
+    private fun validateOAuthUserMatchesProfile(
+        user: User,
+        profile: OAuthUserProfile,
+    ) {
+        if (user.provider == profile.provider && user.providerId == profile.providerId) return
+        throw CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
     }
 
     private fun validateAuthenticatableStatus(user: User) {

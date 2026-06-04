@@ -6,7 +6,6 @@ import com.firstpenguin.app.domain.user.service.UserNicknameGenerator
 import com.firstpenguin.app.domain.user.service.UserService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
-import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -16,23 +15,25 @@ class OAuthUserUseCase(
     private val userService: UserService,
 ) {
     @Transactional
-    fun upsertOAuthUser(profile: OAuthUserProfile): User {
+    fun loginOAuthUser(profile: OAuthUserProfile): User {
+        val user = userService.findOAuthUser(profile)
+        if (user != null) {
+            return userService.updateOAuthLogin(user, profile)
+        }
+
+        return createOAuthUser(profile)
+    }
+
+    private fun createOAuthUser(profile: OAuthUserProfile): User {
         repeat(NICKNAME_GENERATION_MAX_ATTEMPT_COUNT) {
-            try {
-                return userService.upsertOAuthUser(profile, userNicknameGenerator.generate())
-            } catch (e: DuplicateKeyException) {
-                if (!e.isNicknameConflict()) throw e
-            }
+            userService.createOAuthUser(profile, userNicknameGenerator.generate())?.let { return it }
+            val user = userService.findOAuthUser(profile)
+            if (user != null) return userService.updateOAuthLogin(user, profile)
         }
         throw CustomException(ErrorCode.NICKNAME_GENERATION_FAILED)
     }
 
-    private fun DuplicateKeyException.isNicknameConflict(): Boolean =
-        listOfNotNull(message, rootCause?.message, mostSpecificCause.message)
-            .any { it.contains(USER_NICKNAME_UNIQUE_INDEX_NAME) }
-
     private companion object {
         const val NICKNAME_GENERATION_MAX_ATTEMPT_COUNT = 10
-        const val USER_NICKNAME_UNIQUE_INDEX_NAME = "users_nickname_unique_idx"
     }
 }
