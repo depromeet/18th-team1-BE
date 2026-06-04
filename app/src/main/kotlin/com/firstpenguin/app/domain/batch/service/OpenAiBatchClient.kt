@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
 import com.firstpenguin.app.global.enums.BatchJobStatus
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
@@ -16,7 +17,6 @@ import java.nio.file.Files
 import java.time.Duration
 
 private const val OPENAI_BASE_URL = "https://api.openai.com/v1"
-private const val API_KEY_REQUIRED_MESSAGE = "openai.api-key must not be blank"
 private const val OPENAI_CONNECT_TIMEOUT_SECONDS = 5L
 private const val OPENAI_READ_TIMEOUT_MINUTES = 5L
 private val OPENAI_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(OPENAI_CONNECT_TIMEOUT_SECONDS)
@@ -27,7 +27,7 @@ class OpenAiBatchClient(
     @Value("\${openai.api-key:}") private val apiKey: String,
 ) {
     init {
-        require(apiKey.isNotBlank()) { API_KEY_REQUIRED_MESSAGE }
+        require(apiKey.isNotBlank()) { ErrorCode.OPENAI_API_KEY_REQUIRED.message }
     }
 
     private val restClient =
