@@ -28,8 +28,9 @@ private val QUOTE_METADATA_PROMPT_GUIDE =
 10. situationTagCodes는 실제 삶의 문제, 사건, 관계, 주제가 드러날 때만 선택하라.
 11. 추상적 은유, 상징, 비유만으로 contextTagCodes나 situationTagCodes를 선택하지 마라.
 12. 개수를 채우기 위해 약한 태그를 선택하지 마라.
-13. 관련성이 약하면 빈 배열을 반환하라.
-14. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
+13. 같은 배열 안에서 동일한 tagCode를 중복 선택하지 마라.
+14. 관련성이 약하면 빈 배열을 반환하라.
+15. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
 
 [roleTagCode 세부 기준]
 - 감정을 알아주거나 공감하는 의미가 가장 강하면 ROLE_EMPATHY를 선택한다.
