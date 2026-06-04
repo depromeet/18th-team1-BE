@@ -109,6 +109,7 @@ class SecurityConfig(
 
         val PERMIT_ALL_PATTERNS =
             arrayOf(
+                "/admin/**",
                 "/auth/refresh",
                 "/auth/logout",
                 "/auth/dev-token",

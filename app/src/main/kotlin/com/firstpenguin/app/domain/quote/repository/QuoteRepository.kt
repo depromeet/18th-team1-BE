@@ -17,6 +17,7 @@ class QuoteRepository(
             .select(QUOTE_FIELDS)
             .from(QuoteTable.QUOTES)
             .where(QuoteTable.ID.eq(id))
+            .and(QuoteTable.DELETED_AT.isNull)
             .fetchOne(::toQuote)
 
     fun getMaxQuoteId(): Long =
