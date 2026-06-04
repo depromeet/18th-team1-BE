@@ -11,7 +11,7 @@ private const val SUCCESS_STATUS_CODE_MAX = 299
 private const val OUTPUT_TEXT_TYPE = "output_text"
 
 @Component
-class OutputJsonlParser(
+class QuoteMetadataBatchOutputParser(
     private val objectMapper: ObjectMapper,
 ) {
     fun parseBatchOutputJsonl(jsonl: String): List<ParsedBatchQuoteResult> =

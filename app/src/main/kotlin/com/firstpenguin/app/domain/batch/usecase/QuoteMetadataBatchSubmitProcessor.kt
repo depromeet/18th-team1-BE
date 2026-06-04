@@ -3,7 +3,7 @@ package com.firstpenguin.app.domain.batch.usecase
 import com.firstpenguin.app.domain.batch.dto.QuoteMetadataBatchSubmitResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiBatchResponse
 import com.firstpenguin.app.domain.batch.dto.ai.OpenAiFileResponse
-import com.firstpenguin.app.domain.batch.service.OpenAiBatchClient
+import com.firstpenguin.app.domain.batch.service.QuoteMetadataBatchClient
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataBatchJsonlBuilder
 import com.firstpenguin.app.domain.batch.service.QuoteMetadataService
 import org.springframework.stereotype.Component
@@ -12,10 +12,15 @@ import org.springframework.stereotype.Component
 class QuoteMetadataBatchSubmitProcessor(
     private val quoteMetadataService: QuoteMetadataService,
     private val quoteMetadataBatchJsonlBuilder: QuoteMetadataBatchJsonlBuilder,
-    private val openAiBatchClient: OpenAiBatchClient,
+    private val quoteMetadataBatchClient: QuoteMetadataBatchClient,
     private val quoteMetadataBatchCommandUseCase: QuoteMetadataBatchCommandUseCase,
 ) {
-    fun submit(preparedBatch: PreparedQuoteMetadataBatch): QuoteMetadataBatchSubmitResponse =
+    fun submit(limit: Int): QuoteMetadataBatchSubmitResponse {
+        val preparedBatch = quoteMetadataBatchCommandUseCase.prepareBatch(limit = limit)
+        return submitPreparedBatch(preparedBatch)
+    }
+
+    private fun submitPreparedBatch(preparedBatch: PreparedQuoteMetadataBatch): QuoteMetadataBatchSubmitResponse =
         runCatching {
             createSubmittedBatch(preparedBatch)
         }.getOrElse { exception ->
@@ -23,8 +28,8 @@ class QuoteMetadataBatchSubmitProcessor(
         }
 
     private fun createSubmittedBatch(preparedBatch: PreparedQuoteMetadataBatch): QuoteMetadataBatchSubmitResponse {
-        val inputFile = openAiBatchClient.uploadBatchInput(buildBatchInput(preparedBatch))
-        val batch = openAiBatchClient.createBatch(inputFile.id)
+        val inputFile = quoteMetadataBatchClient.uploadBatchInput(buildBatchInput(preparedBatch))
+        val batch = quoteMetadataBatchClient.createBatch(inputFile.id)
 
         markBatchSubmitted(preparedBatch.jobId, batch, inputFile)
         return QuoteMetadataBatchSubmitResponse(preparedBatch.jobId, batch.id)
