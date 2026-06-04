@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.batch.service
 
 import com.firstpenguin.app.domain.batch.dto.ParsedBatchQuoteResult
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
@@ -8,7 +9,6 @@ import tools.jackson.databind.ObjectMapper
 private const val SUCCESS_STATUS_CODE_MIN = 200
 private const val SUCCESS_STATUS_CODE_MAX = 299
 private const val OUTPUT_TEXT_TYPE = "output_text"
-private const val OUTPUT_TEXT_NOT_FOUND_MESSAGE = "output_text not found"
 
 @Component
 class OutputJsonlParser(
@@ -42,7 +42,11 @@ class OutputJsonlParser(
         val outputText = root.outputText()
 
         return if (outputText.isNullOrBlank()) {
-            toErrorParsedBatchQuoteResult(customId, quoteId, OUTPUT_TEXT_NOT_FOUND_MESSAGE)
+            toErrorParsedBatchQuoteResult(
+                customId = customId,
+                quoteId = quoteId,
+                errorMessage = ErrorCode.QUOTE_METADATA_BATCH_OUTPUT_TEXT_NOT_FOUND.message,
+            )
         } else {
             parseMetadataOutputText(customId, quoteId, outputText)
         }
