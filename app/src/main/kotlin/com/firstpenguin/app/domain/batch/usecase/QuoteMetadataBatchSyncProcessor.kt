@@ -17,6 +17,7 @@ class QuoteMetadataBatchSyncProcessor(
     private val quoteMetadataBatchCommandUseCase: QuoteMetadataBatchCommandUseCase,
     private val quoteMetadataBatchClient: QuoteMetadataBatchClient,
     private val quoteMetadataBatchOutputParser: QuoteMetadataBatchOutputParser,
+    private val quoteEmbeddingBulkProcessor: QuoteEmbeddingBulkProcessor,
 ) {
     fun syncActiveJobStatus() {
         val activeJob = quoteMetadataBatchStatusService.getActiveJob() ?: return
@@ -62,6 +63,7 @@ class QuoteMetadataBatchSyncProcessor(
         val outputJsonl = quoteMetadataBatchClient.fetchBatchOutputJsonl(outputFileId)
         val parsedResults = quoteMetadataBatchOutputParser.parseBatchOutputJsonl(outputJsonl)
         quoteMetadataBatchCommandUseCase.saveBatchResults(jobId, parsedResults)
+        quoteEmbeddingBulkProcessor.embedMetadataByJobId(jobId)
     }
 
     private fun OpenAiBatchStatusResponse.completedOutputFileId(): String? {
