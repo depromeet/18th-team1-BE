@@ -23,7 +23,7 @@ private val OPENAI_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(OPENAI_CONNECT
 private val OPENAI_READ_TIMEOUT: Duration = Duration.ofMinutes(OPENAI_READ_TIMEOUT_MINUTES)
 
 @Component
-class OpenAiBatchClient(
+class QuoteMetadataBatchClient(
     @Value("\${openai.api-key:}") private val apiKey: String,
 ) {
     init {
