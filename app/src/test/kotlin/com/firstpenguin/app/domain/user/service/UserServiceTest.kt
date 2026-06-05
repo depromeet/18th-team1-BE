@@ -141,6 +141,18 @@ class UserServiceTest {
     }
 
     @Test
+    fun `프로필 수정 시 예약 닉네임이면 실패한다`() {
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateProfile(USER_ID, DEV_USER_NICKNAME, null)
+            }
+
+        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).existsByNickname(DEV_USER_NICKNAME, USER_ID)
+        Mockito.verify(userRepository, Mockito.never()).update(USER_ID, DEV_USER_NICKNAME, null)
+    }
+
+    @Test
     fun `프로필 수정 중 닉네임 unique 충돌이 발생하면 닉네임 중복 예외로 변환한다`() {
         Mockito
             .doThrow(nicknameDuplicateException())
@@ -195,6 +207,7 @@ class UserServiceTest {
     private companion object {
         const val USER_ID = 1L
         const val PROFILE_IMAGE_ID = 10L
+        const val DEV_USER_NICKNAME = "개발자"
         const val DUPLICATE_NICKNAME = "조용한토끼"
         const val USER_NICKNAME_UNIQUE_INDEX_NAME = "users_nickname_unique_idx"
         val OAUTH_USER_PROFILE =

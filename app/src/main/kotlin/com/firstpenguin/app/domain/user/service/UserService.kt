@@ -63,6 +63,7 @@ class UserService(
         nickname: String,
     ) {
         if (nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
+        if (nickname in RESERVED_NICKNAMES) throw CustomException(ErrorCode.INVALID_INPUT)
         if (userRepository.existsByNickname(nickname, userId)) throw CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS)
     }
 
@@ -90,4 +91,8 @@ class UserService(
             UserStatus.BLOCKED -> ErrorCode.AUTH_USER_BLOCKED
             UserStatus.DELETED -> ErrorCode.AUTH_USER_DELETED
         }
+
+    private companion object {
+        val RESERVED_NICKNAMES = setOf("개발자")
+    }
 }
