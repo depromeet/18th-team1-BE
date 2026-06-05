@@ -3,8 +3,8 @@ package com.firstpenguin.app.domain.embedding.usecase
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbedding
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbeddingTarget
 import com.firstpenguin.app.domain.embedding.repository.QuoteEmbeddingRepository
-import com.firstpenguin.app.domain.embedding.service.OpenAiEmbeddingClient
-import com.firstpenguin.app.global.enums.QuoteEmbeddingModelVersion
+import com.firstpenguin.app.domain.openai.model.OpenAiEmbeddingModelVersion
+import com.firstpenguin.app.domain.openai.service.OpenAiEmbeddingClient
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
@@ -29,7 +29,7 @@ class QuoteEmbeddingBulkProcessor(
 
     private fun findEmbeddingTargets(jobId: Long): List<QuoteEmbeddingTarget> =
         quoteEmbeddingRepository
-            .findMetadataTargetsByJobId(jobId, QuoteEmbeddingModelVersion.V1.model)
+            .findMetadataTargetsByJobId(jobId, OpenAiEmbeddingModelVersion.V1.model)
             .filter { target -> target.needsEmbedding() }
 
     private fun embedChunk(targets: List<QuoteEmbeddingTarget>) {
@@ -53,7 +53,7 @@ class QuoteEmbeddingBulkProcessor(
     private fun QuoteEmbeddingTarget.toQuoteEmbedding(embedding: List<Double>): QuoteEmbedding =
         QuoteEmbedding(
             quoteId = quoteId,
-            embeddingModel = QuoteEmbeddingModelVersion.V1.model,
+            embeddingModel = OpenAiEmbeddingModelVersion.V1.model,
             embedding = embedding,
             embeddingTextHash = embeddingTextHash(),
         )
