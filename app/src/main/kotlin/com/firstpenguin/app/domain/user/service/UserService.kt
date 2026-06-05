@@ -62,8 +62,7 @@ class UserService(
         userId: Long,
         nickname: String,
     ) {
-        if (nickname.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
-        if (nickname in RESERVED_NICKNAMES) throw CustomException(ErrorCode.INVALID_INPUT)
+        if (nickname.isBlank() || nickname in RESERVED_NICKNAMES) throw CustomException(ErrorCode.INVALID_INPUT)
         if (userRepository.existsByNickname(nickname, userId)) throw CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS)
     }
 
