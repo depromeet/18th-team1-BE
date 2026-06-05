@@ -7,7 +7,7 @@ import com.firstpenguin.app.domain.user.model.UserStatus
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
-import org.jooq.impl.DSL
+import org.jooq.UpdateSetMoreStep
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -22,10 +22,21 @@ class UserRepository(
             .where(UserTable.ID.eq(id))
             .fetchOne(::toUser)
 
-    fun upsertOAuthUser(
+    fun findByProviderAndProviderId(
+        provider: Provider,
+        providerId: String,
+    ): User? =
+        dsl
+            .select(USER_FIELDS)
+            .from(UserTable.USERS)
+            .where(UserTable.PROVIDER.eq(provider.name))
+            .and(UserTable.PROVIDER_ID.eq(providerId))
+            .fetchOne(::toUser)
+
+    fun createOAuthUser(
         profile: OAuthUserProfile,
         nickname: String,
-    ): User {
+    ): User? {
         val now = LocalDateTime.now()
 
         return dsl
@@ -39,18 +50,40 @@ class UserRepository(
             .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.CREATED_AT, now)
             .set(UserTable.UPDATED_AT, now)
-            .onConflict(PROVIDER_CONFLICT_TARGET, PROVIDER_ID_CONFLICT_TARGET)
-            .doUpdate()
-            .set(UserTable.EMAIL, DSL.coalesce(DSL.excluded(UserTable.EMAIL), UserTable.EMAIL))
-            .set(UserTable.PROVIDER_DISPLAY_NAME, DSL.excluded(UserTable.PROVIDER_DISPLAY_NAME))
+            .onConflictDoNothing()
+            .returningResult(USER_FIELDS)
+            .fetchOne(::toUser)
+    }
+
+    fun updateOAuthLogin(profile: OAuthUserProfile): User? {
+        val now = LocalDateTime.now()
+        return oauthLoginUpdateStep(profile, now)
+            .where(UserTable.PROVIDER.eq(profile.provider.name))
+            .and(UserTable.PROVIDER_ID.eq(profile.providerId))
+            .returningResult(USER_FIELDS)
+            .fetchOne(::toUser)
+    }
+
+    private fun oauthLoginUpdateStep(
+        profile: OAuthUserProfile,
+        now: LocalDateTime,
+    ): UpdateSetMoreStep<Record> {
+        var step = baseOAuthLoginUpdateStep(profile, now)
+        profile.email?.let { step = step.set(UserTable.EMAIL, it) }
+        return step
+    }
+
+    private fun baseOAuthLoginUpdateStep(
+        profile: OAuthUserProfile,
+        now: LocalDateTime,
+    ): UpdateSetMoreStep<Record> =
+        dsl
+            .update(UserTable.USERS)
+            .set(UserTable.PROVIDER_DISPLAY_NAME, profile.providerDisplayName)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
             .set(UserTable.DELETED_AT, null as LocalDateTime?)
             .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.UPDATED_AT, now)
-            .returningResult(USER_FIELDS)
-            .fetchOne(::toUser)
-            ?: error("Failed to upsert OAuth user")
-    }
 
     fun update(
         id: Long,
@@ -94,9 +127,6 @@ class UserRepository(
         )
 
     private companion object {
-        val PROVIDER_CONFLICT_TARGET = DSL.field(DSL.name("provider"), String::class.java)
-        val PROVIDER_ID_CONFLICT_TARGET = DSL.field(DSL.name("provider_id"), String::class.java)
-
         val USER_FIELDS: List<Field<*>> =
             listOf(
                 UserTable.ID,

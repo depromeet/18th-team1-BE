@@ -24,7 +24,7 @@ class CustomOidcUserService(
                 email = oidcUser.email,
                 providerDisplayName = providerDisplayName(nickname, externalId),
             )
-        val user = oAuthUserUseCase.upsertOAuthUser(profile)
+        val user = oAuthUserUseCase.loginOAuthUser(profile)
 
         return OidcAuthenticatedUser(user = user, idToken = oidcUser.idToken, userInfo = oidcUser.userInfo)
     }
