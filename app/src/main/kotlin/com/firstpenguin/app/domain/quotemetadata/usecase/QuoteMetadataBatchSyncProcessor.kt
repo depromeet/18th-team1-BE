@@ -21,14 +21,12 @@ class QuoteMetadataBatchSyncProcessor(
 ) {
     fun syncActiveJobStatus() {
         val activeJob = quoteMetadataBatchStatusService.getActiveJob() ?: return
-        syncJobStatus(activeJob)
+        syncCompletedBatchIfReady(activeJob)
     }
 
     fun syncBatchResultIfReady(jobId: Long) {
         val job = findJob(jobId)
-        val batch = syncJobStatus(job)
-        val outputFileId = batch?.completedOutputFileId() ?: return
-        syncCompletedBatchResult(job.id, outputFileId)
+        syncCompletedBatchIfReady(job)
     }
 
     private fun findJob(jobId: Long): QuoteMetadataBatchJob =
@@ -56,20 +54,30 @@ class QuoteMetadataBatchSyncProcessor(
             throw exception.toQuoteMetadataBatchException()
         }
 
+    private fun syncCompletedBatchIfReady(job: QuoteMetadataBatchJob) {
+        val batch = syncJobStatus(job) ?: return
+        val fileIds = batch.completedResultFileIds()
+        if (fileIds.isEmpty()) return
+        syncCompletedBatchResult(job.id, fileIds)
+    }
+
     private fun syncCompletedBatchResult(
         jobId: Long,
-        outputFileId: String,
+        fileIds: List<String>,
     ) {
-        val outputJsonl = openAiBatchClient.fetchBatchOutputJsonl(outputFileId)
-        val parsedResults = quoteMetadataBatchOutputParser.parseBatchOutputJsonl(outputJsonl)
+        val parsedResults = fileIds.flatMap { fileId -> parseBatchResultFile(fileId) }
+        if (parsedResults.isEmpty()) return
         quoteMetadataBatchCommandUseCase.saveBatchResults(jobId, parsedResults)
         quoteEmbeddingBulkProcessor.embedMetadataByJobId(jobId)
     }
 
-    private fun OpenAiBatchStatusResponse.completedOutputFileId(): String? {
-        if (status != BatchJobStatus.COMPLETED) {
-            return null
-        }
-        return outputFileId
+    private fun parseBatchResultFile(fileId: String) =
+        openAiBatchClient
+            .fetchBatchOutputJsonl(fileId)
+            .let { jsonl -> quoteMetadataBatchOutputParser.parseBatchOutputJsonl(jsonl) }
+
+    private fun OpenAiBatchStatusResponse.completedResultFileIds(): List<String> {
+        if (status != BatchJobStatus.COMPLETED) return emptyList()
+        return listOfNotNull(outputFileId, errorFileId)
     }
 }
