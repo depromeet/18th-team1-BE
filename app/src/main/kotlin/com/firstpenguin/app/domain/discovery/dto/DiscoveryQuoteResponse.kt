@@ -1,0 +1,44 @@
+package com.firstpenguin.app.domain.discovery.dto
+
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
+import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDateTime
+
+@Schema(description = "발견탭 문장 응답")
+data class DiscoveryQuoteResponse(
+    @field:Schema(description = "문장 ID", example = "1")
+    val quoteId: Long,
+    @field:Schema(description = "책 ID", example = "1")
+    val bookId: Long,
+    @field:Schema(description = "이 문장을 추천받은 사용자 ID", example = "1")
+    val recommendedUserId: Long,
+    @field:Schema(description = "문장 내용", example = "새는 알에서 나오려고 투쟁한다.")
+    val content: String,
+    @field:Schema(description = "책 제목", example = "데미안")
+    val title: String,
+    @field:Schema(description = "저자", example = "헤르만 헤세")
+    val author: String,
+    @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover-placeholder.png")
+    val bookCoverImageUrl: String,
+    @field:Schema(description = "문장이 추천 이력에 등록된 시각", example = "2026-06-05T12:34:56")
+    val recommendedAt: LocalDateTime,
+    @get:JsonProperty("isScrapped")
+    @field:Schema(description = "로그인 사용자의 스크랩 여부", example = "false")
+    val isScrapped: Boolean,
+) {
+    companion object {
+        fun from(quote: DiscoveryQuote): DiscoveryQuoteResponse =
+            DiscoveryQuoteResponse(
+                quoteId = quote.quoteId,
+                bookId = quote.bookId,
+                recommendedUserId = quote.recommendedUserId,
+                content = quote.content,
+                title = quote.title,
+                author = quote.author,
+                bookCoverImageUrl = quote.bookCoverImageUrl,
+                recommendedAt = quote.recommendedAt,
+                isScrapped = quote.isScrapped,
+            )
+    }
+}
