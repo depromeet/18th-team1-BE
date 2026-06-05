@@ -1,10 +1,10 @@
 package com.firstpenguin.app.domain.embedding.repository
 
-import com.firstpenguin.app.domain.batch.repository.table.QuoteMetadataBatchItemTable
-import com.firstpenguin.app.domain.batch.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbedding
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbeddingTarget
 import com.firstpenguin.app.domain.embedding.repository.table.QuoteEmbeddingTable
+import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataBatchItemTable
+import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import org.jooq.Condition
 import org.jooq.DSLContext

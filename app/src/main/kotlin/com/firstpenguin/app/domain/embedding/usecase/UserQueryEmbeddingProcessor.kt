@@ -1,6 +1,6 @@
 package com.firstpenguin.app.domain.embedding.usecase
 
-import com.firstpenguin.app.domain.embedding.service.OpenAiEmbeddingClient
+import com.firstpenguin.app.domain.openai.service.OpenAiEmbeddingClient
 import org.springframework.stereotype.Component
 
 @Component

@@ -1,8 +1,8 @@
 package com.firstpenguin.app.domain.emotion.repository
 
-import com.firstpenguin.app.domain.batch.dto.TagOption
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
+import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.DSLContext
 import org.jooq.Field
