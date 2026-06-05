@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ko-KR
+
+reviews:
+  profile: chill
+  path_filters:
+    - "!docs/**/*.md"
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
