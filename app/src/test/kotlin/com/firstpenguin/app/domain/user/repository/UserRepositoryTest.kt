@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 
 class UserRepositoryTest {
     @Test
-    fun `OAuth 사용자 upsert는 ON CONFLICT에 테이블 한정자를 사용하지 않는다`() {
+    fun `OAuth 사용자 생성은 conflict 발생 시 update하지 않는다`() {
         var capturedSql = ""
         lateinit var dsl: DSLContext
         val connection =
@@ -30,17 +30,55 @@ class UserRepositoryTest {
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
 
-        UserRepository(dsl).upsertOAuthUser(OAUTH_USER_PROFILE, OAUTH_USER_NICKNAME)
+        UserRepository(dsl).createOAuthUser(OAUTH_USER_PROFILE, OAUTH_USER_NICKNAME)
 
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
         assertTrue(
-            normalizedSql.contains("""on conflict ("provider", "provider_id")"""),
+            normalizedSql.contains("""on conflict do nothing"""),
             normalizedSql,
         )
         assertFalse(
-            normalizedSql.contains("""on conflict ("users"."provider", "users"."provider_id")"""),
+            normalizedSql.contains("""do update"""),
             normalizedSql,
         )
+    }
+
+    @Test
+    fun `OAuth 로그인 정보 갱신은 닉네임을 변경하지 않는다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                UserRepository(dsl).updateOAuthLogin(OAUTH_USER_PROFILE)
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.startsWith("""update "users" set"""), normalizedSql)
+        assertFalse(normalizedSql.contains("\"users\".\"nickname\" ="), normalizedSql)
+    }
+
+    @Test
+    fun `OAuth 로그인 정보 갱신은 이메일이 null이면 기존 이메일을 유지한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                UserRepository(dsl).updateOAuthLogin(OAUTH_USER_PROFILE.copy(email = null))
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertFalse(normalizedSql.contains("\"users\".\"email\" ="), normalizedSql)
+    }
+
+    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
+        var capturedSql = ""
+        lateinit var dsl: DSLContext
+        val connection =
+            MockConnection(
+                MockDataProvider { context ->
+                    capturedSql = context.sql()
+                    arrayOf(MockResult(1, userResult(dsl)))
+                },
+            )
+        dsl = DSL.using(connection, SQLDialect.POSTGRES)
+        repositoryCall(dsl)
+        return capturedSql
     }
 
     private fun userResult(dsl: DSLContext) =

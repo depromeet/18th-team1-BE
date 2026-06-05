@@ -21,7 +21,7 @@ class CustomOAuth2UserService(
         val oAuth2User = delegate.loadUser(userRequest)
         val registrationId = userRequest.clientRegistration.registrationId.lowercase()
         val profile = toUserProfile(registrationId, oAuth2User.attributes)
-        val user = oAuthUserUseCase.upsertOAuthUser(profile)
+        val user = oAuthUserUseCase.loginOAuthUser(profile)
 
         return OAuth2AuthenticatedUser(user = user, attributes = oAuth2User.attributes)
     }
