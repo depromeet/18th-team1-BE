@@ -1,8 +1,8 @@
 package com.firstpenguin.app.domain.openai.service
 
+import com.firstpenguin.app.domain.embedding.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.domain.openai.dto.OpenAiEmbeddingRequest
 import com.firstpenguin.app.domain.openai.dto.OpenAiEmbeddingResponse
-import com.firstpenguin.app.domain.openai.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value

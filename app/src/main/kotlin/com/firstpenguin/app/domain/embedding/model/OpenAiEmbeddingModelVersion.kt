@@ -1,4 +1,4 @@
-package com.firstpenguin.app.domain.openai.model
+package com.firstpenguin.app.domain.embedding.model
 
 private const val TEXT_EMBEDDING_3_SMALL_DIMENSION = 1536
 
