@@ -49,6 +49,7 @@ enum class ErrorCode(
     DIARY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 삭제할 수 있습니다"),
     DIARY_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일기 생성에 실패했습니다."),
     DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘 작성한 일기가 존재합니다."),
+    INVALID_DIARY_QUERY_RESULT(HttpStatus.INTERNAL_SERVER_ERROR, "일기 조회 결과가 올바르지 않습니다."),
 
     // Recommendation
     DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
@@ -66,11 +67,20 @@ enum class ErrorCode(
     QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장을 찾을 수 없습니다."),
 
     // QuoteMetadataBatch
+    BATCH_ADMIN_SECRET_REQUIRED(HttpStatus.INTERNAL_SERVER_ERROR, "배치 관리자 secret 설정이 누락되었습니다."),
+    OPENAI_API_KEY_REQUIRED(HttpStatus.INTERNAL_SERVER_ERROR, "OpenAI API 키 설정이 누락되었습니다."),
     INVALID_QUOTE_METADATA_BATCH_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 상태가 올바르지 않습니다."),
     INVALID_QUOTE_METADATA_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 대상 상태가 올바르지 않습니다."),
     QUOTE_METADATA_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 문구 메타정보 배치 작업이 진행 중입니다."),
     QUOTE_METADATA_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "문구 메타정보 배치 대상이 존재하지 않습니다."),
     QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 요청에 실패했습니다."),
+    QUOTE_METADATA_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 배치 결과에서 output_text를 찾을 수 없습니다."),
+
+    // QuoteEmbedding
+    INVALID_QUOTE_EMBEDDING_INPUT(HttpStatus.BAD_REQUEST, "임베딩할 문장 입력이 올바르지 않습니다."),
+    QUOTE_EMBEDDING_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 요청에 실패했습니다."),
+    QUOTE_EMBEDDING_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답이 비어 있습니다."),
+    QUOTE_EMBEDDING_RESPONSE_SIZE_MISMATCH(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답 개수가 요청 개수와 다릅니다."),
 
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),
