@@ -4,10 +4,11 @@ import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.domain.openai.dto.OpenAiBatchResponse
 import com.firstpenguin.app.domain.openai.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.quote.model.Quote
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchModelVersion
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchItemRepository
+import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadataBatchModelVersion
-import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchItemRepository
-import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.enums.TagType
@@ -18,8 +19,8 @@ import org.springframework.stereotype.Service
 @Service
 class QuoteMetadataService(
     private val quoteMetadataRepository: QuoteMetadataRepository,
-    private val quoteMetadataBatchJobRepository: QuoteMetadataBatchJobRepository,
-    private val quoteMetadataBatchItemRepository: QuoteMetadataBatchItemRepository,
+    private val quoteBatchJobRepository: QuoteBatchJobRepository,
+    private val quoteBatchItemRepository: QuoteBatchItemRepository,
     private val tagRepository: TagRepository,
 ) {
     fun getPendingQuotes(limit: Int): List<Quote> = quoteMetadataRepository.findPendingQuotes(limit = limit)
@@ -27,9 +28,10 @@ class QuoteMetadataService(
     fun getAllTagsByType(): Map<TagType, List<TagOption>> = tagRepository.getActiveTagsByType()
 
     fun createPreparingQuoteMetadataBatchJob(submittedCount: Int): Long =
-        quoteMetadataBatchJobRepository.insertPreparingQuoteMetadataBatchJob(
-            metadataModel = QuoteMetadataBatchModelVersion.V1.model,
-            metadataVersion = QuoteMetadataBatchModelVersion.V1.version,
+        quoteBatchJobRepository.insertPreparingQuoteBatchJob(
+            jobType = QuoteBatchType.QUOTE_METADATA,
+            model = QuoteBatchModelVersion.QUOTE_METADATA_V1.model,
+            version = QuoteBatchModelVersion.QUOTE_METADATA_V1.version,
             submittedCount = submittedCount,
         )
 
@@ -37,9 +39,11 @@ class QuoteMetadataService(
         jobId: Long,
         quoteIds: List<Long>,
         status: BatchItemStatus,
-    ) = quoteMetadataBatchItemRepository.insertQuoteMetadataBatchItems(
+    ) = quoteBatchItemRepository.insertQuoteBatchItems(
         jobId = jobId,
-        quoteIds = quoteIds,
+        jobType = QuoteBatchType.QUOTE_METADATA,
+        targetIds = quoteIds,
+        customIdPrefix = QUOTE_CUSTOM_ID_PREFIX,
         status = status,
     )
 
@@ -48,14 +52,14 @@ class QuoteMetadataService(
         batch: OpenAiBatchResponse,
         inputFile: OpenAiFileResponse,
     ) {
-        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobAsSubmitted(
+        quoteBatchJobRepository.updateQuoteBatchJobAsSubmitted(
             jobId = jobId,
             openAiBatchId = batch.id,
             inputFileId = inputFile.id,
             status = batch.status,
         )
 
-        quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
+        quoteBatchItemRepository.updateQuoteBatchItemsStatus(
             jobId = jobId,
             status = BatchItemStatus.SUBMITTED,
         )
@@ -65,8 +69,8 @@ class QuoteMetadataService(
         jobId: Long,
         errorMessage: String?,
     ) {
-        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobAsFailed(jobId = jobId)
-        quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
+        quoteBatchJobRepository.updateQuoteBatchJobAsFailed(jobId = jobId)
+        quoteBatchItemRepository.updateQuoteBatchItemsStatus(
             jobId = jobId,
             status = BatchItemStatus.FAILED,
             errorMessage = errorMessage,
@@ -74,10 +78,15 @@ class QuoteMetadataService(
     }
 
     fun validateNoRunningJob() {
-        val isRunningJob = quoteMetadataBatchJobRepository.isRunningJQuoteMetadataJob()
+        val isRunningJob = quoteBatchJobRepository.isRunningQuoteBatchJob(QUOTE_METADATA_JOB_TYPES)
 
         if (isRunningJob) {
             throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_IS_RUNNING)
         }
+    }
+
+    private companion object {
+        const val QUOTE_CUSTOM_ID_PREFIX = "quote"
+        val QUOTE_METADATA_JOB_TYPES = listOf(QuoteBatchType.QUOTE_METADATA)
     }
 }
