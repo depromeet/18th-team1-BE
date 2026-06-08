@@ -1,9 +1,9 @@
 package com.firstpenguin.app.domain.embedding.usecase
 
+import com.firstpenguin.app.domain.embedding.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbedding
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbeddingTarget
 import com.firstpenguin.app.domain.embedding.repository.QuoteEmbeddingRepository
-import com.firstpenguin.app.domain.openai.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.domain.openai.service.OpenAiEmbeddingClient
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode

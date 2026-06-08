@@ -1,11 +1,12 @@
 package com.firstpenguin.app.domain.quotemetadata.service
 
 import com.firstpenguin.app.domain.openai.dto.OpenAiBatchStatusResponse
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchJob
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.dto.ActiveJobStatusResponse
 import com.firstpenguin.app.domain.quotemetadata.dto.QuoteMetadataBatchStatusResponse
-import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadataBatchJob
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchItemRepository
-import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import org.springframework.stereotype.Service
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service
 @Service
 class QuoteMetadataBatchStatusService(
     private val quoteMetadataRepository: QuoteMetadataRepository,
-    private val quoteMetadataBatchJobRepository: QuoteMetadataBatchJobRepository,
+    private val quoteBatchJobRepository: QuoteBatchJobRepository,
     private val quoteMetadataBatchItemRepository: QuoteMetadataBatchItemRepository,
 ) {
     fun getStatus(): QuoteMetadataBatchStatusResponse =
@@ -23,19 +24,19 @@ class QuoteMetadataBatchStatusService(
             pendingCount = quoteMetadataRepository.countPendingQuotes(),
             processingCount = quoteMetadataBatchItemRepository.countActiveItemsWithoutMetadata(),
             failedCount = quoteMetadataBatchItemRepository.countFailedItemsWithoutMetadata(),
-            runningJobCount = quoteMetadataBatchJobRepository.countRunningJobs(),
-            activeJob = quoteMetadataBatchJobRepository.findActiveJob()?.toResponse(),
+            runningJobCount = quoteBatchJobRepository.countRunningJobs(QUOTE_METADATA_JOB_TYPES),
+            activeJob = quoteBatchJobRepository.findActiveJob(QUOTE_METADATA_JOB_TYPES)?.toResponse(),
         )
 
-    fun getActiveJob(): QuoteMetadataBatchJob? = quoteMetadataBatchJobRepository.findActiveJob()
+    fun getActiveJob(): QuoteBatchJob? = quoteBatchJobRepository.findActiveJob(QUOTE_METADATA_JOB_TYPES)
 
-    fun getJob(jobId: Long): QuoteMetadataBatchJob? = quoteMetadataBatchJobRepository.findById(jobId)
+    fun getJob(jobId: Long): QuoteBatchJob? = findMetadataJob(jobId)
 
     fun updateQuoteMetadataBatchJobStatus(
         jobId: Long,
         batch: OpenAiBatchStatusResponse,
     ) {
-        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobStatus(
+        quoteBatchJobRepository.updateQuoteBatchJobStatus(
             jobId = jobId,
             status = batch.status,
             outputFileId = batch.outputFileId,
@@ -51,11 +52,20 @@ class QuoteMetadataBatchStatusService(
         }
     }
 
-    private fun QuoteMetadataBatchJob.toResponse(): ActiveJobStatusResponse =
+    private fun QuoteBatchJob.toResponse(): ActiveJobStatusResponse =
         ActiveJobStatusResponse(
             jobId = id,
             openAiBatchId = openAiBatchId,
             submittedCount = submittedCount,
             status = status,
         )
+
+    private fun findMetadataJob(jobId: Long): QuoteBatchJob? {
+        val jobTypes = QUOTE_METADATA_JOB_TYPES
+        return quoteBatchJobRepository.findByIdAndJobType(jobId, jobTypes)
+    }
+
+    private companion object {
+        val QUOTE_METADATA_JOB_TYPES = listOf(QuoteBatchType.QUOTE_METADATA)
+    }
 }

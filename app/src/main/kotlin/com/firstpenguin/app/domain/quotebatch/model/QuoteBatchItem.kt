@@ -1,12 +1,14 @@
-package com.firstpenguin.app.domain.quotemetadata.model
+package com.firstpenguin.app.domain.quotebatch.model
 
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import java.time.LocalDateTime
 
-data class QuoteMetadataBatchItem(
+data class QuoteBatchItem(
     val id: Long,
     val jobId: Long,
-    val quoteId: Long,
+    val jobType: QuoteBatchType,
+    val targetId: Long,
+    val customId: String,
     val status: BatchItemStatus,
     val errorMessage: String?,
     val createdAt: LocalDateTime,

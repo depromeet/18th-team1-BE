@@ -1,10 +1,11 @@
 package com.firstpenguin.app.domain.quotemetadata.service
 
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchJob
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.dto.ParsedBatchQuoteResult
-import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadataBatchJob
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchItemRepository
-import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchJobRepository
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.exception.CustomException
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class QuoteMetadataBatchResultService(
     private val quoteMetadataRepository: QuoteMetadataRepository,
-    private val quoteMetadataBatchJobRepository: QuoteMetadataBatchJobRepository,
+    private val quoteBatchJobRepository: QuoteBatchJobRepository,
     private val quoteMetadataBatchItemRepository: QuoteMetadataBatchItemRepository,
     private val tagRepository: TagRepository,
 ) {
@@ -30,7 +31,7 @@ class QuoteMetadataBatchResultService(
         val tagIdByCode = getTagIdByCode()
         val statuses = results.map { result -> saveBatchResult(job, result, tagIdByCode) }
 
-        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobCounts(
+        quoteBatchJobRepository.updateQuoteBatchJobCounts(
             jobId = jobId,
             succeededCount = statuses.count { status -> status == BatchItemStatus.SUCCEEDED },
             failedCount = statuses.count { status -> status == BatchItemStatus.FAILED },
@@ -38,7 +39,7 @@ class QuoteMetadataBatchResultService(
     }
 
     private fun saveBatchResult(
-        job: QuoteMetadataBatchJob,
+        job: QuoteBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus =
@@ -57,7 +58,7 @@ class QuoteMetadataBatchResultService(
         }
 
     private fun saveParsedBatchResult(
-        job: QuoteMetadataBatchJob,
+        job: QuoteBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus =
@@ -68,11 +69,11 @@ class QuoteMetadataBatchResultService(
         }
 
     private fun saveSucceededBatchResult(
-        job: QuoteMetadataBatchJob,
+        job: QuoteBatchJob,
         result: ParsedBatchQuoteResult,
         tagIdByCode: Map<String, Long>,
     ): BatchItemStatus {
-        val metadata = result.toQuoteMetadata(job.metadataModel, job.metadataVersion)
+        val metadata = result.toQuoteMetadata(job.model, job.version)
         val metadataId = quoteMetadataRepository.upsertQuoteMetadata(metadata)
         val tags = result.toQuoteMetadataTags(metadataId, tagIdByCode)
 
@@ -82,8 +83,8 @@ class QuoteMetadataBatchResultService(
         return BatchItemStatus.SUCCEEDED
     }
 
-    private fun findJob(jobId: Long): QuoteMetadataBatchJob =
-        quoteMetadataBatchJobRepository.findById(jobId)
+    private fun findJob(jobId: Long): QuoteBatchJob =
+        quoteBatchJobRepository.findByIdAndJobType(jobId, QUOTE_METADATA_JOB_TYPES)
             ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
 
     private fun markFailedWhenQuoteIdMissing(
@@ -100,7 +101,7 @@ class QuoteMetadataBatchResultService(
         result: ParsedBatchQuoteResult,
     ) {
         val errorMessage = "Batch output has no quoteId: ${result.customId}"
-        quoteMetadataBatchJobRepository.updateQuoteMetadataBatchJobAsFailed(jobId)
+        quoteBatchJobRepository.updateQuoteBatchJobAsFailed(jobId)
         quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
             jobId = jobId,
             status = BatchItemStatus.FAILED,
@@ -135,4 +136,8 @@ class QuoteMetadataBatchResultService(
             .values
             .flatten()
             .associate { tag -> tag.code to tag.id }
+
+    private companion object {
+        val QUOTE_METADATA_JOB_TYPES = listOf(QuoteBatchType.QUOTE_METADATA)
+    }
 }
