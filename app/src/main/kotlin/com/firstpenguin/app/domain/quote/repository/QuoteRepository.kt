@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.quote.repository
 
 import com.firstpenguin.app.domain.quote.model.Quote
+import com.firstpenguin.app.domain.quote.model.QuoteSourceType
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -31,6 +32,7 @@ class QuoteRepository(
             id = record.get(QuoteTable.ID),
             bookId = record.get(QuoteTable.BOOK_ID),
             content = record.get(QuoteTable.CONTENT),
+            sourceType = QuoteSourceType.valueOf(record.get(QuoteTable.SOURCE_TYPE)),
             createdAt = record.get(QuoteTable.CREATED_AT),
             updatedAt = record.get(QuoteTable.UPDATED_AT),
             deletedAt = record.get(QuoteTable.DELETED_AT),
@@ -42,6 +44,7 @@ class QuoteRepository(
                 QuoteTable.ID,
                 QuoteTable.BOOK_ID,
                 QuoteTable.CONTENT,
+                QuoteTable.SOURCE_TYPE,
                 QuoteTable.CREATED_AT,
                 QuoteTable.UPDATED_AT,
                 QuoteTable.DELETED_AT,
