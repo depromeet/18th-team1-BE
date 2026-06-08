@@ -8,6 +8,7 @@ import org.jooq.Record
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.max
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class QuoteRepository(
@@ -26,6 +27,24 @@ class QuoteRepository(
             .select(DSL.coalesce(max(QuoteTable.ID), 0L))
             .from(QuoteTable.QUOTES)
             .fetchOne(0, Long::class.java)!!
+
+    fun insertQuote(
+        bookId: Long,
+        content: String,
+        sourceType: QuoteSourceType = QuoteSourceType.MANUAL,
+    ): Long {
+        val now = LocalDateTime.now()
+
+        return dsl
+            .insertInto(QuoteTable.QUOTES)
+            .set(QuoteTable.BOOK_ID, bookId)
+            .set(QuoteTable.CONTENT, content)
+            .set(QuoteTable.SOURCE_TYPE, sourceType.name)
+            .set(QuoteTable.CREATED_AT, now)
+            .set(QuoteTable.UPDATED_AT, now)
+            .returningResult(QuoteTable.ID)
+            .fetchOne(QuoteTable.ID)!!
+    }
 
     private fun toQuote(record: Record): Quote =
         Quote(

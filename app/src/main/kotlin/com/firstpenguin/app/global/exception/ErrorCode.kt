@@ -76,6 +76,14 @@ enum class ErrorCode(
     QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 요청에 실패했습니다."),
     QUOTE_METADATA_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 배치 결과에서 output_text를 찾을 수 없습니다."),
 
+    // QuoteCreationBatch
+    QUOTE_CREATION_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 추천 문장 생성 배치 작업이 진행 중입니다."),
+    QUOTE_CREATION_BATCH_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 문장 생성 배치 작업이 존재하지 않습니다."),
+    QUOTE_CREATION_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 추천 문장 생성 배치 결과를 찾을 수 없습니다."),
+    QUOTE_EXTRACTION_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "인용구 추출 배치 대상이 존재하지 않습니다."),
+    QUOTE_REVIEW_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 문장 후보 검수 배치 대상이 존재하지 않습니다."),
+    QUOTE_EXTRACTION_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 인용구 추출 배치 요청에 실패했습니다."),
+
     // QuoteEmbedding
     INVALID_QUOTE_EMBEDDING_INPUT(HttpStatus.BAD_REQUEST, "임베딩할 문장 입력이 올바르지 않습니다."),
     QUOTE_EMBEDDING_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 요청에 실패했습니다."),
