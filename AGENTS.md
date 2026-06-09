@@ -25,6 +25,7 @@ docs/                 — 프로젝트 문서 (convention.md, husky.md)
 - 커밋: Conventional Commits — 이모지는 commit-msg 훅이 자동 삽입
 - PR 대상: `dev` 브랜치
 - 머지 순서: feature → dev → main(배포)
+- PR은 draft가 아닌 ready 상태로 생성한다.
 - `dev` 브랜치에 직접 커밋하거나 push하지 않는다. 모든 변경은 작업 브랜치에서 커밋하고 PR로 반영한다.
 
 ## 설정 파일 규칙

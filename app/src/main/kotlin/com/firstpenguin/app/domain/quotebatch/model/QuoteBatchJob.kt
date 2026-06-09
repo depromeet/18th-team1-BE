@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/src/main/kotlin/com/firstpenguin/app/domain/quotebatch/model/QuoteBatchJob.kt
 package com.firstpenguin.app.domain.quotebatch.model
+========
+package com.firstpenguin.app.domain.quotemetadata.model
+>>>>>>>> origin/dev:app/src/main/kotlin/com/firstpenguin/app/domain/quotemetadata/model/QuoteMetadataBatchJob.kt
 
 import com.firstpenguin.app.global.enums.BatchJobStatus
 import java.time.LocalDateTime

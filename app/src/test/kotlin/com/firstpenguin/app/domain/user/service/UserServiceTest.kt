@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.user.service
 
+import com.firstpenguin.app.domain.user.model.OAuthUserProfile
 import com.firstpenguin.app.domain.user.model.Provider
 import com.firstpenguin.app.domain.user.model.User
 import com.firstpenguin.app.domain.user.model.UserStatus
@@ -69,6 +70,64 @@ class UserServiceTest {
     }
 
     @Test
+    fun `활성 OAuth 사용자는 로그인 정보를 갱신한다`() {
+        val user = user()
+        Mockito.`when`(userRepository.updateOAuthLogin(OAUTH_USER_PROFILE)).thenReturn(user)
+
+        val result = userService.updateOAuthLogin(user, OAUTH_USER_PROFILE)
+
+        assertEquals(user, result)
+        Mockito.verify(userRepository).updateOAuthLogin(OAUTH_USER_PROFILE)
+    }
+
+    @Test
+    fun `OAuth 사용자와 프로필이 일치하지 않으면 로그인 정보를 갱신하지 않는다`() {
+        val otherProfile = OAUTH_USER_PROFILE.copy(providerId = "other-provider-id")
+
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateOAuthLogin(user(), otherProfile)
+            }
+
+        assertEquals(ErrorCode.INTERNAL_SERVER_ERROR, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).updateOAuthLogin(otherProfile)
+    }
+
+    @Test
+    fun `OAuth 로그인 정보 갱신 대상이 없으면 실패한다`() {
+        Mockito.`when`(userRepository.updateOAuthLogin(OAUTH_USER_PROFILE)).thenReturn(null)
+
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateOAuthLogin(user(), OAUTH_USER_PROFILE)
+            }
+
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.errorCode)
+    }
+
+    @Test
+    fun `차단 OAuth 사용자는 로그인 정보를 갱신하지 않는다`() {
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateOAuthLogin(user(status = UserStatus.BLOCKED), OAUTH_USER_PROFILE)
+            }
+
+        assertEquals(ErrorCode.AUTH_USER_BLOCKED, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).updateOAuthLogin(OAUTH_USER_PROFILE)
+    }
+
+    @Test
+    fun `삭제된 OAuth 사용자는 로그인 정보를 갱신하지 않는다`() {
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateOAuthLogin(user(status = UserStatus.DELETED), OAUTH_USER_PROFILE)
+            }
+
+        assertEquals(ErrorCode.AUTH_USER_DELETED, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).updateOAuthLogin(OAUTH_USER_PROFILE)
+    }
+
+    @Test
     fun `프로필 수정 시 닉네임이 이미 존재하면 실패한다`() {
         Mockito.`when`(userRepository.existsByNickname(DUPLICATE_NICKNAME, USER_ID)).thenReturn(true)
 
@@ -79,6 +138,18 @@ class UserServiceTest {
 
         assertEquals(ErrorCode.NICKNAME_ALREADY_EXISTS, exception.errorCode)
         Mockito.verify(userRepository, Mockito.never()).update(USER_ID, DUPLICATE_NICKNAME, null)
+    }
+
+    @Test
+    fun `프로필 수정 시 예약 닉네임이면 실패한다`() {
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.updateProfile(USER_ID, DEV_USER_NICKNAME, null)
+            }
+
+        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
+        Mockito.verify(userRepository, Mockito.never()).existsByNickname(DEV_USER_NICKNAME, USER_ID)
+        Mockito.verify(userRepository, Mockito.never()).update(USER_ID, DEV_USER_NICKNAME, null)
     }
 
     @Test
@@ -136,7 +207,15 @@ class UserServiceTest {
     private companion object {
         const val USER_ID = 1L
         const val PROFILE_IMAGE_ID = 10L
+        const val DEV_USER_NICKNAME = "개발자"
         const val DUPLICATE_NICKNAME = "조용한토끼"
         const val USER_NICKNAME_UNIQUE_INDEX_NAME = "users_nickname_unique_idx"
+        val OAUTH_USER_PROFILE =
+            OAuthUserProfile(
+                provider = Provider.KAKAO,
+                providerId = "provider-id",
+                email = "user@example.com",
+                providerDisplayName = "provider user",
+            )
     }
 }

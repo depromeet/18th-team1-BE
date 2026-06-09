@@ -1,0 +1,252 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# CodeRabbit 리뷰와 채팅 답변 언어입니다.
+language: "ko-KR"
+
+# 조직이나 중앙 설정에서 정의한 값 중 이 파일에 없는 값을 상속할지 여부입니다.
+# 레포별 리뷰 정책을 명확히 적용하기 위해 false로 둡니다.
+inheritance: false
+
+# CodeRabbit의 실험 기능은 리뷰 결과가 바뀔 수 있어 기본적으로 끕니다.
+early_access: false
+
+# 유료 플랜 사용자가 아니어도 기본 기능은 사용할 수 있게 둡니다.
+enable_free_tier: true
+
+# 리뷰 톤입니다. 취향성 코멘트보다 실제 장애와 결함 가능성을 우선하도록 지시합니다.
+tone_instructions: "시니어 백엔드 개발자처럼 간결하고 근거 중심으로 리뷰하세요. 사소한 취향보다 로직 오류, 데이터 정합성, 보안, 트랜잭션, 장애 가능성을 우선하세요."
+
+reviews:
+  # chill은 실제 결함 가능성이 높은 코멘트를 우선해 초기 도입 시 잡음을 줄입니다.
+  profile: "chill"
+
+  # CodeRabbit이 남긴 코멘트가 해결되고 pre-merge check가 실패하지 않으면 approve합니다.
+  request_changes_workflow: true
+
+  # PR 변경 요약을 생성합니다.
+  high_level_summary: true
+
+  # PR 본문을 직접 수정하기보다 walkthrough 코멘트 안에 요약을 넣습니다.
+  high_level_summary_in_walkthrough: true
+
+  # 요약에 포함할 내용입니다.
+  high_level_summary_instructions: >
+    변경 의도, 주요 영향, API/DB/인프라 변경 여부, 테스트 확인 포인트를 한국어 bullet로 간결히 정리하세요.
+    릴리스 노트식 과장 표현은 피하고 실제 리뷰에 필요한 정보만 남기세요.
+
+  # 리뷰 진행 상태와 스킵 사유를 walkthrough에 표시합니다.
+  review_status: true
+
+  # 무시된 파일, 사용한 추가 컨텍스트 같은 상세 정보는 일상 PR에서 숨깁니다.
+  review_details: false
+
+  # 리뷰 중/완료 상태를 GitHub commit status로 표시합니다.
+  commit_status: true
+
+  # CodeRabbit이 리뷰 자체를 수행하지 못하면 commit status를 failure로 표시합니다.
+  fail_commit_status: true
+
+  # walkthrough를 접힌 영역으로 표시해 PR 화면을 덜 복잡하게 만듭니다.
+  collapse_walkthrough: true
+
+  # 변경 파일 요약, 시퀀스 다이어그램, 리뷰 노력 추정치를 표시합니다.
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+
+  # 연결된 이슈/관련 PR/라벨/리뷰어 제안을 표시하되 자동 적용은 하지 않습니다.
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+
+  # 리뷰 중 운세 문구와 시는 끕니다.
+  in_progress_fortune: false
+  poem: false
+
+  # inline comment에 AI agent용 프롬프트 섹션을 붙이지 않습니다.
+  enable_prompt_for_ai_agents: false
+
+  # 리뷰 대상에서 제외할 경로입니다.
+  path_filters:
+    - "!**/build/**"
+    - "!**/.gradle/**"
+    - "!app/src/main/resources/fonts/**"
+    - "!secret/**"
+    - "!**/terraform.tfstate*"
+
+  # 자동 리뷰 대상입니다. 이 레포는 PR 대상이 dev이므로 dev를 명시합니다.
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
+    base_branches:
+      - "dev"
+      - "main"
+    ignore_title_keywords:
+      - "wip"
+      - "do not review"
+
+  # CodeRabbit이 추가로 사용할 정적 분석 도구입니다.
+  tools:
+    github-checks:
+      enabled: true
+      timeout_ms: 300000
+    detekt:
+      enabled: true
+      config_file: "detekt.yml"
+    actionlint:
+      enabled: true
+    shellcheck:
+      enabled: true
+    hadolint:
+      enabled: true
+    checkov:
+      enabled: true
+    tflint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    yamllint:
+      enabled: false
+    markdownlint:
+      enabled: true
+
+  # PR 머지 전 점검입니다. error는 request_changes_workflow에서 approve를 막을 수 있습니다.
+  pre_merge_checks:
+    override_requested_reviewers_only: true
+    title:
+      mode: "warning"
+      requirements: >
+        PR 제목은 Conventional Commits 형식을 따르세요.
+        예: feat: 회원가입 API 추가, fix: 토큰 만료 처리 수정
+    description:
+      mode: "warning"
+    issue_assessment:
+      mode: "warning"
+    docstrings:
+      mode: "off"
+    custom_checks:
+      - name: "Layer and transaction rules"
+        mode: "warning"
+        instructions: >
+          변경된 Kotlin 코드에서 프로젝트 계층 규칙을 위반하면 실패로 판단하세요.
+          @Transactional은 usecase 계층에만 있어야 합니다.
+          controller -> usecase -> service -> repository 흐름을 우선해야 합니다.
+          repository는 쿼리 작성과 실행만 담당하고 트랜잭션 경계를 만들면 안 됩니다.
+          service에는 도메인 정책과 검증 로직을 두되 @Transactional을 선언하면 안 됩니다.
+          외부 API 호출과 DB 트랜잭션이 같은 경계에 묶이면 실패로 판단하세요.
+      - name: "Secret and config rules"
+        mode: "error"
+        instructions: >
+          변경 사항에 DB 접속 정보, OAuth secret, JWT secret, .env, terraform.tfstate,
+          환경별 민감 설정이 추가되면 실패로 판단하세요.
+          app/src/main/resources/application.yml에는 공통 설정만 있어야 합니다.
+          환경별 설정과 민감 정보는 secret submodule의 profile yml에서 관리해야 합니다.
+      - name: "Flyway and DB rules"
+        mode: "warning"
+        instructions: >
+          Flyway migration에서 명시적 요청이나 팀 합의 없이 Foreign Key 같은 DB 레벨 연관관계 제약을 추가하면 실패로 판단하세요.
+          migration은 필요한 테이블, 컬럼, 인덱스, 체크 제약처럼 필요한 스키마 중심이어야 합니다.
+          jOOQ를 ORM 연관관계 매핑처럼 사용하거나 repository/usecase의 명시적 조회 흐름을 우회하면 실패로 판단하세요.
+      - name: "Terraform rules"
+        mode: "warning"
+        instructions: >
+          Terraform 변경에서 terraform.tfstate를 포함하거나 리소스 네이밍 규칙을 위반하면 실패로 판단하세요.
+          인프라 리소스는 {env}-{service}-{resource} 형식을 따르고,
+          GCP 리전은 asia-northeast3, 프로젝트는 project-10e57bb0-e960-4b16-9fa 기준이어야 합니다.
+
+  # 경로별 리뷰 지시입니다. 취향보다 실제 결함 가능성에 집중하게 만듭니다.
+  path_instructions:
+    - path: "app/src/main/kotlin/**/*.kt"
+      instructions: >
+        Kotlin/Spring Boot 백엔드 시니어 리뷰어 관점으로 검토하세요.
+        로직 오류, 잘못된 상태 전이, nullability, edge case, 인증/인가 누락, 데이터 정합성,
+        동시성, 트랜잭션 경계, 장애 복구 가능성, 성능 문제, 테스트 공백을 우선 지적하세요.
+        단순 취향이나 포맷팅만의 코멘트는 detekt나 기존 컨벤션 위반이 명확할 때만 남기세요.
+        DTO는 data class를 우선하고, else/else-if보다 early return을 선호하는 프로젝트 규칙을 고려하세요.
+    - path: "app/src/main/kotlin/**/controller/**/*.kt"
+      instructions: >
+        controller는 요청/응답 매핑, 인증 사용자 처리, 입력 검증, HTTP status, usecase 위임 책임에 집중해야 합니다.
+        도메인 정책, DB 접근, 외부 API 호출이 controller에 들어오면 지적하세요.
+    - path: "app/src/main/kotlin/**/usecase/**/*.kt"
+      instructions: >
+        usecase는 트랜잭션 경계와 작업 흐름을 책임집니다.
+        여러 repository 호출이 하나의 작업으로 묶이는지, @Transactional 위치가 적절한지,
+        외부 API 호출이 DB 트랜잭션 안에서 실행되는지 확인하세요.
+    - path: "app/src/main/kotlin/**/useCase/**/*.kt"
+      instructions: >
+        usecase는 트랜잭션 경계와 작업 흐름을 책임집니다.
+        여러 repository 호출이 하나의 작업으로 묶이는지, @Transactional 위치가 적절한지,
+        외부 API 호출이 DB 트랜잭션 안에서 실행되는지 확인하세요.
+    - path: "app/src/main/kotlin/**/service/**/*.kt"
+      instructions: >
+        service는 도메인 정책과 검증 로직을 담당합니다.
+        @Transactional, HTTP 세부사항, repository orchestration 과다, 외부 연동과 DB 상태 변경의 결합을 지적하세요.
+    - path: "app/src/main/kotlin/**/repository/**/*.kt"
+      instructions: >
+        repository는 jOOQ 쿼리 작성과 실행만 담당합니다.
+        잘못된 where 조건, 누락된 정렬/limit, N+1 위험, 잘못된 nullable 처리,
+        트랜잭션 경계 선언, 도메인 정책 누수를 우선 검토하세요.
+    - path: "app/src/main/resources/db/migration/**/*.sql"
+      instructions: >
+        Flyway migration은 운영 DB에 적용되는 변경으로 보고 리뷰하세요.
+        중복 migration 번호, destructive change, 불필요한 Foreign Key,
+        기존 데이터와 호환되지 않는 NOT NULL/타입 변경, 인덱스 누락 가능성을 확인하세요.
+    - path: "app/src/main/resources/application*.yml"
+      instructions: >
+        application.yml에는 공통 설정만 있어야 합니다.
+        DB 접속 정보, OAuth secret, JWT secret, 운영/개발 환경별 민감 값이 들어오면 반드시 지적하세요.
+    - path: "infra/terraform/**/*.tf"
+      instructions: >
+        Terraform은 GCP dev/prod 분리, state GCS 백엔드, 서울 리전,
+        프로젝트 리소스 네이밍 규칙, 방화벽 태그 규칙을 기준으로 검토하세요.
+        apply 전 plan 확인이 필요한 위험 변경이면 명확히 지적하세요.
+    - path: ".github/workflows/**/*.yml"
+      instructions: >
+        GitHub Actions는 PR 대상 dev 브랜치, 빌드/테스트 검증, 민감 정보 노출,
+        불필요한 권한, 캐시 키 안정성, --no-verify 사용 여부를 중점적으로 확인하세요.
+
+  # CodeRabbit finishing touch 기능입니다. 필요할 때 명령으로 실행할 수 있는 항목만 열어둡니다.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: true
+    simplify:
+      enabled: false
+
+# CodeRabbit이 리뷰 때 참고할 지식 베이스입니다.
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: false
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "docs/**/*.md"
+      - ".github/pull_request_template.md"
+      - "detekt.yml"
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
+
+# CodeRabbit에게 테스트 생성을 요청할 때 적용되는 지시입니다.
+code_generation:
+  unit_tests:
+    path_instructions:
+      - path: "app/src/main/kotlin/**/*.kt"
+        instructions: >
+          Kotlin/JUnit 테스트는 실제 실패 가능성이 있는 도메인 로직과 edge case를 우선 검증하세요.
+          단순 getter/setter나 프레임워크 wiring만 검증하는 낮은 가치의 테스트는 만들지 마세요.

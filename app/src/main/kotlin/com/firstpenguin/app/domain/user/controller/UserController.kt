@@ -82,7 +82,9 @@ class UserController(
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "nickname과 profileImageId가 모두 null이거나, nickname이 빈 문자열이거나, profileImageId가 존재하지 않습니다.",
+                description =
+                    "nickname과 profileImageId가 모두 null이거나, nickname이 빈 문자열 또는 예약 닉네임이거나, " +
+                        "profileImageId가 존재하지 않습니다.",
                 content = [
                     Content(
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
