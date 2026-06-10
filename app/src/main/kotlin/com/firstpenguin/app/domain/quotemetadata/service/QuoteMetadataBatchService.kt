@@ -17,7 +17,7 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
-class QuoteMetadataService(
+class QuoteMetadataBatchService(
     private val quoteMetadataRepository: QuoteMetadataRepository,
     private val quoteBatchJobRepository: QuoteBatchJobRepository,
     private val quoteBatchItemRepository: QuoteBatchItemRepository,
@@ -78,15 +78,13 @@ class QuoteMetadataService(
     }
 
     fun validateNoRunningJob() {
-        val isRunningJob = quoteBatchJobRepository.isRunningQuoteBatchJob(QUOTE_METADATA_JOB_TYPES)
-
-        if (isRunningJob) {
-            throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_IS_RUNNING)
+        if (quoteBatchJobRepository.isRunningQuoteBatchJob(RUNNING_BLOCKED_JOB_TYPES)) {
+            throw CustomException(ErrorCode.QUOTE_BATCH_JOB_IS_RUNNING)
         }
     }
 
     private companion object {
         const val QUOTE_CUSTOM_ID_PREFIX = "quote"
-        val QUOTE_METADATA_JOB_TYPES = listOf(QuoteBatchType.QUOTE_METADATA)
+        private val RUNNING_BLOCKED_JOB_TYPES = QuoteBatchType.entries.toList()
     }
 }

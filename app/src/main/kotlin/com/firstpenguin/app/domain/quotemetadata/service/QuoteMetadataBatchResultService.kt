@@ -117,7 +117,7 @@ class QuoteMetadataBatchResultService(
 
     private fun findJob(jobId: Long): QuoteBatchJob =
         quoteBatchJobRepository.findByIdAndJobType(jobId, QUOTE_METADATA_JOB_TYPES)
-            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_NOT_FOUND)
 
     private fun getTagIdByCode(): Map<String, Long> =
         tagRepository

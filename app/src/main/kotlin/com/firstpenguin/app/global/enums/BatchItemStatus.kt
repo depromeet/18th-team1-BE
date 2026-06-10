@@ -13,7 +13,7 @@ enum class BatchItemStatus {
     companion object {
         fun from(value: String): BatchItemStatus =
             entries.find { it.name == value.uppercase() }
-                ?: throw CustomException(ErrorCode.INVALID_QUOTE_METADATA_BATCH_ITEMS_STATUS)
+                ?: throw CustomException(ErrorCode.INVALID_QUOTE_BATCH_ITEMS_STATUS)
 
         fun activeStatuses(): List<BatchItemStatus> =
             listOf(

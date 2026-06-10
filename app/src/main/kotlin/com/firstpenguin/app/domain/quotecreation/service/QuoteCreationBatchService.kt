@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service
 @Service
 class QuoteCreationBatchService(
     private val bookQuoteExtractionTargetRepository: BookQuoteExtractionTargetRepository,
-    private val candidateRepository: QuoteCandidateRepository,
-    private val jobRepository: QuoteBatchJobRepository,
-    private val itemRepository: QuoteBatchItemRepository,
+    private val quoteCandidateRepository: QuoteCandidateRepository,
+    private val quoteBatchJobRepository: QuoteBatchJobRepository,
+    private val quoteBatchItemRepository: QuoteBatchItemRepository,
 ) {
     fun getBooksNeedingQuotes(limit: Int): List<Book> =
         bookQuoteExtractionTargetRepository.findBooksNeedingQuotes(
@@ -28,14 +28,14 @@ class QuoteCreationBatchService(
             extractionVersion = QuoteBatchModelVersion.QUOTE_EXTRACTION_V1.version,
         )
 
-    fun getPendingTargets(limit: Int) = candidateRepository.findPendingTargets(limit = limit)
+    fun getPendingTargets(limit: Int) = quoteCandidateRepository.findPendingTargets(limit = limit)
 
     fun createPreparingQuoteBatchJob(
         batchType: QuoteBatchType,
         submittedCount: Int,
         modelVersion: QuoteBatchModelVersion,
     ): Long =
-        jobRepository.insertPreparingQuoteBatchJob(
+        quoteBatchJobRepository.insertPreparingQuoteBatchJob(
             jobType = batchType,
             model = modelVersion.model,
             version = modelVersion.version,
@@ -48,21 +48,21 @@ class QuoteCreationBatchService(
         targetIds: List<Long>,
         customIdPrefix: String,
         status: BatchItemStatus,
-    ) = itemRepository.insertQuoteBatchItems(jobId, batchType, targetIds, customIdPrefix, status)
+    ) = quoteBatchItemRepository.insertQuoteBatchItems(jobId, batchType, targetIds, customIdPrefix, status)
 
     fun markQuoteBatchSubmitted(
         jobId: Long,
         batch: OpenAiBatchResponse,
         inputFile: OpenAiFileResponse,
     ) {
-        jobRepository.updateQuoteBatchJobAsSubmitted(
+        quoteBatchJobRepository.updateQuoteBatchJobAsSubmitted(
             jobId = jobId,
             openAiBatchId = batch.id,
             inputFileId = inputFile.id,
             status = batch.status,
         )
 
-        itemRepository.updateQuoteBatchItemsStatus(
+        quoteBatchItemRepository.updateQuoteBatchItemsStatus(
             jobId = jobId,
             status = BatchItemStatus.SUBMITTED,
         )
@@ -72,8 +72,8 @@ class QuoteCreationBatchService(
         jobId: Long,
         errorMessage: String?,
     ) {
-        jobRepository.updateQuoteBatchJobAsFailed(jobId = jobId)
-        itemRepository.updateQuoteBatchItemsStatus(
+        quoteBatchJobRepository.updateQuoteBatchJobAsFailed(jobId = jobId)
+        quoteBatchItemRepository.updateQuoteBatchItemsStatus(
             jobId = jobId,
             status = BatchItemStatus.FAILED,
             errorMessage = errorMessage,
@@ -81,12 +81,12 @@ class QuoteCreationBatchService(
     }
 
     fun validateNoRunningJob() {
-        if (jobRepository.isRunningQuoteBatchJob(QUOTE_CONTENT_JOB_TYPES)) {
-            throw CustomException(ErrorCode.QUOTE_CREATION_BATCH_JOB_IS_RUNNING)
+        if (quoteBatchJobRepository.isRunningQuoteBatchJob(RUNNING_BLOCKED_JOB_TYPES)) {
+            throw CustomException(ErrorCode.QUOTE_BATCH_JOB_IS_RUNNING)
         }
     }
 
     private companion object {
-        val QUOTE_CONTENT_JOB_TYPES = listOf(QuoteBatchType.QUOTE_EXTRACTION, QuoteBatchType.QUOTE_REVIEW)
+        private val RUNNING_BLOCKED_JOB_TYPES = QuoteBatchType.entries.toList()
     }
 }

@@ -31,7 +31,7 @@ class QuoteMetadataBatchSyncProcessor(
 
     private fun findJob(jobId: Long): QuoteBatchJob =
         quoteMetadataBatchStatusService.getJob(jobId)
-            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_NOT_FOUND)
 
     private fun syncJobStatus(job: QuoteBatchJob): OpenAiBatchStatusResponse? =
         job.openAiBatchId?.let { batchId ->
