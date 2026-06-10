@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiBatchResponse
 import com.firstpenguin.app.domain.openai.dto.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.openai.dto.OpenAiFileResponse
 import com.firstpenguin.app.global.enums.BatchJobStatus
+import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
@@ -57,7 +58,8 @@ class OpenAiBatchClient(
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(body)
                 .retrieve()
-                .body<OpenAiFileResponse>()!!
+                .body<OpenAiFileResponse>()
+                ?: throw CustomException(ErrorCode.OPENAI_FILE_UPLOAD_FAILED)
         } finally {
             Files.deleteIfExists(tempFile)
         }
@@ -78,7 +80,8 @@ class OpenAiBatchClient(
                         "completion_window" to "24h",
                     ),
                 ).retrieve()
-                .body<Map<String, Any?>>()!!
+                .body<Map<String, Any?>>()
+                ?: throw CustomException(ErrorCode.OPENAI_BATCH_CREATE_FAILED)
 
         return OpenAiBatchResponse(
             id = response.getValue("id").toString(),
@@ -92,7 +95,8 @@ class OpenAiBatchClient(
                 .get()
                 .uri("/batches/{batchId}", batchId)
                 .retrieve()
-                .body<Map<String, Any?>>()!!
+                .body<Map<String, Any?>>()
+                ?: throw CustomException(ErrorCode.OPENAI_BATCH_STATUS_FETCH_FAILED)
 
         return OpenAiBatchStatusResponse(
             id = response.getValue("id").toString(),
