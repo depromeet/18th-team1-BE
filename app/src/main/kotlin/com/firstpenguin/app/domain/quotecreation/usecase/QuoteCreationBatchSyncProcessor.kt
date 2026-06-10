@@ -74,10 +74,9 @@ class QuoteCreationBatchSyncProcessor(
     private fun parseBatchResultFile(
         fileId: String,
         resultType: QuoteCreationBatchResultType,
-    ) =
-        openAiBatchClient
-            .fetchBatchOutputJsonl(fileId)
-            .let { jsonl -> outputParser.parseBatchOutputJsonl(jsonl, resultType) }
+    ) = openAiBatchClient
+        .fetchBatchOutputJsonl(fileId)
+        .let { jsonl -> outputParser.parseBatchOutputJsonl(jsonl, resultType) }
 
     private fun OpenAiBatchStatusResponse.completedResultFileIds(): List<String> =
         if (status == BatchJobStatus.COMPLETED) {

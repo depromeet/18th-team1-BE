@@ -138,15 +138,19 @@ private fun ParsedQuoteCreationBatchResult.acceptedCandidates(pending: List<Quot
         .take(MAX_EXTRACTED_QUOTE_COUNT)
         .mapNotNull { candidateId ->
             pending.firstOrNull { candidate -> candidate.id == candidateId }
-        }
-        .filter { candidate -> candidate.isAcceptableReviewedQuote() }
+        }.filter { candidate -> candidate.isAcceptableReviewedQuote() }
 
 private fun QuoteCandidate.isAcceptableReviewedQuote(): Boolean {
     val trimmedContent = content.trimQuoteMarks()
-    if (trimmedContent.length !in MIN_REVIEWED_QUOTE_LENGTH..MAX_REVIEWED_QUOTE_LENGTH) return false
-    if (HAN_CHARACTER_REGEX.containsMatchIn(trimmedContent)) return false
-    if (trimmedContent.terminalPunctuationCount() > 1) return false
-    return true
+    val validLengthRange = MIN_REVIEWED_QUOTE_LENGTH..MAX_REVIEWED_QUOTE_LENGTH
+
+    val isValidLength = trimmedContent.length in validLengthRange
+    val hasNoHanCharacter = !HAN_CHARACTER_REGEX.containsMatchIn(trimmedContent)
+    val hasSingleTerminalPunctuation = trimmedContent.terminalPunctuationCount() <= 1
+
+    return isValidLength &&
+        hasNoHanCharacter &&
+        hasSingleTerminalPunctuation
 }
 
 private fun String.trimQuoteMarks(): String =
@@ -155,4 +159,6 @@ private fun String.trimQuoteMarks(): String =
         .trim()
 
 private fun String.terminalPunctuationCount(): Int =
-    count { character -> character == '.' || character == '?' || character == '!' }
+    count { character ->
+        character == '.' || character == '?' || character == '!'
+    }
