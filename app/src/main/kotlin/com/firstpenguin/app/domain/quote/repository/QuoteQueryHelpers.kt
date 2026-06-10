@@ -10,8 +10,7 @@ import org.jooq.impl.DSL
 fun activeQuoteCountLessThanRecommended(bookIdField: Field<Long?>): Condition =
     activeQuoteCount(bookIdField).lessThan(RECOMMENDED_QUOTE_COUNT)
 
-fun activeQuoteCount(bookIdField: Field<Long?>): Field<Int> =
-    DSL.field(activeQuoteCountSelect(bookIdField))
+fun activeQuoteCount(bookIdField: Field<Long?>): Field<Int> = DSL.field(activeQuoteCountSelect(bookIdField))
 
 fun activeQuoteCountSelect(bookIdField: Field<Long?>): Select<Record1<Int>> =
     DSL

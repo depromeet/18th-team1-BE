@@ -6,8 +6,8 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quotemetadata.dto.ParsedBatchQuoteResult
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchResultService
-import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchStatusService
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchService
+import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchStatusService
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode

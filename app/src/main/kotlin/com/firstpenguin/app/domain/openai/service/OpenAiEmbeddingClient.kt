@@ -96,8 +96,9 @@ class OpenAiEmbeddingClient(
                 }
 
                 Thread.sleep(delayMillis)
-                delayMillis = (delayMillis * BACKOFF_MULTIPLIER)
-                    .coerceAtMost(MAX_RETRY_DELAY_MILLIS)
+                delayMillis =
+                    (delayMillis * BACKOFF_MULTIPLIER)
+                        .coerceAtMost(MAX_RETRY_DELAY_MILLIS)
             }
         }
 
@@ -126,4 +127,3 @@ private fun Throwable.isRetryable(): Boolean =
         is HttpClientErrorException.TooManyRequests -> true
         else -> false
     }
-
