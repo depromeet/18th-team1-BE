@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.embedding.repository
 
+import com.firstpenguin.app.domain.embedding.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbedding
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbeddingTarget
 import com.firstpenguin.app.domain.embedding.repository.table.QuoteEmbeddingTable
@@ -7,6 +8,8 @@ import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
 import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchItemTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.global.enums.BatchItemStatus
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -59,12 +62,19 @@ class QuoteEmbeddingRepository(
             .set(QuoteEmbeddingTable.EMBEDDING_TEXT_HASH, quoteEmbedding.embeddingTextHash)
             .set(QuoteEmbeddingTable.UPDATED_AT, now)
 
-    private fun vectorField(embedding: List<Double>): Field<String> =
-        DSL.field(
-            "?::vector",
+    private fun vectorField(embedding: List<Double>): Field<String> {
+        val dimension = OpenAiEmbeddingModelVersion.V1.dimension
+
+        if (embedding.size != dimension) {
+            throw CustomException(ErrorCode.QUOTE_EMBEDDING_DIMENSION_MISMATCH)
+        }
+
+        return DSL.field(
+            "?::vector($dimension)",
             String::class.java,
             embedding.toVectorLiteral(),
         )
+    }
 
     private fun List<Double>.toVectorLiteral(): String =
         joinToString(

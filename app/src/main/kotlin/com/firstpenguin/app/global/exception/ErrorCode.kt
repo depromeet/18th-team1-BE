@@ -94,6 +94,7 @@ enum class ErrorCode(
     QUOTE_EMBEDDING_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 요청에 실패했습니다."),
     QUOTE_EMBEDDING_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답이 비어 있습니다."),
     QUOTE_EMBEDDING_RESPONSE_SIZE_MISMATCH(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답 개수가 요청 개수와 다릅니다."),
+    QUOTE_EMBEDDING_DIMENSION_MISMATCH(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 벡터 차원이 올바르지 않습니다."),
 
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),
