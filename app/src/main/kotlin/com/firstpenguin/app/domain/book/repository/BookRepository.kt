@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.book.repository
 
 import com.firstpenguin.app.domain.book.model.Book
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.global.enums.QuoteConstants.RECOMMENDED_QUOTE_COUNT
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -9,8 +10,6 @@ import org.jooq.Record1
 import org.jooq.Select
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
-
-private const val RECOMMENDED_QUOTE_COUNT = 3
 
 @Repository
 class BookRepository(

@@ -1,9 +1,8 @@
 package com.firstpenguin.app.domain.quotecreation.extraction.service
 
 import com.firstpenguin.app.domain.book.model.Book
-
-private const val RECOMMENDED_QUOTE_COUNT = 3
-private const val MAX_QUOTE_LENGTH = 90
+import com.firstpenguin.app.global.enums.QuoteConstants.MAX_REVIEWED_QUOTE_LENGTH
+import com.firstpenguin.app.global.enums.QuoteConstants.RECOMMENDED_QUOTE_COUNT
 
 internal fun quoteExtractionSchema(book: Book): Map<String, Any> =
     mapOf(
@@ -39,6 +38,6 @@ private fun quoteItemSchema(): Map<String, Any> =
         "required" to listOf("content"),
         "properties" to
             mapOf(
-                "content" to mapOf("type" to "string", "maxLength" to MAX_QUOTE_LENGTH),
+                "content" to mapOf("type" to "string", "maxLength" to MAX_REVIEWED_QUOTE_LENGTH),
             ),
     )

@@ -2,22 +2,18 @@ package com.firstpenguin.app.domain.quotecreation.review.repository
 
 import com.firstpenguin.app.domain.book.model.Book
 import com.firstpenguin.app.domain.book.repository.BookTable
-import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.domain.quote.repository.activeQuoteCountLessThanRecommended
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteCandidate
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteCandidateStatus
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteReviewBatchTarget
 import com.firstpenguin.app.domain.quotecreation.review.repository.table.QuoteCandidateTable
+import com.firstpenguin.app.global.enums.QuoteConstants.REJECT_REASON_NOT_ACCEPTED
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
-import org.jooq.Record1
-import org.jooq.Select
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
-
-private const val RECOMMENDED_QUOTE_COUNT = 3
-private const val REJECT_REASON_NOT_ACCEPTED = "NOT_ACCEPTED_BY_REVIEW"
 
 private val BOOK_FIELDS: List<Field<*>> =
     listOf(
@@ -77,7 +73,7 @@ class QuoteCandidateRepository(
             .from(BookTable.BOOKS)
             .where(BookTable.DELETED_AT.isNull)
             .and(pendingCandidateExists())
-            .and(activeQuoteCountLessThanRecommended())
+            .and(activeQuoteCountLessThanRecommended(BookTable.ID))
             .orderBy(BookTable.ID.asc())
             .limit(limit)
             .fetch(::toBook)
@@ -123,17 +119,6 @@ private fun pendingCandidateExists() =
             .where(QuoteCandidateTable.BOOK_ID.eq(BookTable.ID))
             .and(QuoteCandidateTable.STATUS.eq(QuoteCandidateStatus.PENDING.name)),
     )
-
-private fun activeQuoteCountLessThanRecommended() = activeQuoteCount().lessThan(RECOMMENDED_QUOTE_COUNT)
-
-private fun activeQuoteCount(): Field<Int> = DSL.field(activeQuoteCountSelect())
-
-private fun activeQuoteCountSelect(): Select<Record1<Int>> =
-    DSL
-        .selectCount()
-        .from(QuoteTable.QUOTES)
-        .where(QuoteTable.BOOK_ID.eq(BookTable.ID))
-        .and(QuoteTable.DELETED_AT.isNull)
 
 private fun toCandidate(record: Record): QuoteCandidate =
     QuoteCandidate(

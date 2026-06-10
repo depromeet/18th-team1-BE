@@ -1,7 +1,7 @@
 package com.firstpenguin.app.domain.book.repository
 
 import com.firstpenguin.app.domain.book.model.Book
-import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.domain.quote.repository.activeQuoteCountLessThanRecommended
 import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
 import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchItemTable
 import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchJobTable
@@ -16,8 +16,6 @@ import org.jooq.Record1
 import org.jooq.Select
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
-
-private const val RECOMMENDED_QUOTE_COUNT = 3
 
 @Repository
 class BookQuoteExtractionTargetRepository(
@@ -51,7 +49,7 @@ class BookQuoteExtractionTargetRepository(
         extractionVersion: Int,
     ): Condition =
         BookTable.DELETED_AT.isNull
-            .and(activeQuoteCountLessThanRecommended())
+            .and(activeQuoteCountLessThanRecommended(BookTable.ID))
             .and(noPendingCandidateExists())
             .and(noSucceededQuoteExtractionAttempt(extractionModel, extractionVersion))
 
@@ -68,21 +66,10 @@ class BookQuoteExtractionTargetRepository(
             deletedAt = record.get(BookTable.DELETED_AT),
         )
 
-    private fun activeQuoteCountLessThanRecommended() = activeQuoteCount().lessThan(RECOMMENDED_QUOTE_COUNT)
-
-    private fun activeQuoteCount(): Field<Int> = DSL.field(activeQuoteCountSelect())
-
     private fun noSucceededQuoteExtractionAttempt(
         extractionModel: String,
         extractionVersion: Int,
     ): Condition = DSL.notExists(succeededQuoteExtractionAttemptSelect(extractionModel, extractionVersion))
-
-    private fun activeQuoteCountSelect(): Select<Record1<Int>> =
-        DSL
-            .selectCount()
-            .from(QuoteTable.QUOTES)
-            .where(QuoteTable.BOOK_ID.eq(BookTable.ID))
-            .and(QuoteTable.DELETED_AT.isNull)
 
     private fun succeededQuoteExtractionAttemptSelect(
         extractionModel: String,
