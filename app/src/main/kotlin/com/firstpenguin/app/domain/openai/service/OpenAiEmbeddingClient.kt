@@ -88,7 +88,7 @@ class OpenAiEmbeddingClient(
         repeat(MAX_RETRY_ATTEMPTS) { attempt ->
             try {
                 return operation()
-            } catch (exception: Exception) {
+            } catch (exception: RestClientException) {
                 lastException = exception
 
                 if (!exception.isRetryable() || attempt == MAX_RETRY_ATTEMPTS - 1) {
