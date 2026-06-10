@@ -24,10 +24,6 @@ class QuoteMetadataBatchResultService(
         results: List<ParsedBatchQuoteResult>,
     ) {
         val job = findJob(jobId)
-        if (markFailedWhenQuoteIdMissing(jobId, results)) {
-            return
-        }
-
         val tagIdByCode = getTagIdByCode()
         val statuses = results.map { result -> saveBatchResult(job, result, tagIdByCode) }
 
@@ -47,7 +43,7 @@ class QuoteMetadataBatchResultService(
             result.errorMessage != null -> {
                 saveFailedBatchResult(
                     jobId = job.id,
-                    quoteId = requireNotNull(result.quoteId),
+                    customId = result.customId,
                     errorMessage = result.errorMessage,
                 )
             }
@@ -65,8 +61,39 @@ class QuoteMetadataBatchResultService(
         runCatching {
             saveSucceededBatchResult(job, result, tagIdByCode)
         }.getOrElse { exception ->
-            saveFailedBatchResult(job.id, requireNotNull(result.quoteId), exception.message)
+            saveFailedBatchResult(
+                jobId = job.id,
+                customId = result.customId,
+                errorMessage = exception.message,
+            )
         }
+
+    private fun saveFailedBatchResult(
+        jobId: Long,
+        customId: String,
+        errorMessage: String?,
+    ): BatchItemStatus {
+        updateBatchItemStatus(
+            jobId = jobId,
+            customId = customId,
+            status = BatchItemStatus.FAILED,
+            errorMessage = errorMessage,
+        )
+
+        return BatchItemStatus.FAILED
+    }
+
+    private fun updateBatchItemStatus(
+        jobId: Long,
+        customId: String,
+        status: BatchItemStatus,
+        errorMessage: String? = null,
+    ) = quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemStatus(
+        jobId = jobId,
+        customId = customId,
+        status = status,
+        errorMessage = errorMessage,
+    )
 
     private fun saveSucceededBatchResult(
         job: QuoteBatchJob,
@@ -78,7 +105,12 @@ class QuoteMetadataBatchResultService(
         val tags = result.toQuoteMetadataTags(metadataId, tagIdByCode)
 
         quoteMetadataRepository.replaceQuoteMetadataTags(metadataId, tags)
-        updateBatchItemStatus(job.id, requireNotNull(result.quoteId), BatchItemStatus.SUCCEEDED)
+
+        updateBatchItemStatus(
+            jobId = job.id,
+            customId = result.customId,
+            status = BatchItemStatus.SUCCEEDED,
+        )
 
         return BatchItemStatus.SUCCEEDED
     }
@@ -86,49 +118,6 @@ class QuoteMetadataBatchResultService(
     private fun findJob(jobId: Long): QuoteBatchJob =
         quoteBatchJobRepository.findByIdAndJobType(jobId, QUOTE_METADATA_JOB_TYPES)
             ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
-
-    private fun markFailedWhenQuoteIdMissing(
-        jobId: Long,
-        results: List<ParsedBatchQuoteResult>,
-    ): Boolean {
-        val result = results.firstOrNull { batchResult -> batchResult.quoteId == null }
-        result?.let { missingResult -> markWholeJobFailed(jobId, missingResult) }
-        return result != null
-    }
-
-    private fun markWholeJobFailed(
-        jobId: Long,
-        result: ParsedBatchQuoteResult,
-    ) {
-        val errorMessage = "Batch output has no quoteId: ${result.customId}"
-        quoteBatchJobRepository.updateQuoteBatchJobAsFailed(jobId)
-        quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
-            jobId = jobId,
-            status = BatchItemStatus.FAILED,
-            errorMessage = errorMessage,
-        )
-    }
-
-    private fun saveFailedBatchResult(
-        jobId: Long,
-        quoteId: Long,
-        errorMessage: String?,
-    ): BatchItemStatus {
-        updateBatchItemStatus(jobId, quoteId, BatchItemStatus.FAILED, errorMessage)
-        return BatchItemStatus.FAILED
-    }
-
-    private fun updateBatchItemStatus(
-        jobId: Long,
-        quoteId: Long,
-        status: BatchItemStatus,
-        errorMessage: String? = null,
-    ) = quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemStatus(
-        jobId = jobId,
-        quoteId = quoteId,
-        status = status,
-        errorMessage = errorMessage,
-    )
 
     private fun getTagIdByCode(): Map<String, Long> =
         tagRepository

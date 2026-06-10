@@ -26,10 +26,10 @@ class QuoteMetadataBatchItemRepository(
 
     fun updateQuoteMetadataBatchItemStatus(
         jobId: Long,
-        quoteId: Long,
+        customId: String,
         status: BatchItemStatus,
         errorMessage: String? = null,
-    ) = updateItemStatus(jobId, quoteId, status, errorMessage)
+    ) = updateItemStatus(jobId, customId, status, errorMessage)
 
     private fun countItemsWithoutMetadata(statuses: List<BatchItemStatus>): Int =
         dsl
@@ -57,7 +57,7 @@ class QuoteMetadataBatchItemRepository(
 
     private fun updateItemStatus(
         jobId: Long,
-        quoteId: Long,
+        customId: String,
         status: BatchItemStatus,
         errorMessage: String?,
     ) {
@@ -67,7 +67,7 @@ class QuoteMetadataBatchItemRepository(
             .set(QuoteBatchItemTable.ERROR_MESSAGE, errorMessage)
             .set(QuoteBatchItemTable.UPDATED_AT, LocalDateTime.now())
             .where(QuoteBatchItemTable.JOB_ID.eq(jobId))
-            .and(QuoteBatchItemTable.TARGET_ID.eq(quoteId))
+            .and(QuoteBatchItemTable.CUSTOM_ID.eq(customId))
             .execute()
     }
 
