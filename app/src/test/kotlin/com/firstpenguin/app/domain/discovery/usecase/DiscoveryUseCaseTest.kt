@@ -1,5 +1,7 @@
 package com.firstpenguin.app.domain.discovery.usecase
 
+import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.discovery.service.DiscoveryService
 import com.firstpenguin.app.global.exception.CustomException
@@ -76,6 +78,42 @@ class DiscoveryUseCaseTest {
 
         assertEquals(emptyList(), response.quotes)
         assertFalse(response.hasNext)
+    }
+
+    @Test
+    fun `유효한 커서로 조회하면 파싱된 커서가 서비스에 전달된다`() {
+        val quote = discoveryQuote(QUOTE_ID)
+        Mockito
+            .`when`(
+                discoveryService.getRecommendedQuotes(
+                    USER_ID,
+                    DiscoveryCursor(RECOMMENDED_AT, QUOTE_ID),
+                    null,
+                    DISCOVERY_QUOTE_FETCH_COUNT,
+                ),
+            ).thenReturn(listOf(quote))
+
+        val response = discoveryUseCase.getDiscoveryQuotes(USER_ID, cursor = EXPECTED_NEXT_CURSOR, genre = null)
+
+        assertEquals(1, response.quotes.size)
+    }
+
+    @Test
+    fun `유효한 장르로 조회하면 파싱된 장르가 서비스에 전달된다`() {
+        val quote = discoveryQuote(QUOTE_ID)
+        Mockito
+            .`when`(
+                discoveryService.getRecommendedQuotes(
+                    USER_ID,
+                    null,
+                    DiscoveryGenre.KOREAN_NOVEL,
+                    DISCOVERY_QUOTE_FETCH_COUNT,
+                ),
+            ).thenReturn(listOf(quote))
+
+        val response = discoveryUseCase.getDiscoveryQuotes(USER_ID, cursor = null, genre = GENRE)
+
+        assertEquals(1, response.quotes.size)
     }
 
     @Test
