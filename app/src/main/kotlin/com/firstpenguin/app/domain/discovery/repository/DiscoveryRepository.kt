@@ -1,11 +1,13 @@
 package com.firstpenguin.app.domain.discovery.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
+import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationTable
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -18,8 +20,9 @@ import java.time.LocalDateTime
 class DiscoveryRepository(
     private val dsl: DSLContext,
 ) {
-    fun findRandomRecommendedQuotes(
+    fun findRecommendedQuotes(
         userId: Long,
+        cursor: DiscoveryCursor?,
         limit: Int,
     ): List<DiscoveryQuote> {
         if (limit <= 0) return emptyList()
@@ -38,13 +41,31 @@ class DiscoveryRepository(
             .leftJoin(QuoteScrapTable.QUOTE_SCRAPS)
             .on(QuoteScrapTable.QUOTE_ID.eq(QuoteTable.ID))
             .and(QuoteScrapTable.USER_ID.eq(userId))
-            .where(recommendationRank(rankedRecommendationEvents).eq(LATEST_RECOMMENDATION_RANK))
+            .where(latestRecommendedQuoteCondition(rankedRecommendationEvents, cursor))
             .and(QuoteTable.DELETED_AT.isNull)
             .and(BookTable.DELETED_AT.isNull)
-            .orderBy(DSL.function("random", Double::class.java))
+            .orderBy(at(rankedRecommendationEvents).desc(), QuoteTable.ID.desc())
             .limit(limit)
             .fetch(::toDiscoveryQuote)
     }
+
+    private fun latestRecommendedQuoteCondition(
+        rankedRecommendationEvents: Table<*>,
+        cursor: DiscoveryCursor?,
+    ): Condition {
+        val latestCondition = recommendationRank(rankedRecommendationEvents).eq(LATEST_RECOMMENDATION_RANK)
+        if (cursor == null) return latestCondition
+
+        return latestCondition.and(cursorCondition(rankedRecommendationEvents, cursor))
+    }
+
+    private fun cursorCondition(
+        rankedRecommendationEvents: Table<*>,
+        cursor: DiscoveryCursor,
+    ): Condition =
+        at(rankedRecommendationEvents)
+            .lt(cursor.recommendedAt)
+            .or(at(rankedRecommendationEvents).eq(cursor.recommendedAt).and(QuoteTable.ID.lt(cursor.quoteId)))
 
     private fun toDiscoveryQuote(record: Record): DiscoveryQuote =
         DiscoveryQuote(
