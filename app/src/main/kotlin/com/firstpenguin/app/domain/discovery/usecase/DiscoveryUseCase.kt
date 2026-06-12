@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.discovery.usecase
 import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuoteResponse
 import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuotesResponse
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.discovery.service.DiscoveryService
 import org.springframework.stereotype.Service
@@ -19,18 +20,21 @@ class DiscoveryUseCase(
     fun getDiscoveryQuotes(
         userId: Long,
         cursor: String?,
+        genre: String?,
     ): DiscoveryQuotesResponse {
-        val quotes = fetchQuotesWithNextPageCheck(userId, cursor)
+        val quotes = fetchQuotesWithNextPageCheck(userId, cursor, genre)
         return toDiscoveryQuotesResponse(quotes)
     }
 
     private fun fetchQuotesWithNextPageCheck(
         userId: Long,
         cursor: String?,
+        genre: String?,
     ): List<DiscoveryQuote> =
         discoveryService.getRecommendedQuotes(
             userId = userId,
             cursor = DiscoveryCursor.parse(cursor),
+            genre = DiscoveryGenre.parse(genre),
             limit = DISCOVERY_QUOTE_COUNT + NEXT_PAGE_CHECK_COUNT,
         )
 

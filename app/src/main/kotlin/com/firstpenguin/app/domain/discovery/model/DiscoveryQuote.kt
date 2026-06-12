@@ -10,6 +10,7 @@ data class DiscoveryQuote(
     val title: String,
     val author: String,
     val bookCoverImageUrl: String,
+    val genre: String?,
     val recommendedAt: LocalDateTime,
     val isScrapped: Boolean,
 )
