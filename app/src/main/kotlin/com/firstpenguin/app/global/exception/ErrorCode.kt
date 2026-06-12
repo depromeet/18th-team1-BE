@@ -45,26 +45,23 @@ enum class ErrorCode(
 
     // Diary
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "일기를 찾을 수 없습니다"),
-    DIARY_UPDATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 수정할 수 있습니다"),
-    DIARY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "오늘 작성한 일기만 삭제할 수 있습니다"),
-    DIARY_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "일기 생성에 실패했습니다."),
-    DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘 작성한 일기가 존재합니다."),
-    INVALID_DIARY_QUERY_RESULT(HttpStatus.INTERNAL_SERVER_ERROR, "일기 조회 결과가 올바르지 않습니다."),
 
     // Recommendation
-    DAILY_RECOMMENDATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 오늘의 추천 문구가 존재합니다."),
-    DAILY_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 추천 문구가 존재하지 않습니다."),
-    INVALID_DAILY_RECOMMENDATION(HttpStatus.BAD_REQUEST, "오늘 생성된 추천 문구만 사용할 수 있습니다."),
+    RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 기록이 존재하지 않습니다."),
     INVALID_RECOMMENDATION_QUOTE(HttpStatus.BAD_REQUEST, "추천받은 문장만 선택할 수 있습니다."),
-    EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT(HttpStatus.CONFLICT, "일일 추천 문구 더보기 횟수를 초과했습니다."),
-    FORBIDDEN_DAILY_RECOMMENDATION(HttpStatus.FORBIDDEN, "본인의 일일 추천 문구만 사용할 수 있습니다."),
+    EXCEEDED_RECOMMENDATION_QUOTE_LIMIT(HttpStatus.CONFLICT, "추천 문장 더보기 개수를 초과했습니다."),
+    FORBIDDEN_RECOMMENDATION(HttpStatus.FORBIDDEN, "본인의 추천 기록만 사용할 수 있습니다."),
+    RECOMMENDATION_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 추천은 최대 5개까지 생성할 수 있습니다."),
+    RECOMMENDATION_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "추천 기록 생성에 실패했습니다."),
+    RECOMMENDATION_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 문장을 선택한 추천입니다."),
+    RECOMMENDATION_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 문장을 선택하지 않은 추천입니다."),
+    INVALID_RECOMMENDATION_NEED_INPUT(HttpStatus.BAD_REQUEST, "기대 태그 또는 직접 입력 문장 중 하나만 선택해야 합니다."),
 
     // Book
     BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "책이 존재하지 않습니다."),
 
     // Quote
     NOT_ENOUGH_QUOTES(HttpStatus.CONFLICT, "추천 가능한 문장이 부족합니다."),
-    QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장을 찾을 수 없습니다."),
 
     // OpenAi
     BATCH_ADMIN_SECRET_REQUIRED(HttpStatus.INTERNAL_SERVER_ERROR, "배치 관리자 secret 설정이 누락되었습니다."),

@@ -2,7 +2,8 @@ package com.firstpenguin.app.domain.recommendation.controller
 
 import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
-import com.firstpenguin.app.domain.recommendation.dto.DailyRecommendationResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationDetailResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationPeriodResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.useCase.RecommendationUseCase
@@ -11,14 +12,18 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 
 @RestController
 @RequestMapping("/recommendations")
@@ -27,26 +32,9 @@ class RecommendationController(
     private val recommendationUseCase: RecommendationUseCase,
 ) {
     @Operation(
-        summary = "일일 추천 상세 조회 API",
-        description = "dailyRecommendationId를 기준으로 추천 당시 선택한 태그와 추천 문장 정보를 조회한다.",
+        summary = "추천 시작 API",
+        description = "사용자 입력과 선택 태그를 저장한 뒤 최초 추천 문장 1개를 반환한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
-    )
-    @GetMapping("/{dailyRecommendationId}")
-    fun getDailyRecommendationDetail(
-        @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-        @PathVariable dailyRecommendationId: Long,
-    ): ResponseEntity<DailyRecommendationResponse> =
-        ResponseEntity.ok(
-            recommendationUseCase.getDailyRecommendationDetail(
-                userId = authenticatedUser.id,
-                dailyRecommendationId = dailyRecommendationId,
-            ),
-        )
-
-    @Operation(
-        summary = "감정/기대 태그 선택, 사용자 문장을 받아 추천된 문장 반환 API",
-        description = "사용자가 선택한 감정 태그와 기대 태그를 검증하고, 추천된 문장을 반환한다.",
     )
     @PostMapping("/quotes")
     fun recommendationQuote(
@@ -61,18 +49,115 @@ class RecommendationController(
         )
 
     @Operation(
-        summary = "문장 더보기 조회 API",
-        description = "오늘의 추천 문구 외에 추가 문장 3개를 조회하여 반환한다.",
+        summary = "추천 문장 더보기 API",
+        description = "추천 기록에 추가 후보 문장 9개를 저장하고 반환한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
-    @PostMapping("/{dailyRecommendationId}/quotes")
+    @PostMapping("/{recommendationId}/quotes")
     fun getNextRecommendationQuotes(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-        @PathVariable dailyRecommendationId: Long,
+        @PathVariable recommendationId: Long,
     ): ResponseEntity<List<QuoteResponse>> =
         ResponseEntity.ok(
             recommendationUseCase.getNextRecommendationQuotes(
                 userId = authenticatedUser.id,
-                dailyRecommendationId = dailyRecommendationId,
+                recommendationId = recommendationId,
             ),
         )
+
+    @Operation(
+        summary = "추천 후보 문장 조회 API",
+        description = "추천 기록에 저장된 후보 문장 목록을 조회한다. 진행 중인 추천 화면 복구에 사용한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @GetMapping("/{recommendationId}/quotes")
+    fun getRecommendationQuoteCandidates(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @PathVariable recommendationId: Long,
+    ): ResponseEntity<List<QuoteResponse>> =
+        ResponseEntity.ok(
+            recommendationUseCase.getRecommendationQuoteCandidates(
+                userId = authenticatedUser.id,
+                recommendationId = recommendationId,
+            ),
+        )
+
+    @Operation(
+        summary = "추천 문장 최종 선택 API",
+        description = "추천 후보로 받은 문장 중 하나를 오늘의 문장으로 최종 선택하고 추천 상세 정보를 반환한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @PostMapping("/{recommendationId}/quotes/{quoteId}/select")
+    fun selectRecommendationQuote(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @PathVariable recommendationId: Long,
+        @PathVariable quoteId: Long,
+    ): ResponseEntity<RecommendationDetailResponse> =
+        ResponseEntity.ok(
+            recommendationUseCase.selectRecommendationQuote(
+                userId = authenticatedUser.id,
+                recommendationId = recommendationId,
+                quoteId = quoteId,
+            ),
+        )
+
+    @Operation(
+        summary = "기간별 추천 기록 조회 API",
+        description = "기간 내 최종 선택된 추천 기록 목록을 조회한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @GetMapping
+    fun getRecommendationsByPeriod(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @Parameter(description = "조회 시작일", example = "2026-06-01")
+        @RequestParam
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        start: LocalDate,
+        @Parameter(description = "조회 종료일", example = "2026-06-30")
+        @RequestParam
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        end: LocalDate,
+    ): ResponseEntity<RecommendationPeriodResponse> =
+        ResponseEntity.ok(
+            recommendationUseCase.getRecommendationsByPeriod(
+                userId = authenticatedUser.id,
+                start = start,
+                end = end,
+            ),
+        )
+
+    @Operation(
+        summary = "추천 기록 상세 조회 API",
+        description = "최종 선택된 추천 기록의 문장, 책, 태그, 사용자 입력을 조회한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @GetMapping("/{recommendationId}")
+    fun getRecommendationDetail(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @PathVariable recommendationId: Long,
+    ): ResponseEntity<RecommendationDetailResponse> =
+        ResponseEntity.ok(
+            recommendationUseCase.getRecommendationDetail(
+                userId = authenticatedUser.id,
+                recommendationId = recommendationId,
+            ),
+        )
+
+    @Operation(
+        summary = "추천 기록 삭제 API",
+        description = "사용자의 추천 기록, 추천 기록에 연결된 문장, 태그 정보를 삭제한다.",
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @DeleteMapping("/{recommendationId}")
+    fun deleteRecommendation(
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @PathVariable recommendationId: Long,
+    ): ResponseEntity<Unit> {
+        recommendationUseCase.deleteRecommendation(
+            userId = authenticatedUser.id,
+            recommendationId = recommendationId,
+        )
+
+        return ResponseEntity.noContent().build()
+    }
 }

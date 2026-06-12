@@ -19,59 +19,41 @@ class EmotionService(
         return tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
     }
 
-    fun getEmotionRange(value: Int): EmotionRange =
-        emotionRangeRepository.getEmotionRange(value)
-            ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
-
     fun getNeedTags(): List<Tag> = tagRepository.getNeedTags()
-
-    fun selectEmotionTags(emotionTagIds: List<Long>): List<Tag> {
-        val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
-
-        validateEmotionTags(emotionTags, emotionTagIds)
-        validateSameEmotionRange(emotionTags)
-
-        return emotionTags
-    }
-
-    fun selectNeedTags(needTagIds: List<Long>): List<Tag> {
-        val needTags = tagRepository.getNeedTagsByTagIdsIn(needTagIds)
-
-        validateNeedTags(needTags, needTagIds)
-
-        return needTags
-    }
 
     fun getTagsByIds(tagIds: List<Long>): Pair<List<Tag>, List<Tag>> =
         tagRepository.getEmotionTagsByTagIdsIn(tagIds) to tagRepository.getNeedTagsByTagIdsIn(tagIds)
 
-    fun validateEmotionTags(
-        emotionValue: Int,
-        tagIds: List<Long>,
-    ) {
-        val emotionRange = getEmotionRange(emotionValue)
-
-        validateEmotionTagsInRange(
-            tagIds = tagIds,
-            emotionRangeId = emotionRange.id,
-        )
-    }
-
-    private fun validateEmotionTagsInRange(
-        tagIds: List<Long>,
+    fun validateTags(
         emotionRangeId: Long,
+        emotionTagIds: List<Long>,
+        needTagIds: List<Long>,
     ) {
-        val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(tagIds)
-
-        validateEmotionTags(emotionTags, tagIds)
-        validateSameEmotionRange(emotionTags)
-
-        if (emotionTags.any { tag -> tag.emotionRangeId != emotionRangeId }) {
-            throw CustomException(ErrorCode.INVALID_EMOTION_TAG_RANGE)
-        }
+        validateEmotionTags(emotionTagIds, emotionRangeId)
+        validateNeedTags(needTagIds)
     }
 
     private fun validateEmotionTags(
+        emotionTagIds: List<Long>,
+        emotionRangeId: Long,
+    ) {
+        val emotionTags = tagRepository.getEmotionTagsByTagIdsIn(emotionTagIds)
+
+        validateEmotionTagIds(emotionTags, emotionTagIds)
+        validateSameEmotionRange(emotionTags, emotionRangeId)
+    }
+
+    private fun validateNeedTags(needTagIds: List<Long>) {
+        val needTags = tagRepository.getNeedTagsByTagIdsIn(needTagIds)
+
+        validateNeedTagsIds(needTags, needTagIds)
+    }
+
+    private fun getEmotionRange(value: Int): EmotionRange =
+        emotionRangeRepository.getEmotionRange(value)
+            ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
+
+    private fun validateEmotionTagIds(
         emotionTags: List<Tag>,
         emotionTagIds: List<Long>,
     ) {
@@ -80,7 +62,7 @@ class EmotionService(
         }
     }
 
-    private fun validateNeedTags(
+    private fun validateNeedTagsIds(
         needTags: List<Tag>,
         needTagIds: List<Long>,
     ) {
@@ -89,9 +71,13 @@ class EmotionService(
         }
     }
 
-    private fun validateSameEmotionRange(emotionTags: List<Tag>) {
-        val rangeIds = emotionTags.mapNotNull { it.emotionRangeId }.toSet()
-        if (rangeIds.size != 1) {
+    private fun validateSameEmotionRange(
+        emotionTags: List<Tag>,
+        emotionRangeId: Long,
+    ) {
+        val rangeIds = emotionTags.mapNotNull { tag -> tag.emotionRangeId }.toSet()
+
+        if (rangeIds.size != 1 || rangeIds.first() != emotionRangeId) {
             throw CustomException(ErrorCode.INVALID_EMOTION_TAG_RANGE)
         }
     }
