@@ -5,6 +5,9 @@ DROP INDEX IF EXISTS daily_recommendation_quotes_recommendation_quote_uidx;
 DROP INDEX IF EXISTS daily_recommendation_quotes_recommendation_display_order_uidx;
 DROP INDEX IF EXISTS daily_recommendation_tags_recommendation_tag_uidx;
 
+ALTER TABLE daily_recommendations
+    RENAME COLUMN selected_emotion_range_id TO emotion_range_id;
+
 ALTER TABLE IF EXISTS daily_recommendations
     ADD COLUMN IF NOT EXISTS feeling_text TEXT;
 
