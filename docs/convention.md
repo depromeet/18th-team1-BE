@@ -78,6 +78,8 @@ feat: 회원가입 API 추가
 
 - 최소 **1명 이상 Approve 필요**
 - 리뷰 요청 후 **24시간 내 응답**
+- PR 생성 시 GitHub Actions가 작성자를 제외한 팀원에게 리뷰를 자동 요청
+- PR 작성자는 자동으로 assignee에 등록
 
 ### 예외 (hotfix)
 
@@ -98,8 +100,8 @@ feat: 회원가입 API 추가
 ### 이슈 템플릿
 
 - **Feature** (`.github/ISSUE_TEMPLATE/01-feature.yml`) — 적용 완료
-- **Fix** (`.github/ISSUE_TEMPLATE/02-fix.yml`) — 미적용
-- **Refactor** (`.github/ISSUE_TEMPLATE/03-refactor.yml`) — 미적용
+- **Fix** (`.github/ISSUE_TEMPLATE/02-fix.yml`) — 적용 완료
+- **Refactor** (`.github/ISSUE_TEMPLATE/03-refactor.yml`) — 적용 완료
 
 ### PR 템플릿
 
@@ -189,5 +191,5 @@ Controller → UseCase(Facade) → Service → Repository
 
 ### 도구
 
-- 코드 리뷰: CodeRabbit (미적용)
+- 코드 리뷰: CodeRabbit
 - 모델 활용: HuggingFace (Emotion Classification)
