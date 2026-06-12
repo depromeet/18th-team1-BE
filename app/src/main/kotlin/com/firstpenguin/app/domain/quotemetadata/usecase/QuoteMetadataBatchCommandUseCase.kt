@@ -6,8 +6,8 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quotemetadata.dto.ParsedBatchQuoteResult
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchResultService
+import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchService
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchStatusService
-import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataService
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
@@ -16,25 +16,25 @@ import org.springframework.transaction.annotation.Transactional
 
 @Component
 class QuoteMetadataBatchCommandUseCase(
-    private val quoteMetadataService: QuoteMetadataService,
+    private val quoteMetadataBatchService: QuoteMetadataBatchService,
     private val quoteMetadataBatchStatusService: QuoteMetadataBatchStatusService,
     private val quoteMetadataBatchResultService: QuoteMetadataBatchResultService,
 ) {
     @Transactional
     fun prepareBatch(limit: Int): PreparedQuoteMetadataBatch {
-        quoteMetadataService.validateNoRunningJob()
+        quoteMetadataBatchService.validateNoRunningJob()
 
-        val pendingQuotes = quoteMetadataService.getPendingQuotes(limit = limit)
+        val pendingQuotes = quoteMetadataBatchService.getPendingQuotes(limit = limit)
         if (pendingQuotes.isEmpty()) {
             throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
         }
 
         val jobId =
-            quoteMetadataService.createPreparingQuoteMetadataBatchJob(
+            quoteMetadataBatchService.createPreparingQuoteMetadataBatchJob(
                 submittedCount = pendingQuotes.size,
             )
 
-        quoteMetadataService.createQuoteMetadataBatchItem(
+        quoteMetadataBatchService.createQuoteMetadataBatchItem(
             jobId = jobId,
             quoteIds = pendingQuotes.map { quote -> quote.id },
             status = BatchItemStatus.PREPARING,
@@ -52,7 +52,7 @@ class QuoteMetadataBatchCommandUseCase(
         batch: OpenAiBatchResponse,
         inputFile: OpenAiFileResponse,
     ) {
-        quoteMetadataService.markQuoteMetadataBatchSubmitted(
+        quoteMetadataBatchService.markQuoteMetadataBatchSubmitted(
             jobId = jobId,
             batch = batch,
             inputFile = inputFile,
@@ -64,7 +64,7 @@ class QuoteMetadataBatchCommandUseCase(
         jobId: Long,
         errorMessage: String?,
     ) {
-        quoteMetadataService.markQuoteMetadataBatchFailed(
+        quoteMetadataBatchService.markQuoteMetadataBatchFailed(
             jobId = jobId,
             errorMessage = errorMessage,
         )

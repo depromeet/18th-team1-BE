@@ -5,12 +5,12 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiFileResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiBatchClient
 import com.firstpenguin.app.domain.quotemetadata.dto.QuoteMetadataBatchSubmitResponse
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchJsonlBuilder
-import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataService
+import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchService
 import org.springframework.stereotype.Component
 
 @Component
 class QuoteMetadataBatchSubmitProcessor(
-    private val quoteMetadataService: QuoteMetadataService,
+    private val quoteMetadataBatchService: QuoteMetadataBatchService,
     private val quoteMetadataBatchJsonlBuilder: QuoteMetadataBatchJsonlBuilder,
     private val openAiBatchClient: OpenAiBatchClient,
     private val quoteMetadataBatchCommandUseCase: QuoteMetadataBatchCommandUseCase,
@@ -38,7 +38,7 @@ class QuoteMetadataBatchSubmitProcessor(
     private fun buildBatchInput(preparedBatch: PreparedQuoteMetadataBatch): String =
         quoteMetadataBatchJsonlBuilder.build(
             quotes = preparedBatch.quotes,
-            tagGroups = quoteMetadataService.getAllTagsByType(),
+            tagGroups = quoteMetadataBatchService.getAllTagsByType(),
         )
 
     private fun markBatchSubmitted(
