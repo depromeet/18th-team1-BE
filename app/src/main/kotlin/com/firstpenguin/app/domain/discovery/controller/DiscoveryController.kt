@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -19,13 +20,27 @@ class DiscoveryController(
     private val discoveryUseCase: DiscoveryUseCase,
 ) {
     @Operation(
-        summary = "발견탭 랜덤 문장 조회 API",
-        description = "누군가에게 한 번이라도 추천된 문장을 랜덤으로 10개까지 조회한다.",
+        summary = "발견탭 문장 목록 조회 API",
+        description =
+            "누군가에게 한 번이라도 추천된 문장을 최신 추천 이력 순으로 10개씩 조회한다. " +
+                "첫 페이지는 `cursor` 없이 요청하고, 다음 페이지는 직전 응답의 `nextCursor` 값을 그대로 전달한다. " +
+                "`cursor`는 서버가 발급하는 URL-safe Base64 인코딩 문자열이며 클라이언트에서 직접 생성하거나 해석하지 않는다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @GetMapping("/quotes")
     fun getDiscoveryQuotes(
         @Parameter(hidden = true)
         @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-    ): DiscoveryQuotesResponse = discoveryUseCase.getDiscoveryQuotes(authenticatedUser.id)
+        @Parameter(
+            description =
+                "다음 페이지 조회 커서. 첫 페이지에서는 생략한다. " +
+                    "직전 응답의 `nextCursor` 값을 그대로 전달하며, 클라이언트에서 디코딩하거나 수정하지 않는다.",
+            example = "MjAyNi0wNi0wNVQxMjozNDo1NnwxMA",
+        )
+        @RequestParam(required = false) cursor: String?,
+    ): DiscoveryQuotesResponse =
+        discoveryUseCase.getDiscoveryQuotes(
+            userId = authenticatedUser.id,
+            cursor = cursor,
+        )
 }
