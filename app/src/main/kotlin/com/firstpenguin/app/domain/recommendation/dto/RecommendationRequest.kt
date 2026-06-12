@@ -15,7 +15,7 @@ data class RecommendationRequest(
     @field:NotEmpty(message = "감정 태그는 최소 1개 이상 선택해야 합니다.")
     @field:Size(max = 5, message = "감정 태그는 최대 5개까지 선택할 수 있습니다.")
     val emotionTagIds: List<Long>,
-    val needTagIds: List<Long> = emptyList(),
-    val feelingText: String?,
-    val diaryText: String?,
+    val needTagId: Long? = null,
+    val feelingText: String? = null,
+    val diaryText: String? = null,
 )

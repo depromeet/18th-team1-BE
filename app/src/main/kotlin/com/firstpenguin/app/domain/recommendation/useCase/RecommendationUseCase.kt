@@ -22,7 +22,6 @@ import java.time.LocalDate
 
 private const val NEXT_RECOMMENDATION_QUOTE_COUNT = 9
 private const val MAX_EMOTION_TAG_COUNT = 5
-private const val REQUIRED_NEED_TAG_COUNT = 1
 
 @Service
 class RecommendationUseCase(
@@ -38,10 +37,12 @@ class RecommendationUseCase(
     ): RecommendationResponse {
         validateRecommendationRequest(request)
 
+        val selectedTagIds = request.emotionTagIds + listOfNotNull(request.needTagId)
+
         emotionService.validateTags(
             emotionRangeId = request.emotionRangeId,
             emotionTagIds = request.emotionTagIds,
-            needTagIds = request.needTagIds,
+            needTagId = request.needTagId,
         )
 
         recommendationService.lockRecommendationCreation(userId)
@@ -62,7 +63,7 @@ class RecommendationUseCase(
 
         recommendationService.createRecommendationTags(
             recommendationId = recommendationId,
-            tagIds = request.emotionTagIds + request.needTagIds,
+            tagIds = selectedTagIds,
         )
         recommendationService.createRecommendationQuotes(
             recommendationId = recommendationId,
@@ -87,10 +88,10 @@ class RecommendationUseCase(
     }
 
     private fun validateNeedInput(request: RecommendationRequest) {
-        val hasNeedTag = request.needTagIds.isNotEmpty()
+        val hasNeedTag = request.needTagId != null
         val hasFeelingText = request.feelingText.hasText()
 
-        if (request.needTagIds.size > REQUIRED_NEED_TAG_COUNT || hasNeedTag == hasFeelingText) {
+        if (hasNeedTag == hasFeelingText) {
             throw CustomException(ErrorCode.INVALID_RECOMMENDATION_NEED_INPUT)
         }
     }
@@ -244,14 +245,14 @@ class RecommendationUseCase(
 
         val quoteId = recommendation.quoteId ?: throw CustomException(ErrorCode.RECOMMENDATION_NOT_COMPLETED)
         val quote = quoteService.findQuoteById(quoteId)
-        val (emotionTags, needTags) = toTagDtos(recommendationService.getRecommendationTags(recommendation.id))
+        val (emotionTags, needTag) = toTagDtos(recommendationService.getRecommendationTags(recommendation.id))
 
         return RecommendationDetailResponse(
             recommendationId = recommendation.id,
             quote = toQuoteResponse(quote),
             emotionRangeId = recommendation.emotionRangeId,
             emotionTags = emotionTags,
-            needTags = needTags,
+            needTag = needTag,
             feelingText = recommendation.feelingText,
             diaryText = recommendation.diaryText,
             recommendationDate = recommendation.recommendationDate,
@@ -267,11 +268,11 @@ class RecommendationUseCase(
         )
     }
 
-    private fun toTagDtos(recommendationTags: List<RecommendationTag>): Pair<List<TagDto>, List<TagDto>> {
+    private fun toTagDtos(recommendationTags: List<RecommendationTag>): Pair<List<TagDto>, TagDto?> {
         val tagIds = recommendationTags.map { recommendationTag -> recommendationTag.tagId }
-        val (emotionTags, needTags) = emotionService.getTagsByIds(tagIds)
+        val (emotionTags, needTag) = emotionService.getEmotionTagsAndNeedTagByIds(tagIds)
 
-        return emotionTags.map(TagDto::from) to needTags.map(TagDto::from)
+        return emotionTags.map(TagDto::from) to needTag?.let(TagDto::from)
     }
 }
 

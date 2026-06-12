@@ -9,7 +9,7 @@ data class RecommendationDetailResponse(
     val quote: QuoteResponse,
     val emotionRangeId: Long,
     val emotionTags: List<TagDto>,
-    val needTags: List<TagDto>,
+    val needTag: TagDto?,
     val feelingText: String?,
     val diaryText: String?,
     val recommendationDate: LocalDate,
