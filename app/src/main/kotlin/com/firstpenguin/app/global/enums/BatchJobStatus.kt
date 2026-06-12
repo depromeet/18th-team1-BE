@@ -36,7 +36,7 @@ enum class BatchJobStatus {
     companion object {
         fun from(value: String): BatchJobStatus =
             entries.find { it.name == value.uppercase() }
-                ?: throw CustomException(ErrorCode.INVALID_QUOTE_METADATA_BATCH_STATUS)
+                ?: throw CustomException(ErrorCode.INVALID_QUOTE_BATCH_JOB_STATUS)
 
         fun runningStatuses(): List<BatchJobStatus> =
             listOf(

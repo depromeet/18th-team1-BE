@@ -3,7 +3,7 @@ package com.firstpenguin.app.domain.quotemetadata.usecase
 import com.firstpenguin.app.domain.embedding.usecase.QuoteEmbeddingBulkProcessor
 import com.firstpenguin.app.domain.openai.dto.OpenAiBatchStatusResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiBatchClient
-import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadataBatchJob
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchJob
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchOutputParser
 import com.firstpenguin.app.domain.quotemetadata.service.QuoteMetadataBatchStatusService
 import com.firstpenguin.app.global.enums.BatchJobStatus
@@ -29,11 +29,11 @@ class QuoteMetadataBatchSyncProcessor(
         syncCompletedBatchIfReady(job)
     }
 
-    private fun findJob(jobId: Long): QuoteMetadataBatchJob =
+    private fun findJob(jobId: Long): QuoteBatchJob =
         quoteMetadataBatchStatusService.getJob(jobId)
-            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+            ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_NOT_FOUND)
 
-    private fun syncJobStatus(job: QuoteMetadataBatchJob): OpenAiBatchStatusResponse? =
+    private fun syncJobStatus(job: QuoteBatchJob): OpenAiBatchStatusResponse? =
         job.openAiBatchId?.let { batchId ->
             syncOpenAiBatchStatus(job.id, batchId)
         }
@@ -54,7 +54,7 @@ class QuoteMetadataBatchSyncProcessor(
             throw exception.toQuoteMetadataBatchException()
         }
 
-    private fun syncCompletedBatchIfReady(job: QuoteMetadataBatchJob) {
+    private fun syncCompletedBatchIfReady(job: QuoteBatchJob) {
         val batch = syncJobStatus(job) ?: return
         val fileIds = batch.completedResultFileIds()
         if (fileIds.isEmpty()) return

@@ -6,6 +6,7 @@ data class Quote(
     val id: Long,
     val bookId: Long,
     val content: String,
+    val sourceType: QuoteSourceType,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val deletedAt: LocalDateTime?,

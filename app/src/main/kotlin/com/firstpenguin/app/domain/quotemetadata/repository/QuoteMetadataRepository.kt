@@ -1,10 +1,12 @@
 package com.firstpenguin.app.domain.quotemetadata.repository
 
 import com.firstpenguin.app.domain.quote.model.Quote
+import com.firstpenguin.app.domain.quote.model.QuoteSourceType
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchItemTable
 import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadata
 import com.firstpenguin.app.domain.quotemetadata.model.QuoteMetadataTag
-import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataBatchItemTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTagTable
 import com.firstpenguin.app.global.enums.BatchItemStatus
@@ -141,10 +143,11 @@ class QuoteMetadataRepository(
         DSL.notExists(
             DSL
                 .selectOne()
-                .from(QuoteMetadataBatchItemTable.QUOTE_METADATA_BATCH_ITEMS)
-                .where(QuoteMetadataBatchItemTable.QUOTE_ID.eq(QuoteTable.ID))
+                .from(QuoteBatchItemTable.QUOTE_BATCH_ITEMS)
+                .where(QuoteBatchItemTable.TARGET_ID.eq(QuoteTable.ID))
+                .and(QuoteBatchItemTable.JOB_TYPE.eq(QuoteBatchType.QUOTE_METADATA.name))
                 .and(
-                    QuoteMetadataBatchItemTable.STATUS.`in`(
+                    QuoteBatchItemTable.STATUS.`in`(
                         BatchItemStatus.activeStatuses().map { status -> status.name },
                     ),
                 ),
@@ -155,6 +158,7 @@ class QuoteMetadataRepository(
             id = record[QuoteTable.ID]!!,
             bookId = record[QuoteTable.BOOK_ID]!!,
             content = record[QuoteTable.CONTENT]!!,
+            sourceType = QuoteSourceType.valueOf(record[QuoteTable.SOURCE_TYPE]!!),
             createdAt = record[QuoteTable.CREATED_AT]!!,
             updatedAt = record[QuoteTable.UPDATED_AT]!!,
             deletedAt = record[QuoteTable.DELETED_AT],
@@ -166,6 +170,7 @@ class QuoteMetadataRepository(
                 QuoteTable.ID,
                 QuoteTable.BOOK_ID,
                 QuoteTable.CONTENT,
+                QuoteTable.SOURCE_TYPE,
                 QuoteTable.CREATED_AT,
                 QuoteTable.UPDATED_AT,
                 QuoteTable.DELETED_AT,

@@ -66,21 +66,35 @@ enum class ErrorCode(
     NOT_ENOUGH_QUOTES(HttpStatus.CONFLICT, "추천 가능한 문장이 부족합니다."),
     QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "문장을 찾을 수 없습니다."),
 
-    // QuoteMetadataBatch
+    // OpenAi
     BATCH_ADMIN_SECRET_REQUIRED(HttpStatus.INTERNAL_SERVER_ERROR, "배치 관리자 secret 설정이 누락되었습니다."),
     OPENAI_API_KEY_REQUIRED(HttpStatus.INTERNAL_SERVER_ERROR, "OpenAI API 키 설정이 누락되었습니다."),
-    INVALID_QUOTE_METADATA_BATCH_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 상태가 올바르지 않습니다."),
-    INVALID_QUOTE_METADATA_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 메타정보 배치 대상 상태가 올바르지 않습니다."),
-    QUOTE_METADATA_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 문구 메타정보 배치 작업이 진행 중입니다."),
+    OPENAI_FILE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 파일 업로드에 실패했습니다."),
+    OPENAI_BATCH_CREATE_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 생성에 실패했습니다."),
+    OPENAI_BATCH_STATUS_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 상태 조회에 실패했습니다."),
+    QUOTE_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 배치 작업이 진행 중입니다."),
+    INVALID_QUOTE_BATCH_JOB_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 배치 상태가 올바르지 않습니다."),
+    INVALID_QUOTE_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 배치 대상 상태가 올바르지 않습니다."),
+
+    // QuoteMetadataBatch
+    QUOTE_METADATA_BATCH_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "문구 메타정보 배치 작업이 존재하지 않습니다."),
     QUOTE_METADATA_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "문구 메타정보 배치 대상이 존재하지 않습니다."),
-    QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 요청에 실패했습니다."),
-    QUOTE_METADATA_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 배치 결과에서 output_text를 찾을 수 없습니다."),
+    QUOTE_METADATA_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 문구 메타정보 배치 요청에 실패했습니다."),
+    QUOTE_METADATA_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 문구 메타정보 배치 결과를 찾을 수 없습니다."),
+
+    // QuoteCreationBatch
+    QUOTE_CREATION_BATCH_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 문장 생성 배치 작업이 존재하지 않습니다."),
+    QUOTE_EXTRACTION_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "인용구 추출 배치 대상이 존재하지 않습니다."),
+    QUOTE_REVIEW_BATCH_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 문장 후보 검수 배치 대상이 존재하지 않습니다."),
+    QUOTE_EXTRACTION_BATCH_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 인용구 추출 배치 요청에 실패했습니다."),
+    QUOTE_CREATION_BATCH_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 추천 문장 생성 배치 결과를 찾을 수 없습니다."),
 
     // QuoteEmbedding
     INVALID_QUOTE_EMBEDDING_INPUT(HttpStatus.BAD_REQUEST, "임베딩할 문장 입력이 올바르지 않습니다."),
     QUOTE_EMBEDDING_OPENAI_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 요청에 실패했습니다."),
     QUOTE_EMBEDDING_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답이 비어 있습니다."),
     QUOTE_EMBEDDING_RESPONSE_SIZE_MISMATCH(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 응답 개수가 요청 개수와 다릅니다."),
+    QUOTE_EMBEDDING_DIMENSION_MISMATCH(HttpStatus.BAD_GATEWAY, "OpenAI 임베딩 벡터 차원이 올바르지 않습니다."),
 
     // Image
     INVALID_IMAGE_OWNER_TYPE(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 주인 타입이 올바르지 않습니다."),

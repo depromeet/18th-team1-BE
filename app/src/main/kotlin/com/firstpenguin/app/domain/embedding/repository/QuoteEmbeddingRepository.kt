@@ -1,11 +1,15 @@
 package com.firstpenguin.app.domain.embedding.repository
 
+import com.firstpenguin.app.domain.embedding.model.OpenAiEmbeddingModelVersion
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbedding
 import com.firstpenguin.app.domain.embedding.model.QuoteEmbeddingTarget
 import com.firstpenguin.app.domain.embedding.repository.table.QuoteEmbeddingTable
-import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataBatchItemTable
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchItemTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.global.enums.BatchItemStatus
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -26,7 +30,7 @@ class QuoteEmbeddingRepository(
         dsl
             .select(TARGET_FIELDS)
             .from(QuoteMetadataTable.QUOTE_METADATA)
-            .join(QuoteMetadataBatchItemTable.QUOTE_METADATA_BATCH_ITEMS)
+            .join(QuoteBatchItemTable.QUOTE_BATCH_ITEMS)
             .on(metadataBatchItemJoinCondition())
             .leftJoin(QuoteEmbeddingTable.QUOTE_EMBEDDINGS)
             .on(quoteEmbeddingJoinCondition(embeddingModel))
@@ -58,12 +62,19 @@ class QuoteEmbeddingRepository(
             .set(QuoteEmbeddingTable.EMBEDDING_TEXT_HASH, quoteEmbedding.embeddingTextHash)
             .set(QuoteEmbeddingTable.UPDATED_AT, now)
 
-    private fun vectorField(embedding: List<Double>): Field<String> =
-        DSL.field(
-            "?::vector",
+    private fun vectorField(embedding: List<Double>): Field<String> {
+        val dimension = OpenAiEmbeddingModelVersion.V1.dimension
+
+        if (embedding.size != dimension) {
+            throw CustomException(ErrorCode.QUOTE_EMBEDDING_DIMENSION_MISMATCH)
+        }
+
+        return DSL.field(
+            "?::vector($dimension)",
             String::class.java,
             embedding.toVectorLiteral(),
         )
+    }
 
     private fun List<Double>.toVectorLiteral(): String =
         joinToString(
@@ -79,9 +90,10 @@ class QuoteEmbeddingRepository(
             .and(QuoteEmbeddingTable.EMBEDDING_MODEL.eq(embeddingModel))
 
     private fun batchJobCondition(jobId: Long): Condition =
-        QuoteMetadataBatchItemTable.JOB_ID
+        QuoteBatchItemTable.JOB_ID
             .eq(jobId)
-            .and(QuoteMetadataBatchItemTable.STATUS.eq(BatchItemStatus.SUCCEEDED.name))
+            .and(QuoteBatchItemTable.JOB_TYPE.eq(QuoteBatchType.QUOTE_METADATA.name))
+            .and(QuoteBatchItemTable.STATUS.eq(BatchItemStatus.SUCCEEDED.name))
 
     private fun toQuoteEmbeddingTarget(record: Record): QuoteEmbeddingTarget =
         QuoteEmbeddingTarget(
@@ -94,7 +106,7 @@ class QuoteEmbeddingRepository(
         private const val VECTOR_PREFIX = "["
         private const val VECTOR_POSTFIX = "]"
         private const val EXISTING_EMBEDDING_TEXT_HASH_ALIAS = "existing_embedding_text_hash"
-        private val BATCH_ITEM_QUOTE_ID = QuoteMetadataBatchItemTable.QUOTE_ID
+        private val BATCH_ITEM_QUOTE_ID = QuoteBatchItemTable.TARGET_ID
         private val METADATA_QUOTE_ID = QuoteMetadataTable.QUOTE_ID
         private val EXISTING_EMBEDDING_TEXT_HASH =
             QuoteEmbeddingTable.EMBEDDING_TEXT_HASH.`as`(EXISTING_EMBEDDING_TEXT_HASH_ALIAS)
