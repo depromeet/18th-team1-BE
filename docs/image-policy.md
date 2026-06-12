@@ -10,7 +10,15 @@ DB에는 최종 조회용 public URL을 저장한다.
 presigned URL은 업로드용 임시 URL이므로 DB에 저장하지 않는다.
 클라이언트는 public URL을 직접 저장 API에 전달하지 않고, 백엔드가 발급한 `imageId`만 도메인 API에 전달한다.
 
-현재 스토리지는 GCP Cloud Storage(dev 환경)를 사용한다.
+스토리지 구현은 `cloud.provider` 설정으로 선택한다.
+
+| `cloud.provider` | 구현체 | 용도 |
+|------------------|--------|------|
+| `gcp` | `GcsStorageService` | dev/prod GCP Cloud Storage |
+| `local` 또는 미설정 | `LocalStorageService` | 로컬 개발용 mock URL |
+
+dev/prod 환경은 GCP Cloud Storage를 사용한다.
+로컬에서 별도 GCP 자격증명 없이 API 흐름만 확인할 때는 local 구현이 mock 업로드 URL과 mock 조회 URL을 반환한다.
 
 ## 업로드 흐름
 
@@ -75,6 +83,35 @@ presigned URL 발급 API에서 사용하는 로직이다.
 3. `image_owners`에는 `image_id`, `owner_type`, `owner_id`, `sort_order`가 저장된다.
 
 `images` row는 presigned URL 발급 시점에 이미 생성되어 있으므로, 도메인 생성 시점에는 `image_owners` 연결만 만든다.
+
+## 스토리지 구현
+
+### GCP
+
+`cloud.provider=gcp`이면 `GcsStorageService`가 활성화된다.
+GCS presigned URL은 Application Default Credentials를 사용해 V4 signed URL로 발급한다.
+
+앱 시작 시점에 `GoogleCredentials.getApplicationDefault()` 결과가 `ServiceAccountSigner`인지 검증한다.
+서명을 지원하지 않는 자격증명이면 앱 시작 단계에서 실패시켜, presigned URL 발급 시점의 403 서명 오류를 늦게 발견하지 않도록 한다.
+
+GCP 환경에서는 다음 조건이 필요하다.
+
+- VM 또는 실행 환경에 서비스 계정 자격증명이 연결되어 있어야 한다.
+- 해당 서비스 계정이 대상 버킷 object 관리 권한을 가져야 한다.
+- IAM Service Account Credentials API가 활성화되어 있어야 한다.
+
+### Local
+
+`cloud.provider=local` 또는 설정이 없으면 `LocalStorageService`가 활성화된다.
+이 구현은 실제 스토리지에 업로드 URL을 만들지 않고 아래 형식의 mock URL을 반환한다.
+
+```text
+presignedUrl: http://localhost:8080/mock-upload/{objectKey}
+publicUrl:    http://localhost:8080/mock-images/{objectKey}
+```
+
+로컬 구현은 API 응답과 DB 저장 흐름을 확인하기 위한 용도다.
+실제 파일 업로드와 조회를 보장하지 않는다.
 
 ## DB 저장 구조
 

@@ -59,7 +59,7 @@ git commit -m "feat: 회원가입 API 추가"
 |------|-----|-----------|
 | `git commit` 직전 | `pre-commit` | 비밀키 검사 + 컴파일 검증 |
 | `git commit` 메시지 작성 후 | `commit-msg` | 타입 검증 + 이모지 자동 삽입 |
-| `git push` 직전 | `pre-push` | 전체 테스트 검증 |
+| `git push` 직전 | `pre-push` | submodule 최신 여부 확인 + 전체 테스트 검증 |
 
 ### 3.5. 훅이 실패했을 때
 - **컴파일 에러**: IDE에서 에러를 먼저 해결하고 다시 커밋
@@ -145,22 +145,33 @@ feat: 회원가입 API 추가
 ### 5.3. `pre-push` — 푸시 직전 검증
 
 **역할**
+- `secret` submodule 포인터가 원격 최신 커밋인지 확인
 - 전체 테스트 실행 (`./gradlew clean test`)
 
 **왜 push에만?**
 - 커밋은 자주 한다 → 빠른 피드백 필요
 - 푸시는 덜 한다 → 한 번에 꼼꼼히 검증
 - 원격에 올라가는 순간부터 팀 전체에 영향 → 여기서 막는 게 마지막 방어선
+- submodule 최신 여부는 로컬 커밋보다 원격 반영 시점에 강제하는 것이 개발 흐름을 덜 방해한다.
+
+`secret` submodule이 최신이 아니면 현재 커밋과 원격 최신 커밋을 출력하고 push를 중단한다.
+이 경우 아래 명령으로 submodule을 갱신한 뒤 포인터 변경을 커밋한다.
+
+```bash
+git submodule update --remote --checkout secret
+git add secret
+git commit -m "chore: config submodule 업데이트"
+```
 
 ## 6. 훅 우회가 필요할 때
 
-정말 급할 때는 `--no-verify` 플래그로 우회할 수 있다:
+Git hook은 기술적으로 `--no-verify` 플래그로 우회할 수 있다:
 ```bash
 git commit --no-verify -m "..."
 git push --no-verify
 ```
 
-**하지만 원칙적으로 금지.** 우회가 필요하다는 건 훅 설정이 잘못됐거나, 진짜 문제가 있다는 신호다. 팀 회의에서 논의 후 설정을 조정하는 게 맞다.
+**하지만 프로젝트 규칙상 사용 금지.** 우회가 필요하다는 건 훅 설정이 잘못됐거나, 진짜 문제가 있다는 신호다. 팀 회의에서 논의 후 설정을 조정하는 게 맞다.
 
 ## 7. 주의사항
 

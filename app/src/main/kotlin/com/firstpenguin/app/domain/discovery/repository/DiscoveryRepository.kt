@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.discovery.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
@@ -23,6 +24,7 @@ class DiscoveryRepository(
     fun findRecommendedQuotes(
         userId: Long,
         cursor: DiscoveryCursor?,
+        genre: DiscoveryGenre?,
         limit: Int,
     ): List<DiscoveryQuote> {
         if (limit <= 0) return emptyList()
@@ -44,6 +46,7 @@ class DiscoveryRepository(
             .where(latestRecommendedQuoteCondition(rankedRecommendationEvents, cursor))
             .and(QuoteTable.DELETED_AT.isNull)
             .and(BookTable.DELETED_AT.isNull)
+            .and(genre?.let { selectedGenre -> BookTable.CATEGORY.eq(selectedGenre.value) } ?: DSL.noCondition())
             .orderBy(at(rankedRecommendationEvents).desc(), QuoteTable.ID.desc())
             .limit(limit)
             .fetch(::toDiscoveryQuote)
@@ -76,6 +79,7 @@ class DiscoveryRepository(
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
+            genre = record.get(BookTable.CATEGORY),
             recommendedAt = record.get(RECOMMENDED_AT_FIELD),
             isScrapped = record.get(IS_SCRAPPED_FIELD),
         )
@@ -122,6 +126,7 @@ class DiscoveryRepository(
             BookTable.TITLE,
             BookTable.AUTHOR,
             BookTable.COVER_IMAGE_URL,
+            BookTable.CATEGORY,
             at(rankedRecommendationEvents),
             IS_SCRAPPED_FIELD,
         )
