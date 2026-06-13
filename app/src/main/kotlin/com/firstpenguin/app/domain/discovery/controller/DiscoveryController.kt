@@ -37,7 +37,7 @@ class DiscoveryController(
             description =
                 "다음 페이지 조회 커서. 첫 페이지에서는 생략한다. " +
                     "직전 응답의 `nextCursor` 값을 그대로 전달하며, 클라이언트에서 디코딩하거나 수정하지 않는다.",
-            example = "MjAyNi0wNi0wNVQxMjozNDo1NnwxMA",
+            example = "MjA5OS0wNi0wNVQxMjozNDo1NnwxMA",
         )
         @RequestParam(required = false) cursor: String?,
         @Parameter(
