@@ -1,8 +1,8 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
-import com.firstpenguin.app.domain.recommendation.policy.EffectiveTagPolicy
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
+import com.firstpenguin.app.domain.recommendation.policy.EffectiveTagPolicy
 import org.springframework.stereotype.Component
 
 @Component
