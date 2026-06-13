@@ -2,9 +2,9 @@ package com.firstpenguin.app.domain.recommendation.model
 
 import java.time.LocalDateTime
 
-data class DailyRecommendationTag(
+data class RecommendationTag(
     val id: Long,
-    val dailyRecommendationId: Long,
+    val recommendationId: Long,
     val tagId: Long,
     val createdAt: LocalDateTime,
 )

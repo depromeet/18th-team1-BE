@@ -6,8 +6,8 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
-import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationQuoteTable
-import com.firstpenguin.app.domain.recommendation.repository.table.DailyRecommendationTable
+import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
+import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -87,19 +87,19 @@ class DiscoveryRepository(
     private fun recommendationEvents(): Table<*> =
         DSL
             .select(
-                DailyRecommendationTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
-                DailyRecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
-                DailyRecommendationTable.CREATED_AT.`as`(RECOMMENDED_AT),
-            ).from(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
+                RecommendationTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
+                RecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
+                RecommendationTable.CREATED_AT.`as`(RECOMMENDED_AT),
+            ).from(RecommendationTable.RECOMMENDATIONS)
             .unionAll(
                 DSL
                     .select(
-                        DailyRecommendationQuoteTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
-                        DailyRecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
-                        DailyRecommendationQuoteTable.CREATED_AT.`as`(RECOMMENDED_AT),
-                    ).from(DailyRecommendationQuoteTable.DAILY_RECOMMENDATION_QUOTES)
-                    .join(DailyRecommendationTable.DAILY_RECOMMENDATIONS)
-                    .on(DailyRecommendationTable.ID.eq(DailyRecommendationQuoteTable.DAILY_RECOMMENDATION_ID)),
+                        RecommendationQuoteTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
+                        RecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
+                        RecommendationQuoteTable.CREATED_AT.`as`(RECOMMENDED_AT),
+                    ).from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
+                    .join(RecommendationTable.RECOMMENDATIONS)
+                    .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID)),
             ).asTable(RECOMMENDATION_EVENTS)
 
     private fun rankedRecommendationEvents(recommendationEvents: Table<*>): Table<*> =

@@ -30,8 +30,8 @@ class DiscoveryRepositoryTest {
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("daily_recommendations"), normalizedSql)
-        assertTrue(normalizedSql.contains("daily_recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("recommendations"), normalizedSql)
+        assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_scraps"), normalizedSql)

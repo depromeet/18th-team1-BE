@@ -1,134 +1,110 @@
 package com.firstpenguin.app.domain.recommendation.service
 
-import com.firstpenguin.app.domain.recommendation.model.DailyRecommendation
-import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationQuote
-import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationTag
-import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationQuoteRepository
-import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationRepository
-import com.firstpenguin.app.domain.recommendation.repository.DailyRecommendationTagRepository
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
+import com.firstpenguin.app.domain.recommendation.model.Recommendation
+import com.firstpenguin.app.domain.recommendation.model.RecommendationQuote
+import com.firstpenguin.app.domain.recommendation.model.RecommendationTag
+import com.firstpenguin.app.domain.recommendation.repository.RecommendationCommandRepository
+import com.firstpenguin.app.domain.recommendation.repository.RecommendationQuoteRepository
+import com.firstpenguin.app.domain.recommendation.repository.RecommendationRepository
+import com.firstpenguin.app.domain.recommendation.repository.RecommendationTagRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
-private const val MAX_RECOMMENDATION_QUOTE_COUNT = 10
-
 @Service
 class RecommendationService(
-    private val dailyRecommendationRepository: DailyRecommendationRepository,
-    private val dailyRecommendationQuoteRepository: DailyRecommendationQuoteRepository,
-    private val dailyRecommendationTagRepository: DailyRecommendationTagRepository,
+    private val recommendationRepository: RecommendationRepository,
+    private val recommendationCommandRepository: RecommendationCommandRepository,
+    private val recommendationQuoteRepository: RecommendationQuoteRepository,
+    private val recommendationTagRepository: RecommendationTagRepository,
 ) {
-    fun createDailyRecommendation(
+    fun createRecommendation(
         userId: Long,
-        quoteId: Long,
-        userContext: String?,
-        selectedEmotionRangeId: Long,
+        feelingText: String?,
+        diaryText: String?,
+        emotionRangeId: Long,
     ): Long =
-        dailyRecommendationRepository.insertDailyRecommendation(
+        recommendationCommandRepository.insertRecommendation(
             userId = userId,
-            quoteId = quoteId,
-            userContext = userContext,
-            selectedEmotionRangeId = selectedEmotionRangeId,
+            feelingText = feelingText,
+            diaryText = diaryText,
+            emotionRangeId = emotionRangeId,
         )
 
-    fun createDailyRecommendationQuotes(
-        dailyRecommendationId: Long,
+    fun createRecommendationQuotes(
+        recommendationId: Long,
         quoteIds: List<Long>,
     ) {
-        val maxDisplayOrder = dailyRecommendationQuoteRepository.getMaxDisplayOrder(dailyRecommendationId)
+        val maxDisplayOrder = recommendationQuoteRepository.getMaxDisplayOrder(recommendationId)
 
-        dailyRecommendationQuoteRepository.insertDailyRecommendationQuote(
-            dailyRecommendationId = dailyRecommendationId,
+        recommendationQuoteRepository.insertRecommendationQuote(
+            recommendationId = recommendationId,
             quoteIds = quoteIds,
             nextDisplayOrder = maxDisplayOrder + 1,
         )
     }
 
-    fun createDailyRecommendationTags(
-        dailyRecommendationId: Long,
+    fun createRecommendationTags(
+        recommendationId: Long,
         tagIds: List<Long>,
     ) {
-        dailyRecommendationTagRepository.insertDailyRecommendationTag(
-            dailyRecommendationId = dailyRecommendationId,
+        recommendationTagRepository.insertRecommendationTag(
+            recommendationId = recommendationId,
             tagIds = tagIds,
         )
     }
 
-    fun getRecommendationHistory(dailyRecommendationId: Long): List<DailyRecommendationQuote> =
-        dailyRecommendationQuoteRepository
-            .findByDailyRecommendationId(dailyRecommendationId)
+    fun getRecommendationHistory(recommendationId: Long): List<RecommendationQuote> =
+        recommendationQuoteRepository
+            .findByRecommendationId(recommendationId)
 
-    fun findByUserIdAndRecommendationDate(userId: Long): DailyRecommendation? {
+    fun lockRecommendationCreation(userId: Long) {
         val today = LocalDate.now()
 
-        return dailyRecommendationRepository.findByUserIdAndRecommendationDate(userId, today)
+        recommendationCommandRepository.lockRecommendationCreation(
+            userId = userId,
+            recommendationDate = today,
+        )
     }
 
-    fun getRecommendationTags(dailyRecommendationId: Long): List<DailyRecommendationTag> =
-        dailyRecommendationTagRepository.findByDailyRecommendationId(dailyRecommendationId)
+    fun findOngoingRecommendation(userId: Long): Recommendation? {
+        val today = LocalDate.now()
 
-    fun validateDailyRecommendationQuote(
+        return recommendationRepository.findOngoingByUserIdAndRecommendationDate(
+            userId = userId,
+            recommendationDate = today,
+        )
+    }
+
+    fun findByUserIdAndRecommendationDateBetween(
         userId: Long,
-        dailyRecommendationId: Long,
-        quoteId: Long,
-    ): DailyRecommendation {
-        val dailyRecommendation = validateDailyRecommendation(userId, dailyRecommendationId)
-        val isRecommendedQuote =
-            dailyRecommendationQuoteRepository.existsByDailyRecommendationIdAndQuoteId(
-                dailyRecommendationId = dailyRecommendationId,
-                quoteId = quoteId,
-            )
+        start: LocalDate,
+        end: LocalDate,
+    ): List<Recommendation> =
+        recommendationRepository.findRecommendationsByUserIdAndRecommendationDateBetween(
+            userId = userId,
+            start = start,
+            end = end,
+        )
 
-        if (!isRecommendedQuote) {
-            throw CustomException(ErrorCode.INVALID_RECOMMENDATION_QUOTE)
-        }
-
-        return dailyRecommendation
-    }
-
-    fun validateDailyRecommendation(
+    fun findCompletedByUserIdAndRecommendationDateBetween(
         userId: Long,
-        dailyRecommendationId: Long,
-        lockForUpdate: Boolean = true,
-    ): DailyRecommendation {
-        val dailyRecommendation =
-            if (lockForUpdate) {
-                dailyRecommendationRepository.findDailyRecommendationByPkForUpdate(dailyRecommendationId)
-            } else {
-                dailyRecommendationRepository.findDailyRecommendationById(dailyRecommendationId)
-            }
-                ?: notFound()
+        start: LocalDate,
+        end: LocalDate,
+    ): List<Recommendation> =
+        recommendationRepository.findCompletedRecommendationsByUserIdAndRecommendationDateBetween(
+            userId = userId,
+            start = start,
+            end = end,
+        )
 
-        if (dailyRecommendation.userId != userId) {
-            forbidden()
-        }
+    fun countCompletedByUserId(userId: Long): Int = recommendationRepository.countCompletedByUserId(userId)
 
-        if (dailyRecommendation.recommendationDate != LocalDate.now()) {
-            invalidDate()
-        }
+    fun getRecommendationTags(recommendationId: Long): List<RecommendationTag> =
+        recommendationTagRepository.findByRecommendationId(recommendationId)
 
-        return dailyRecommendation
-    }
+    fun hasReachedRecommendationLimit(count: Int): Boolean = count >= MAX_RECOMMENDATION_COUNT_PER_DAY
 
-    fun validateRecommendationAvailable(userId: Long) {
-        findByUserIdAndRecommendationDate(userId)?.let {
-            throw CustomException(ErrorCode.DAILY_RECOMMENDATION_ALREADY_EXISTS)
-        }
-    }
-
-    fun validateRecommendationCount(
-        currentCount: Int,
-        nextCount: Int,
-    ) {
-        if (currentCount + nextCount > MAX_RECOMMENDATION_QUOTE_COUNT) {
-            throw CustomException(ErrorCode.EXCEEDED_DAILY_RECOMMENDATION_QUOTE_LIMIT)
-        }
+    private companion object {
+        const val MAX_RECOMMENDATION_COUNT_PER_DAY = 5
     }
 }
-
-private fun notFound(): Nothing = throw CustomException(ErrorCode.DAILY_RECOMMENDATION_NOT_FOUND)
-
-private fun forbidden(): Nothing = throw CustomException(ErrorCode.FORBIDDEN_DAILY_RECOMMENDATION)
-
-private fun invalidDate(): Nothing = throw CustomException(ErrorCode.INVALID_DAILY_RECOMMENDATION)

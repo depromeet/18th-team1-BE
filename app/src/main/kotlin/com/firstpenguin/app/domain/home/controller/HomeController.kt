@@ -36,17 +36,16 @@ class HomeController(
     @GetMapping("/today/status")
     @Operation(
         summary = "오늘 진행 상태 조회 API",
-        description = "로그인한 사용자의 오늘 추천 문구 생성 여부와 일기 작성 여부를 조회한다.",
+        description = "선택 진행 중인 추천 기록과 오늘 추천 생성 가능 여부를 조회한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     fun getTodayStatus(
-        @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
     ): ResponseEntity<TodayStatusResponse> = ResponseEntity.ok(homeUseCase.getTodayStatus(authenticatedUser.id))
 
     @Operation(
         summary = "홈 요약 API",
-        description = "오늘 작성한 일기, 이번 달 일기 목록, 전체 일기 수를 반환한다.",
+        description = "오늘 생성한 추천 기록, 이번 달 추천 기록 목록, 전체 추천 기록 수를 반환한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @ApiResponses(
@@ -65,7 +64,6 @@ class HomeController(
     )
     @GetMapping("/summary")
     fun getSummary(
-        @Parameter(hidden = true)
-        @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
     ): ResponseEntity<HomeSummaryResponse> = ResponseEntity.ok(homeUseCase.getSummary(authenticatedUser.id))
 }

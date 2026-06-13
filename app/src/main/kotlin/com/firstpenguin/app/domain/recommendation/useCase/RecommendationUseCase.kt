@@ -1,103 +1,84 @@
 package com.firstpenguin.app.domain.recommendation.useCase
 
-import com.firstpenguin.app.domain.book.service.BookService
-import com.firstpenguin.app.domain.emotion.dto.TagDto
-import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
-import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quote.service.QuoteService
-import com.firstpenguin.app.domain.recommendation.dto.DailyRecommendationResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationDetailResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationPeriodItemResponse
+import com.firstpenguin.app.domain.recommendation.dto.RecommendationPeriodResponse
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
-import com.firstpenguin.app.domain.recommendation.model.DailyRecommendationTag
+import com.firstpenguin.app.domain.recommendation.service.RecommendationCommandService
+import com.firstpenguin.app.domain.recommendation.service.RecommendationRequestValidator
+import com.firstpenguin.app.domain.recommendation.service.RecommendationResponseMapper
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
+import com.firstpenguin.app.domain.recommendation.service.RecommendationValidationService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
-private const val NEXT_RECOMMENDATION_QUOTE_COUNT = 3
+private const val NEXT_RECOMMENDATION_QUOTE_COUNT = 9
 
 @Service
 class RecommendationUseCase(
-    private val emotionService: EmotionService,
     private val quoteService: QuoteService,
     private val recommendationService: RecommendationService,
-    private val bookService: BookService,
+    private val recommendationCommandService: RecommendationCommandService,
+    private val recommendationValidationService: RecommendationValidationService,
+    private val recommendationRequestValidator: RecommendationRequestValidator,
+    private val recommendationResponseMapper: RecommendationResponseMapper,
 ) {
     @Transactional
     fun recommendQuote(
         userId: Long,
         request: RecommendationRequest,
     ): RecommendationResponse {
-        recommendationService.validateRecommendationAvailable(userId)
+        recommendationRequestValidator.validate(request)
 
-        val selectedEmotionTags = emotionService.selectEmotionTags(request.emotionTagIds)
-        emotionService.selectNeedTags(request.needTagIds)
-        val selectedEmotionRangeId =
-            selectedEmotionTags.first().emotionRangeId
-                ?: throw CustomException(ErrorCode.INVALID_EMOTION_TAG)
+        val selectedTagIds = request.emotionTagIds + listOfNotNull(request.needTagId)
 
+        recommendationService.lockRecommendationCreation(userId)
+        recommendationService.findOngoingRecommendation(userId)?.let { recommendation ->
+            return recommendationResponseMapper.toRecommendationResponse(recommendation)
+        }
+
+        recommendationValidationService.validateRecommendationCreatable(userId)
+
+        val recommendationId =
+            recommendationService.createRecommendation(
+                userId = userId,
+                feelingText = request.feelingText.normalizedText(),
+                diaryText = request.diaryText,
+                emotionRangeId = request.emotionRangeId,
+            )
         val randomQuote = quoteService.getRandomQuote()
 
-        val dailyRecommendationId =
-            recommendationService.createDailyRecommendation(
-                userId = userId,
-                quoteId = randomQuote.id,
-                userContext = request.userContext.takeIf { it.isNotBlank() },
-                selectedEmotionRangeId = selectedEmotionRangeId,
-            )
-
-        recommendationService.createDailyRecommendationQuotes(
-            dailyRecommendationId = dailyRecommendationId,
+        recommendationService.createRecommendationTags(
+            recommendationId = recommendationId,
+            tagIds = selectedTagIds,
+        )
+        recommendationService.createRecommendationQuotes(
+            recommendationId = recommendationId,
             quoteIds = listOf(randomQuote.id),
         )
 
-        recommendationService.createDailyRecommendationTags(
-            dailyRecommendationId = dailyRecommendationId,
-            tagIds = request.emotionTagIds + request.needTagIds,
-        )
-
-        return RecommendationResponse(
-            dailyRecommendationId = dailyRecommendationId,
-            quote = toQuoteResponse(randomQuote),
-        )
-    }
-
-    @Transactional(readOnly = true)
-    fun getDailyRecommendationDetail(
-        userId: Long,
-        dailyRecommendationId: Long,
-    ): DailyRecommendationResponse {
-        val dailyRecommendation =
-            recommendationService.validateDailyRecommendation(
-                userId = userId,
-                dailyRecommendationId = dailyRecommendationId,
-                lockForUpdate = false,
-            )
-
-        val quote = quoteService.findQuoteById(dailyRecommendation.quoteId)
-        val recommendationTags = recommendationService.getRecommendationTags(dailyRecommendationId)
-        val (emotionTags, needTags) = toTagDtos(recommendationTags)
-
-        return DailyRecommendationResponse(
-            dailyRecommendationId = dailyRecommendationId,
-            quote = toQuoteResponse(quote),
-            emotionTags = emotionTags,
-            needTags = needTags,
+        return recommendationResponseMapper.toRecommendationResponse(
+            recommendationId = recommendationId,
+            quote = randomQuote,
         )
     }
 
     @Transactional
     fun getNextRecommendationQuotes(
         userId: Long,
-        dailyRecommendationId: Long,
+        recommendationId: Long,
     ): List<QuoteResponse> {
-        recommendationService.validateDailyRecommendation(userId, dailyRecommendationId)
+        val recommendation = recommendationValidationService.validateRecommendation(userId, recommendationId)
+        recommendationValidationService.validateRecommendationOngoing(recommendation)
 
-        val recommendationHistory = recommendationService.getRecommendationHistory(dailyRecommendationId)
-
-        recommendationService.validateRecommendationCount(
+        val recommendationHistory = recommendationService.getRecommendationHistory(recommendationId)
+        recommendationValidationService.validateRecommendationCount(
             currentCount = recommendationHistory.size,
             nextCount = NEXT_RECOMMENDATION_QUOTE_COUNT,
         )
@@ -109,27 +90,104 @@ class RecommendationUseCase(
                 count = NEXT_RECOMMENDATION_QUOTE_COUNT,
             )
 
-        recommendationService.createDailyRecommendationQuotes(
-            dailyRecommendationId = dailyRecommendationId,
-            quoteIds = nextQuotes.map { it.id },
+        recommendationService.createRecommendationQuotes(
+            recommendationId = recommendationId,
+            quoteIds = nextQuotes.map { quote -> quote.id },
         )
 
-        return nextQuotes.map(::toQuoteResponse)
+        return nextQuotes.map(recommendationResponseMapper::toQuoteResponse)
     }
 
-    private fun toQuoteResponse(quote: Quote): QuoteResponse {
-        val book = bookService.findBookById(quote.bookId)
-
-        return QuoteResponse.from(
-            quote = quote,
-            book = book,
+    @Transactional
+    fun selectRecommendationQuote(
+        userId: Long,
+        recommendationId: Long,
+        quoteId: Long,
+    ): RecommendationDetailResponse =
+        recommendationResponseMapper.toRecommendationDetailResponse(
+            recommendationCommandService.selectRecommendationQuote(
+                userId = userId,
+                recommendationId = recommendationId,
+                quoteId = quoteId,
+            ),
         )
+
+    @Transactional
+    fun deleteRecommendation(
+        userId: Long,
+        recommendationId: Long,
+    ) {
+        val recommendation = recommendationValidationService.validateRecommendation(userId, recommendationId)
+        recommendationValidationService.validateRecommendationCompleted(recommendation)
+
+        recommendationCommandService.deleteRecommendation(recommendationId)
     }
 
-    private fun toTagDtos(recommendationTags: List<DailyRecommendationTag>): Pair<List<TagDto>, List<TagDto>> {
-        val tagIds = recommendationTags.map { recommendationTag -> recommendationTag.tagId }
-        val (emotionTags, needTags) = emotionService.getTagsByIds(tagIds)
+    @Transactional(readOnly = true)
+    fun getRecommendationDetail(
+        userId: Long,
+        recommendationId: Long,
+    ): RecommendationDetailResponse {
+        val recommendation =
+            recommendationValidationService.validateRecommendation(
+                userId = userId,
+                recommendationId = recommendationId,
+                lockForUpdate = false,
+            )
+        recommendationValidationService.validateRecommendationCompleted(recommendation)
 
-        return emotionTags.map(TagDto::from) to needTags.map(TagDto::from)
+        return recommendationResponseMapper.toRecommendationDetailResponse(recommendation)
+    }
+
+    @Transactional(readOnly = true)
+    fun getRecommendationQuoteCandidates(
+        userId: Long,
+        recommendationId: Long,
+    ): List<QuoteResponse> {
+        recommendationValidationService.validateRecommendation(
+            userId = userId,
+            recommendationId = recommendationId,
+            lockForUpdate = false,
+        )
+
+        return recommendationService
+            .getRecommendationHistory(recommendationId)
+            .map { recommendationQuote -> quoteService.findQuoteById(recommendationQuote.quoteId) }
+            .map(recommendationResponseMapper::toQuoteResponse)
+    }
+
+    @Transactional(readOnly = true)
+    fun getRecommendationsByPeriod(
+        userId: Long,
+        start: LocalDate,
+        end: LocalDate,
+    ): RecommendationPeriodResponse {
+        if (start.isAfter(end)) {
+            throw CustomException(ErrorCode.INVALID_INPUT)
+        }
+
+        val recommendationItems =
+            recommendationService
+                .findCompletedByUserIdAndRecommendationDateBetween(
+                    userId = userId,
+                    start = start,
+                    end = end,
+                ).map { recommendation ->
+                    val quoteId = checkNotNull(recommendation.quoteId)
+                    val quote = quoteService.findQuoteById(quoteId)
+
+                    RecommendationPeriodItemResponse.from(
+                        recommendation = recommendation,
+                        quote = recommendationResponseMapper.toQuoteResponse(quote),
+                    )
+                }
+
+        return RecommendationPeriodResponse.from(
+            start = start,
+            end = end,
+            recommendations = recommendationItems,
+        )
     }
 }
+
+private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
