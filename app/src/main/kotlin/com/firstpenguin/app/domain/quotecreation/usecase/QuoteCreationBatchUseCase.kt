@@ -11,10 +11,19 @@ class QuoteCreationBatchUseCase(
     private val statusService: QuoteCreationBatchStatusService,
     private val syncProcessor: QuoteCreationBatchSyncProcessor,
 ) {
-    fun getStatus(adminSecret: String?): QuoteCreationBatchStatusResponse {
+    fun getTotalStatus(adminSecret: String?): QuoteCreationBatchStatusResponse {
         adminBatchSecretValidator.validate(adminSecret)
         syncProcessor.syncActiveJobStatus()
-        return statusService.getStatus()
+        return statusService.getTotalStatus()
+    }
+
+    fun getStatus(
+        adminSecret: String?,
+        jobId: Long,
+    ): QuoteCreationBatchStatusResponse {
+        adminBatchSecretValidator.validate(adminSecret)
+        syncProcessor.syncJobStatus(jobId)
+        return statusService.getStatus(jobId)
     }
 
     fun syncBatchResult(
@@ -23,6 +32,6 @@ class QuoteCreationBatchUseCase(
     ): QuoteCreationBatchStatusResponse {
         adminBatchSecretValidator.validate(adminSecret)
         syncProcessor.syncBatchResultIfReady(jobId)
-        return statusService.getStatus()
+        return statusService.getStatus(jobId)
     }
 }

@@ -23,11 +23,21 @@ class QuoteMetadataBatchUseCase(
         return quoteMetadataBatchSubmitProcessor.submit(limit = request.limit)
     }
 
-    fun getStatus(adminSecret: String?): QuoteMetadataBatchStatusResponse {
+    fun getTotalStatus(adminSecret: String?): QuoteMetadataBatchStatusResponse {
         adminBatchSecretValidator.validate(adminSecret)
         quoteMetadataBatchSyncProcessor.syncActiveJobStatus()
 
-        return quoteMetadataBatchStatusService.getStatus()
+        return quoteMetadataBatchStatusService.getTotalStatus()
+    }
+
+    fun getStatus(
+        adminSecret: String?,
+        jobId: Long,
+    ): QuoteMetadataBatchStatusResponse {
+        adminBatchSecretValidator.validate(adminSecret)
+        quoteMetadataBatchSyncProcessor.syncJobStatus(jobId)
+
+        return quoteMetadataBatchStatusService.getStatus(jobId)
     }
 
     fun syncBatchResult(
@@ -37,6 +47,6 @@ class QuoteMetadataBatchUseCase(
         adminBatchSecretValidator.validate(adminSecret)
         quoteMetadataBatchSyncProcessor.syncBatchResultIfReady(jobId)
 
-        return quoteMetadataBatchStatusService.getStatus()
+        return quoteMetadataBatchStatusService.getStatus(jobId)
     }
 }

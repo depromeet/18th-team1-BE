@@ -81,13 +81,16 @@ JOIN daily_recommendations
     ON daily_recommendations.id = daily_recommendation_quotes.daily_recommendation_id
 ```
 
-같은 문장이 여러 번 추천된 경우에는 최신 추천 이력 1개를 대표로 사용한다.
+같은 문장이라도 추천받은 사용자가 다르면 서로 다른 발견탭 카드로 노출할 수 있다.
+중복 제거 기준은 `quoteId` 단독이 아니라 `recommendedUserId + quoteId` 조합이다.
+같은 사용자가 같은 문장을 여러 번 추천받은 경우에는 최신 추천 이력 1개를 대표로 사용한다.
 삭제된 문장이나 삭제된 책은 응답에서 제외한다.
 
 ### 신규 테이블
 
 스크랩 여부 조회 기반으로 `quote_scraps` 테이블을 추가한다.
-이번 작업에서는 조회만 사용하고, 생성/삭제 API는 만들지 않는다.
+#96 발견탭 작업에서는 조회만 사용했고, #100 스크랩 작업에서 생성/삭제 API를 추가한다.
+스크랩은 추천 이력이나 추천받은 사용자가 아니라 로그인 사용자와 문장 ID를 기준으로 저장한다.
 
 ```sql
 CREATE TABLE IF NOT EXISTS quote_scraps (
@@ -108,7 +111,7 @@ CREATE INDEX IF NOT EXISTS quote_scraps_quote_id_idx
 
 ### 신규 인덱스
 
-추천 이력에서 `quote_id` 기준 후보를 모으므로 다음 인덱스를 추가한다.
+추천 이력에서 후보를 모으므로 다음 인덱스를 추가한다.
 
 ```sql
 CREATE INDEX IF NOT EXISTS daily_recommendations_quote_id_idx
@@ -129,7 +132,8 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
    - `DiscoveryRepository`에서 `quote_scraps`를 직접 left join해 `isScrapped`를 계산한다.
 3. 발견탭 조회 repository를 만든다.
    - 추천 이력에서 후보 `quote_id`, 추천받은 `user_id`, 추천 이력 `created_at`을 조회한다.
-   - 같은 문장이 여러 번 추천됐으면 최신 추천 이력 1개를 대표로 사용한다.
+   - 같은 `recommendedUserId + quoteId` 조합이 여러 번 추천됐으면 최신 추천 이력 1개를 대표로 사용한다.
+   - 같은 `quoteId`라도 `recommendedUserId`가 다르면 별도 카드로 응답할 수 있다.
    - `quotes`, `books`를 join한다.
    - `quote_scraps`를 로그인 사용자 ID 기준으로 left join하고 `quote_scraps.id IS NOT NULL`을 `isScrapped`로 변환한다.
    - `ORDER BY random()`과 `LIMIT 10`으로 랜덤 목록을 가져온다.
@@ -148,7 +152,8 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
 
 추천 이력이 없으면 빈 목록을 반환한다.
 추천된 문장이 10개 미만이면 가능한 개수만 반환한다.
-같은 문장이 여러 추천 이력에 있어도 한 번만 반환한다.
+같은 `recommendedUserId + quoteId` 조합이 여러 추천 이력에 있어도 한 번만 반환한다.
+같은 문장이라도 추천받은 사용자가 다르면 여러 번 반환될 수 있다.
 
 인증 실패 처리 방식은 기존 JWT 필터와 security entry point를 따른다.
 
@@ -157,7 +162,8 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
 단위 테스트는 다음 시나리오를 검증한다.
 
 - 로그인 사용자는 스크랩한 문장만 `isScrapped=true`로 응답한다.
-- 후보 문장이 중복되어도 응답에는 중복 문장이 없다.
+- 후보 추천 이력이 중복되어도 같은 `recommendedUserId + quoteId` 조합은 한 번만 응답한다.
+- 같은 `quoteId`라도 추천받은 사용자가 다르면 별도 응답으로 포함될 수 있다.
 - 추천 이력이 없으면 빈 목록을 반환한다.
 - 응답에 `recommendedUserId`, `recommendedAt`이 포함된다.
 
@@ -179,13 +185,19 @@ cd app && ./gradlew detekt
 장르 필터는 `docs/discovery-genre-filter-implementation.md` 기준으로 정리했다.
 스크랩 생성/삭제 API는 `docs/quote-scrap-api.md` 기준으로 정리했다.
 
-남은 후속 작업은 마이페이지에서 내가 스크랩한 문장 목록 API를 추가하는 것이다.
+마이페이지 스크랩 모아보기 API와 선택 삭제 API는 스크랩 API 작업 범위에서 구현한다.
 
 ```text
-GET /api/my-page/scrapped-quotes
+GET /api/my-page/scrapped-quotes?cursor={cursor}&limit={limit}
+POST /api/quote-scraps/bulk-delete
 ```
 
-페이지네이션을 추가할 때는 응답에 `nextCursor` 같은 필드를 포함하는 방식으로 확장한다.
+마이페이지 스크랩 목록은 `totalCount`, `quotes`, `nextCursor`, `hasNext`를 한 번에 반환한다.
+`totalCount`는 책 개수가 아니라 로그인 사용자가 스크랩한 문장 개수다.
+목록 항목은 책 이미지, 문장, 책 제목, 작가를 포함한다.
+페이지네이션은 `scrappedAt DESC, quoteId DESC` 커서 기반 무한스크롤로 구현하고, `limit`는 기본 10개, 최대 50개로 둔다.
+다중 취소 API는 최대 50개의 `quoteIds` 배열을 받아 로그인 사용자의 스크랩만 삭제하고, 이미 취소된 문장이 포함되어도 성공 처리한다.
+발견탭 단건 스크랩 API를 토글 API로 바꾸지 않고, 화면 상태에 따라 `PUT /api/quotes/{quoteId}/scrap` 또는 `DELETE /api/quotes/{quoteId}/scrap`을 호출한다.
 
 ## PR 설명에 포함할 내용
 
