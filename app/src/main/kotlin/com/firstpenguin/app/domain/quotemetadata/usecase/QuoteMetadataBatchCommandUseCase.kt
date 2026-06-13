@@ -22,8 +22,6 @@ class QuoteMetadataBatchCommandUseCase(
 ) {
     @Transactional
     fun prepareBatch(limit: Int): PreparedQuoteMetadataBatch {
-        quoteMetadataBatchService.validateNoRunningJob()
-
         val pendingQuotes = quoteMetadataBatchService.getPendingQuotes(limit = limit)
         if (pendingQuotes.isEmpty()) {
             throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)

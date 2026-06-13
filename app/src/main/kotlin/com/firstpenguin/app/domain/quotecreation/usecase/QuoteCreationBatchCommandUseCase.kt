@@ -25,7 +25,6 @@ class QuoteCreationBatchCommandUseCase(
 ) {
     @Transactional
     fun prepareExtractionBatch(limit: Int): PreparedQuoteExtractionBatch {
-        batchService.validateNoRunningJob()
         val books = batchService.getBooksNeedingQuotes(limit = limit)
         if (books.isEmpty()) throw CustomException(ErrorCode.QUOTE_EXTRACTION_BATCH_TARGET_NOT_FOUND)
 
@@ -47,7 +46,6 @@ class QuoteCreationBatchCommandUseCase(
 
     @Transactional
     fun prepareCandidateReviewBatch(limit: Int): PreparedCandidateReviewBatch {
-        batchService.validateNoRunningJob()
         val targets = batchService.getPendingTargets(limit = limit)
         if (targets.isEmpty()) throw CustomException(ErrorCode.QUOTE_REVIEW_BATCH_TARGET_NOT_FOUND)
         return createPreparedReviewBatch(targets)
