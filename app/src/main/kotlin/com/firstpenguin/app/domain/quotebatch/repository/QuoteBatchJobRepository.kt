@@ -111,6 +111,18 @@ class QuoteBatchJobRepository(
             .execute()
     }
 
+    fun updateQuoteBatchJobSubmittedCount(
+        jobId: Long,
+        submittedCount: Int,
+    ) {
+        dsl
+            .update(QuoteBatchJobTable.QUOTE_BATCH_JOBS)
+            .set(QuoteBatchJobTable.SUBMITTED_COUNT, submittedCount)
+            .set(QuoteBatchJobTable.UPDATED_AT, LocalDateTime.now())
+            .where(QuoteBatchJobTable.ID.eq(jobId))
+            .execute()
+    }
+
     fun isRunningQuoteBatchJob(jobTypes: List<QuoteBatchType>): Boolean =
         dsl.fetchExists(
             QuoteBatchJobTable.QUOTE_BATCH_JOBS,
