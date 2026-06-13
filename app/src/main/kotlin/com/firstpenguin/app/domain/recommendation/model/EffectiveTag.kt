@@ -4,6 +4,7 @@ import com.firstpenguin.app.global.enums.TagType
 
 data class EffectiveTag(
     val tagId: Long,
+    val code: String,
     val type: TagType,
-    val weight: Double = 1.0,
+    val importance: Double = 1.0,
 )
