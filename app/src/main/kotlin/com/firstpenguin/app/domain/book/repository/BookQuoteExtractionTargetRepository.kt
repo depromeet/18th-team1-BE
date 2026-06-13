@@ -51,6 +51,7 @@ class BookQuoteExtractionTargetRepository(
         BookTable.DELETED_AT.isNull
             .and(activeQuoteCountLessThanRecommended(BookTable.ID))
             .and(noPendingCandidateExists())
+            .and(activeQuoteExtractionBatchItemNotExists())
             .and(noSucceededQuoteExtractionAttempt(extractionModel, extractionVersion))
 
     private fun toBook(record: Record): Book =
@@ -116,4 +117,14 @@ private fun noPendingCandidateExists(): Condition =
             .from(QuoteCandidateTable.QUOTE_CANDIDATES)
             .where(QuoteCandidateTable.BOOK_ID.eq(BookTable.ID))
             .and(QuoteCandidateTable.STATUS.eq(QuoteCandidateStatus.PENDING.name)),
+    )
+
+private fun activeQuoteExtractionBatchItemNotExists(): Condition =
+    DSL.notExists(
+        DSL
+            .selectOne()
+            .from(QuoteBatchItemTable.QUOTE_BATCH_ITEMS)
+            .where(QuoteBatchItemTable.TARGET_ID.eq(BookTable.ID))
+            .and(QuoteBatchItemTable.JOB_TYPE.eq(QuoteBatchType.QUOTE_EXTRACTION.name))
+            .and(QuoteBatchItemTable.STATUS.`in`(BatchItemStatus.activeStatuses().map { status -> status.name })),
     )

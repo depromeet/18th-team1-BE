@@ -48,7 +48,23 @@ class QuoteMetadataBatchController(
         @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
     ): ResponseEntity<QuoteMetadataBatchStatusResponse> =
         ResponseEntity.ok(
-            quoteMetadataBatchUseCase.getStatus(adminSecret = adminSecret),
+            quoteMetadataBatchUseCase.getTotalStatus(adminSecret = adminSecret),
+        )
+
+    @Operation(
+        summary = "문장 메타정보 배치 단건 처리 현황 조회 API",
+        description = "지정한 OpenAI 배치 상태를 조회해 DB 상태를 갱신한 뒤 문장 메타정보 처리 현황을 보여준다.",
+    )
+    @GetMapping("/{jobId}/status")
+    fun getQuoteMetadataBatchStatusByJobId(
+        @PathVariable jobId: Long,
+        @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
+    ): ResponseEntity<QuoteMetadataBatchStatusResponse> =
+        ResponseEntity.ok(
+            quoteMetadataBatchUseCase.getStatus(
+                adminSecret = adminSecret,
+                jobId = jobId,
+            ),
         )
 
     @Operation(

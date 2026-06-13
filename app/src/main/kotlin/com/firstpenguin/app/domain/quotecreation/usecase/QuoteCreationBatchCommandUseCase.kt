@@ -25,29 +25,33 @@ class QuoteCreationBatchCommandUseCase(
 ) {
     @Transactional
     fun prepareExtractionBatch(limit: Int): PreparedQuoteExtractionBatch {
-        batchService.validateNoRunningJob()
         val books = batchService.getBooksNeedingQuotes(limit = limit)
         if (books.isEmpty()) throw CustomException(ErrorCode.QUOTE_EXTRACTION_BATCH_TARGET_NOT_FOUND)
 
         val jobId =
             batchService.createPreparingQuoteBatchJob(
                 batchType = QuoteBatchType.QUOTE_EXTRACTION,
-                submittedCount = books.size,
+                submittedCount = INITIAL_SUBMITTED_COUNT,
                 modelVersion = QuoteBatchModelVersion.QUOTE_EXTRACTION_V1,
             )
-        batchService.createQuoteBatchItems(
-            jobId = jobId,
-            batchType = QuoteBatchType.QUOTE_EXTRACTION,
-            targetIds = books.map { book -> book.id },
-            customIdPrefix = BOOK_CUSTOM_ID_PREFIX,
-            status = BatchItemStatus.PREPARING,
-        )
-        return PreparedQuoteExtractionBatch(jobId, books)
+        val claimedBookIds =
+            batchService
+                .createQuoteBatchItems(
+                    jobId = jobId,
+                    batchType = QuoteBatchType.QUOTE_EXTRACTION,
+                    targetIds = books.map { book -> book.id },
+                    customIdPrefix = BOOK_CUSTOM_ID_PREFIX,
+                    status = BatchItemStatus.PREPARING,
+                ).toSet()
+        val claimedBooks = books.filter { book -> book.id in claimedBookIds }
+        if (claimedBooks.isEmpty()) throw CustomException(ErrorCode.QUOTE_EXTRACTION_BATCH_TARGET_NOT_FOUND)
+
+        batchService.updateSubmittedCount(jobId, claimedBooks.size)
+        return PreparedQuoteExtractionBatch(jobId, claimedBooks)
     }
 
     @Transactional
     fun prepareCandidateReviewBatch(limit: Int): PreparedCandidateReviewBatch {
-        batchService.validateNoRunningJob()
         val targets = batchService.getPendingTargets(limit = limit)
         if (targets.isEmpty()) throw CustomException(ErrorCode.QUOTE_REVIEW_BATCH_TARGET_NOT_FOUND)
         return createPreparedReviewBatch(targets)
@@ -57,18 +61,29 @@ class QuoteCreationBatchCommandUseCase(
         val jobId =
             batchService.createPreparingQuoteBatchJob(
                 batchType = QuoteBatchType.QUOTE_REVIEW,
-                submittedCount = targets.size,
+                submittedCount = INITIAL_SUBMITTED_COUNT,
                 modelVersion = QuoteBatchModelVersion.QUOTE_REVIEW_V1,
             )
-        batchService.createQuoteBatchItems(
-            jobId = jobId,
-            batchType = QuoteBatchType.QUOTE_REVIEW,
-            targetIds = targets.map { target -> target.book.id },
-            customIdPrefix = BOOK_CUSTOM_ID_PREFIX,
-            status = BatchItemStatus.PREPARING,
-        )
-        return PreparedCandidateReviewBatch(jobId, targets)
+        val claimedBookIds = createReviewBatchItems(jobId, targets)
+        val claimedTargets = targets.filter { target -> target.book.id in claimedBookIds }
+        if (claimedTargets.isEmpty()) throw CustomException(ErrorCode.QUOTE_REVIEW_BATCH_TARGET_NOT_FOUND)
+
+        batchService.updateSubmittedCount(jobId, claimedTargets.size)
+        return PreparedCandidateReviewBatch(jobId, claimedTargets)
     }
+
+    private fun createReviewBatchItems(
+        jobId: Long,
+        targets: List<QuoteReviewBatchTarget>,
+    ): Set<Long> =
+        batchService
+            .createQuoteBatchItems(
+                jobId = jobId,
+                batchType = QuoteBatchType.QUOTE_REVIEW,
+                targetIds = targets.map { target -> target.book.id },
+                customIdPrefix = BOOK_CUSTOM_ID_PREFIX,
+                status = BatchItemStatus.PREPARING,
+            ).toSet()
 
     @Transactional
     fun markBatchSubmitted(
@@ -107,3 +122,4 @@ data class PreparedCandidateReviewBatch(
 )
 
 private const val BOOK_CUSTOM_ID_PREFIX = "book"
+private const val INITIAL_SUBMITTED_COUNT = 0

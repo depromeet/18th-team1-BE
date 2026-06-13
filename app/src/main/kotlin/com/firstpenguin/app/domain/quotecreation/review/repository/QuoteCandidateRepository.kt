@@ -3,10 +3,13 @@ package com.firstpenguin.app.domain.quotecreation.review.repository
 import com.firstpenguin.app.domain.book.model.Book
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.quote.repository.activeQuoteCountLessThanRecommended
+import com.firstpenguin.app.domain.quotebatch.model.QuoteBatchType
+import com.firstpenguin.app.domain.quotebatch.repository.table.QuoteBatchItemTable
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteCandidate
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteCandidateStatus
 import com.firstpenguin.app.domain.quotecreation.review.model.QuoteReviewBatchTarget
 import com.firstpenguin.app.domain.quotecreation.review.repository.table.QuoteCandidateTable
+import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.enums.QuoteConstants.REJECT_REASON_NOT_ACCEPTED
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -73,6 +76,7 @@ class QuoteCandidateRepository(
             .from(BookTable.BOOKS)
             .where(BookTable.DELETED_AT.isNull)
             .and(pendingCandidateExists())
+            .and(activeReviewBatchItemNotExists())
             .and(activeQuoteCountLessThanRecommended(BookTable.ID))
             .orderBy(BookTable.ID.asc())
             .limit(limit)
@@ -118,6 +122,16 @@ private fun pendingCandidateExists() =
             .from(QuoteCandidateTable.QUOTE_CANDIDATES)
             .where(QuoteCandidateTable.BOOK_ID.eq(BookTable.ID))
             .and(QuoteCandidateTable.STATUS.eq(QuoteCandidateStatus.PENDING.name)),
+    )
+
+private fun activeReviewBatchItemNotExists() =
+    DSL.notExists(
+        DSL
+            .selectOne()
+            .from(QuoteBatchItemTable.QUOTE_BATCH_ITEMS)
+            .where(QuoteBatchItemTable.TARGET_ID.eq(BookTable.ID))
+            .and(QuoteBatchItemTable.JOB_TYPE.eq(QuoteBatchType.QUOTE_REVIEW.name))
+            .and(QuoteBatchItemTable.STATUS.`in`(BatchItemStatus.activeStatuses().map { status -> status.name })),
     )
 
 private fun toCandidate(record: Record): QuoteCandidate =

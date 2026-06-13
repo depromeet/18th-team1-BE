@@ -10,8 +10,6 @@ import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchItemRepositor
 import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchJobRepository
 import com.firstpenguin.app.domain.quotecreation.review.repository.QuoteCandidateRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
@@ -50,6 +48,11 @@ class QuoteCreationBatchService(
         status: BatchItemStatus,
     ) = quoteBatchItemRepository.insertQuoteBatchItems(jobId, batchType, targetIds, customIdPrefix, status)
 
+    fun updateSubmittedCount(
+        jobId: Long,
+        submittedCount: Int,
+    ) = quoteBatchJobRepository.updateQuoteBatchJobSubmittedCount(jobId, submittedCount)
+
     fun markQuoteBatchSubmitted(
         jobId: Long,
         batch: OpenAiBatchResponse,
@@ -78,15 +81,5 @@ class QuoteCreationBatchService(
             status = BatchItemStatus.FAILED,
             errorMessage = errorMessage,
         )
-    }
-
-    fun validateNoRunningJob() {
-        if (quoteBatchJobRepository.isRunningQuoteBatchJob(RUNNING_BLOCKED_JOB_TYPES)) {
-            throw CustomException(ErrorCode.QUOTE_BATCH_JOB_IS_RUNNING)
-        }
-    }
-
-    private companion object {
-        private val RUNNING_BLOCKED_JOB_TYPES = QuoteBatchType.entries.toList()
     }
 }
