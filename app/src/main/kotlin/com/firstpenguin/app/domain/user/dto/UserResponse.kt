@@ -8,6 +8,8 @@ import java.time.LocalDate
 data class UserResponse(
     @field:Schema(description = "사용자 ID", example = "1")
     val id: Long,
+    @field:Schema(description = "로그인 OAuth provider", example = "KAKAO", allowableValues = ["KAKAO", "GOOGLE"])
+    val provider: String,
     @field:Schema(description = "OAuth provider에서 제공한 이메일. 제공되지 않으면 null", example = "user@example.com")
     val email: String?,
     @field:Schema(description = "사용자 닉네임", example = "산타는펭귄")
@@ -24,6 +26,7 @@ data class UserResponse(
         ): UserResponse =
             UserResponse(
                 id = user.id,
+                provider = user.provider.name,
                 email = user.email,
                 nickname = user.nickname,
                 profileImageUrl = profileImageUrl,

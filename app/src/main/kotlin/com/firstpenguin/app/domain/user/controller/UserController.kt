@@ -113,6 +113,7 @@ class UserController(
     private companion object {
         const val ME_DESCRIPTION =
             "Authorization 헤더에 `Bearer {accessToken}` 형식으로 access token을 담아 호출합니다. " +
+                "`provider`는 사용자가 가입/로그인한 OAuth provider입니다. " +
                 "`profileImageUrl`은 `users.profile_image_id`로 연결된 이미지가 없으면 null입니다."
 
         const val UPDATE_ME_DESCRIPTION =

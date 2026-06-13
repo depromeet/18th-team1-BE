@@ -24,12 +24,13 @@ class UserUseCaseTest {
     }
 
     @Test
-    fun `내 정보 조회 응답에 가입한 날짜를 포함한다`() {
+    fun `내 정보 조회 응답에 OAuth provider와 가입한 날짜를 포함한다`() {
         val user = user()
         Mockito.`when`(userService.getById(USER_ID)).thenReturn(user)
 
         val response = userUseCase.getMe(USER_ID)
 
+        assertEquals(user.provider.name, response.provider)
         assertEquals(user.createdAt.toLocalDate(), response.createdAt)
         Mockito.verifyNoInteractions(imageService)
     }
