@@ -1,4 +1,4 @@
-DROP INDEX IF EXISTS daily_recommendations_user_date_uidx;
+경DROP INDEX IF EXISTS daily_recommendations_user_date_uidx;
 DROP INDEX IF EXISTS daily_recommendations_quote_id_idx;
 DROP INDEX IF EXISTS daily_recommendation_quotes_quote_id_idx;
 DROP INDEX IF EXISTS daily_recommendation_quotes_recommendation_quote_uidx;
