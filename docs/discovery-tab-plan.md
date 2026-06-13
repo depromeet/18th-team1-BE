@@ -5,8 +5,8 @@
 발견탭은 로그인 사용자가 추천받은 문장을 다시 탐색할 수 있는 목록 API다.
 목록에는 누군가에게 한 번이라도 추천된 문장만 노출한다.
 
-첫 구현 범위는 랜덤 문장 10개 조회까지다.
-스크랩 생성/삭제 API와 페이지네이션은 후속 작업으로 분리한다.
+첫 구현 범위는 랜덤 문장 10개 조회까지였다.
+이후 커서 페이지네이션, 장르 필터, 스크랩 생성/삭제 API를 별도 작업으로 확장했다.
 
 관련 이슈: #96
 
@@ -175,13 +175,13 @@ cd app && ./gradlew detekt
 
 ## 후속 작업
 
-발견탭 페이지네이션 또는 커서 기반 무한스크롤을 추가한다.
-스크랩 생성/삭제 API를 추가한다.
-마이페이지에서 내가 스크랩한 문장 목록 API를 추가한다.
+커서 기반 무한스크롤은 `docs/discovery-pagination-implementation.md` 기준으로 정리했다.
+장르 필터는 `docs/discovery-genre-filter-implementation.md` 기준으로 정리했다.
+스크랩 생성/삭제 API는 `docs/quote-scrap-api.md` 기준으로 정리했다.
+
+남은 후속 작업은 마이페이지에서 내가 스크랩한 문장 목록 API를 추가하는 것이다.
 
 ```text
-POST /api/quotes/{quoteId}/scraps
-DELETE /api/quotes/{quoteId}/scraps
 GET /api/my-page/scrapped-quotes
 ```
 

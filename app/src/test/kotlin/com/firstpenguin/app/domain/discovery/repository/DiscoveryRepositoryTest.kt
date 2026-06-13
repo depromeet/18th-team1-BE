@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.discovery.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import org.jooq.DSLContext
@@ -23,6 +24,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = null,
+                    genre = null,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
@@ -56,6 +58,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = DiscoveryCursor(RECOMMENDED_AT, QUOTE_ID),
+                    genre = null,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
@@ -64,6 +67,22 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("\"recommended_at\" < cast(? as timestamp)"), normalizedSql)
         assertTrue(normalizedSql.contains("\"recommended_at\" = cast(? as timestamp)"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quotes\".\"id\" < ?"), normalizedSql)
+    }
+
+    @Test
+    fun `장르가 있으면 책 카테고리 조건을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).findRecommendedQuotes(
+                    userId = USER_ID,
+                    cursor = null,
+                    genre = DiscoveryGenre.KOREAN_NOVEL,
+                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
@@ -95,6 +114,7 @@ class DiscoveryRepositoryTest {
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
+                BookTable.CATEGORY,
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
             )

@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuotesResponse
 import com.firstpenguin.app.domain.discovery.usecase.DiscoveryUseCase
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -24,7 +25,8 @@ class DiscoveryController(
         description =
             "누군가에게 한 번이라도 추천된 문장을 최신 추천 이력 순으로 10개씩 조회한다. " +
                 "첫 페이지는 `cursor` 없이 요청하고, 다음 페이지는 직전 응답의 `nextCursor` 값을 그대로 전달한다. " +
-                "`cursor`는 서버가 발급하는 URL-safe Base64 인코딩 문자열이며 클라이언트에서 직접 생성하거나 해석하지 않는다.",
+                "`cursor`는 서버가 발급하는 URL-safe Base64 인코딩 문자열이며 클라이언트에서 직접 생성하거나 해석하지 않는다. " +
+                "`genre`는 생략하거나 `전체`이면 전체 장르를 조회한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @GetMapping("/quotes")
@@ -38,9 +40,30 @@ class DiscoveryController(
             example = "MjAyNi0wNi0wNVQxMjozNDo1NnwxMA",
         )
         @RequestParam(required = false) cursor: String?,
+        @Parameter(
+            description = "책 장르 필터. 생략하거나 `전체`이면 전체 장르를 조회한다.",
+            example = "한국소설",
+            schema =
+                Schema(
+                    allowableValues = [
+                        "전체",
+                        "한국소설",
+                        "일본소설",
+                        "영미소설",
+                        "판타지",
+                        "고전문학",
+                        "인문",
+                        "철학",
+                        "에세이•시",
+                        "영화•드라마 원작",
+                    ],
+                ),
+        )
+        @RequestParam(required = false) genre: String?,
     ): DiscoveryQuotesResponse =
         discoveryUseCase.getDiscoveryQuotes(
             userId = authenticatedUser.id,
             cursor = cursor,
+            genre = genre,
         )
 }
