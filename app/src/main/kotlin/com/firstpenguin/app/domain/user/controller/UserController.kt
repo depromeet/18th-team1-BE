@@ -83,8 +83,8 @@ class UserController(
             ApiResponse(
                 responseCode = "400",
                 description =
-                    "nickname과 profileImageId가 모두 null이거나, nickname이 빈 문자열 또는 예약 닉네임이거나, " +
-                        "profileImageId가 존재하지 않습니다.",
+                    "nickname과 profileImageId가 모두 생략되었거나 null이거나, " +
+                        "nickname이 빈 문자열 또는 예약 닉네임이거나, profileImageId가 존재하지 않습니다.",
                 content = [
                     Content(
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -119,7 +119,7 @@ class UserController(
         const val UPDATE_ME_DESCRIPTION =
             "닉네임 또는 프로필 이미지를 수정합니다. " +
                 "nickname, profileImageId 중 하나 이상은 반드시 포함해야 합니다. " +
-                "null 필드는 변경하지 않습니다. 프로필 이미지 제거(null로 초기화)는 현재 미지원입니다. " +
+                "생략하거나 null인 필드는 변경하지 않습니다. 프로필 이미지 제거(null로 초기화)는 현재 미지원입니다. " +
                 "profileImageId는 `POST /images/presigned-url`로 발급받은 imageId를 사용합니다."
     }
 }

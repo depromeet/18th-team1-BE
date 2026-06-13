@@ -71,10 +71,18 @@ Content-Type: application/json
 | `profileImageId` | 변경할 프로필 이미지 ID. `null`이면 변경하지 않음 |
 
 `nickname`, `profileImageId` 중 하나 이상은 반드시 포함해야 한다.
-두 값이 모두 `null`이면 `INVALID_INPUT`으로 처리한다.
+필드는 생략할 수 있으며, 두 값이 모두 생략되거나 `null`이면 `INVALID_INPUT`으로 처리한다.
 
-`null` 필드는 변경하지 않는다.
+생략하거나 `null`인 필드는 변경하지 않는다.
 따라서 현재 API로는 프로필 이미지를 제거할 수 없다.
+
+닉네임만 변경할 때는 `profileImageId`를 보내지 않아도 된다.
+
+```json
+{
+  "nickname": "새닉네임"
+}
+```
 
 응답은 수정 후 `UserResponse`를 반환한다.
 
