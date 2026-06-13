@@ -1,5 +1,6 @@
-package com.firstpenguin.app.domain.recommendation.model
+package com.firstpenguin.app.domain.recommendation.policy
 
+import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.global.enums.TagType
 
 @Suppress("MagicNumber")
