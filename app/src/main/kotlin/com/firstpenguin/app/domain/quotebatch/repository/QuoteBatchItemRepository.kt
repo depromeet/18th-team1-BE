@@ -7,8 +7,8 @@ import com.firstpenguin.app.global.enums.BatchItemStatus
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
-import org.jooq.Query
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -22,9 +22,9 @@ class QuoteBatchItemRepository(
         targetIds: List<Long>,
         customIdPrefix: String,
         status: BatchItemStatus,
-    ) {
-        if (targetIds.isEmpty()) return
-        dsl.insertRows(jobId, jobType, targetIds, customIdPrefix, status)
+    ): List<Long> {
+        if (targetIds.isEmpty()) return emptyList()
+        return dsl.insertRows(jobId, jobType, targetIds, customIdPrefix, status)
     }
 
     fun updateQuoteBatchItemsStatus(
@@ -95,34 +95,36 @@ class QuoteBatchItemRepository(
         targetIds: List<Long>,
         customIdPrefix: String,
         status: BatchItemStatus,
-    ) {
-        batch(targetIds.toInsertQueries(jobId, jobType, customIdPrefix, status)).execute()
+    ): List<Long> {
+        val rows = targetIds.toInsertRows(jobId, jobType, customIdPrefix, status)
+
+        return insertInto(
+            QuoteBatchItemTable.QUOTE_BATCH_ITEMS,
+            QuoteBatchItemTable.JOB_ID,
+            QuoteBatchItemTable.JOB_TYPE,
+            QuoteBatchItemTable.TARGET_ID,
+            QuoteBatchItemTable.CUSTOM_ID,
+            QuoteBatchItemTable.STATUS,
+        ).valuesOfRows(rows)
+            .onConflictDoNothing()
+            .returningResult(QuoteBatchItemTable.TARGET_ID)
+            .fetch(QuoteBatchItemTable.TARGET_ID)
     }
 
-    private fun List<Long>.toInsertQueries(
+    private fun List<Long>.toInsertRows(
         jobId: Long,
         jobType: QuoteBatchType,
         customIdPrefix: String,
         status: BatchItemStatus,
-    ): List<Query> =
-        distinct().map { targetId ->
-            dsl.insertQuoteBatchItem(jobId, jobType, targetId, customIdPrefix, status)
-        }
-
-    private fun DSLContext.insertQuoteBatchItem(
-        jobId: Long,
-        jobType: QuoteBatchType,
-        targetId: Long,
-        customIdPrefix: String,
-        status: BatchItemStatus,
-    ): Query =
-        insertInto(QuoteBatchItemTable.QUOTE_BATCH_ITEMS)
-            .set(QuoteBatchItemTable.JOB_ID, jobId)
-            .set(QuoteBatchItemTable.JOB_TYPE, jobType.name)
-            .set(QuoteBatchItemTable.TARGET_ID, targetId)
-            .set(QuoteBatchItemTable.CUSTOM_ID, "$customIdPrefix-$targetId")
-            .set(QuoteBatchItemTable.STATUS, status.name)
-            .onConflictDoNothing()
+    ) = distinct().map { targetId ->
+        DSL.row(
+            jobId,
+            jobType.name,
+            targetId,
+            "$customIdPrefix-$targetId",
+            status.name,
+        )
+    }
 
     private fun toQuoteBatchItem(record: Record): QuoteBatchItem =
         QuoteBatchItem(

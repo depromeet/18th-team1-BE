@@ -48,6 +48,11 @@ class QuoteCreationBatchService(
         status: BatchItemStatus,
     ) = quoteBatchItemRepository.insertQuoteBatchItems(jobId, batchType, targetIds, customIdPrefix, status)
 
+    fun updateSubmittedCount(
+        jobId: Long,
+        submittedCount: Int,
+    ) = quoteBatchJobRepository.updateQuoteBatchJobSubmittedCount(jobId, submittedCount)
+
     fun markQuoteBatchSubmitted(
         jobId: Long,
         batch: OpenAiBatchResponse,
