@@ -255,18 +255,20 @@ tags.id = top emotion tag id
 
 월말 결산은 매번 실시간으로 재계산하지 않고 월 단위 스냅샷으로 저장한다.
 프로젝트 DB 규칙에 따라 Foreign Key는 추가하지 않는다.
+문서와 schema PR에서는 Flyway migration까지만 추가한다.
+DTO, table mapping, repository, API, scheduler 구현은 후속 PR로 분리한다.
 
 ```sql
-CREATE TABLE monthly_settlements (
+CREATE TABLE IF NOT EXISTS monthly_settlements (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id BIGINT NOT NULL,
     settlement_year INT NOT NULL,
     settlement_month INT NOT NULL,
     shared_quote_count INT NOT NULL,
     most_frequent_genre VARCHAR(100),
-    top_emotion_tag_id BIGINT,
-    top_emotion_tag_label VARCHAR(100),
-    recommendation_message TEXT,
+    top_emotion_tag_id BIGINT NOT NULL,
+    top_emotion_tag_label VARCHAR(100) NOT NULL,
+    recommendation_message TEXT NOT NULL,
     selected_quote_id BIGINT,
     selected_quote_content TEXT,
     selected_book_id BIGINT,
@@ -274,47 +276,76 @@ CREATE TABLE monthly_settlements (
     selected_book_author VARCHAR(255),
     selected_book_cover_image_url TEXT,
     selected_book_genre VARCHAR(100),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT monthly_settlements_month_check CHECK (settlement_month BETWEEN 1 AND 12),
+    CONSTRAINT monthly_settlements_shared_quote_count_check CHECK (shared_quote_count > 0)
 );
 
-CREATE UNIQUE INDEX monthly_settlements_user_month_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlements_user_month_uidx
     ON monthly_settlements (user_id, settlement_year, settlement_month);
 
-CREATE INDEX monthly_settlements_user_id_idx
+CREATE INDEX IF NOT EXISTS monthly_settlements_user_id_idx
     ON monthly_settlements (user_id);
 ```
 
 ```sql
-CREATE TABLE monthly_settlement_emotion_tags (
+CREATE TABLE IF NOT EXISTS monthly_settlement_emotion_tags (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     monthly_settlement_id BIGINT NOT NULL,
     tag_id BIGINT NOT NULL,
     tag_label VARCHAR(100) NOT NULL,
     tag_count INT NOT NULL,
     sort_order INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT monthly_settlement_emotion_tags_count_check CHECK (tag_count > 0),
+    CONSTRAINT monthly_settlement_emotion_tags_sort_order_check CHECK (sort_order BETWEEN 1 AND 10)
 );
 
-CREATE UNIQUE INDEX monthly_settlement_emotion_tags_settlement_tag_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlement_emotion_tags_settlement_tag_uidx
     ON monthly_settlement_emotion_tags (monthly_settlement_id, tag_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlement_emotion_tags_settlement_sort_uidx
+    ON monthly_settlement_emotion_tags (monthly_settlement_id, sort_order);
 ```
 
 ```sql
-CREATE TABLE monthly_settlement_books (
+CREATE TABLE IF NOT EXISTS monthly_settlement_books (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     monthly_settlement_id BIGINT NOT NULL,
     book_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     book_cover_image_url TEXT NOT NULL,
-    genre VARCHAR(100),
+    genre VARCHAR(100) NOT NULL,
     sort_order INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT monthly_settlement_books_sort_order_check CHECK (sort_order BETWEEN 1 AND 3)
 );
 
-CREATE UNIQUE INDEX monthly_settlement_books_settlement_book_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlement_books_settlement_book_uidx
     ON monthly_settlement_books (monthly_settlement_id, book_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlement_books_settlement_sort_uidx
+    ON monthly_settlement_books (monthly_settlement_id, sort_order);
 ```
+
+## PR 분리
+
+월말 결산은 한 화면 기능이지만 PR은 위험 단위로 나눈다.
+
+1. 문서 + schema PR
+   - 최종 설계 문서 정리
+   - 기존 월간 리포트 문서 삭제
+   - 월말 결산 스냅샷 테이블 Flyway migration 추가
+2. API PR
+   - DTO, table mapping, repository, service, usecase, controller 추가
+   - `GET /api/monthly-settlements`
+   - shared quote count, top genre, monthly books, emotion tags, recommendation message, monthly book 집계 구현
+3. scheduler PR
+   - 매월 1일 지난달 월말 결산 생성
+   - 월 단위 lock
+   - 누락 감지와 재처리
+   - scheduler 멱등성 검증
 
 ## 스케줄러
 
@@ -374,19 +405,19 @@ if (!requestedMonth.isBefore(currentMonth)) {
 
 ## 구현 순서
 
-1. Flyway migration을 추가한다.
+1. 문서 + schema PR에서 Flyway migration을 추가한다.
    - `monthly_settlements`
    - `monthly_settlement_emotion_tags`
    - `monthly_settlement_books`
-2. book 매핑을 확인한다.
+2. API PR에서 book 매핑을 확인한다.
    - 현재 DB source column은 `books.category`
    - 코드 레벨에서는 `genre` 용어 사용
-3. monthly settlement 도메인 모델과 DTO를 만든다.
+3. API PR에서 monthly settlement 도메인 모델과 DTO를 만든다.
    - 월말 결산 응답
    - 감정 태그 통계 응답
    - 해당 월의 책 응답
    - 이달의 책 응답
-4. repository를 만든다.
+4. API PR에서 repository를 만든다.
    - 저장된 월말 결산 조회
    - 추천 문장 수 조회
    - top genre 조회
@@ -395,20 +426,20 @@ if (!requestedMonth.isBefore(currentMonth)) {
    - 추천 요청 감정 태그 집계
    - top emotion 기반 이달의 책 후보 조회
    - 월말 결산 스냅샷 저장
-5. service를 만든다.
+5. API PR에서 service를 만든다.
    - 집계 정책
    - top genre 결정
    - 월별 책 3권 구성
    - top emotion 결정
    - 결산 문장 생성
    - 이달의 책 랜덤 선정
-6. usecase를 만든다.
+6. API PR에서 usecase를 만든다.
    - 조회
    - 누락 결산 즉시 생성
-7. controller를 추가한다.
+7. API PR에서 controller를 추가한다.
    - `GET /api/monthly-settlements`
    - `year`, `month` request parameter 검증
-8. scheduler를 추가한다.
+8. scheduler PR에서 scheduler를 추가한다.
    - 매월 1일 지난달 월말 결산 생성
    - 월 단위 lock
    - page 단위 사용자 처리
