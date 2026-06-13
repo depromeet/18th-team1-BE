@@ -24,6 +24,11 @@ class QuoteCreationBatchSyncProcessor(
         syncCompletedBatchIfReady(activeJob)
     }
 
+    fun syncJobStatus(jobId: Long) {
+        val job = findJob(jobId)
+        syncCompletedBatchIfReady(job)
+    }
+
     fun syncBatchResultIfReady(jobId: Long) {
         val job = findJob(jobId)
         syncCompletedBatchIfReady(job)

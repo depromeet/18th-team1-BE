@@ -9,6 +9,8 @@ import com.firstpenguin.app.domain.quotemetadata.dto.QuoteMetadataBatchStatusRes
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataBatchItemRepository
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
@@ -17,7 +19,15 @@ class QuoteMetadataBatchStatusService(
     private val quoteBatchJobRepository: QuoteBatchJobRepository,
     private val quoteMetadataBatchItemRepository: QuoteMetadataBatchItemRepository,
 ) {
-    fun getStatus(): QuoteMetadataBatchStatusResponse =
+    fun getTotalStatus(): QuoteMetadataBatchStatusResponse =
+        createStatusResponse(quoteBatchJobRepository.findActiveJob(QUOTE_METADATA_JOB_TYPES))
+
+    fun getStatus(jobId: Long): QuoteMetadataBatchStatusResponse =
+        createStatusResponse(
+            getJob(jobId) ?: throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_JOB_NOT_FOUND),
+        )
+
+    private fun createStatusResponse(job: QuoteBatchJob?): QuoteMetadataBatchStatusResponse =
         QuoteMetadataBatchStatusResponse(
             totalQuoteCount = quoteMetadataRepository.countTotalQuotes(),
             createdCount = quoteMetadataRepository.countCreatedMetadata(),
@@ -25,7 +35,7 @@ class QuoteMetadataBatchStatusService(
             processingCount = quoteMetadataBatchItemRepository.countActiveItemsWithoutMetadata(),
             failedCount = quoteMetadataBatchItemRepository.countFailedItemsWithoutMetadata(),
             runningJobCount = quoteBatchJobRepository.countRunningJobs(QUOTE_METADATA_JOB_TYPES),
-            activeJob = quoteBatchJobRepository.findActiveJob(QUOTE_METADATA_JOB_TYPES)?.toResponse(),
+            activeJob = job?.toResponse(),
         )
 
     fun getActiveJob(): QuoteBatchJob? = quoteBatchJobRepository.findActiveJob(QUOTE_METADATA_JOB_TYPES)
