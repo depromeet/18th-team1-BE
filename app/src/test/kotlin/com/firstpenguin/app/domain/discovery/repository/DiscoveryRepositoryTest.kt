@@ -14,6 +14,7 @@ import org.jooq.tools.jdbc.MockDataProvider
 import org.jooq.tools.jdbc.MockResult
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DiscoveryRepositoryTest {
@@ -32,6 +33,8 @@ class DiscoveryRepositoryTest {
 
         assertTrue(normalizedSql.contains("recommendations"), normalizedSql)
         assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertFalse(normalizedSql.contains("daily_recommendation_quotes"), normalizedSql)
+        assertFalse(normalizedSql.contains("daily_recommendation_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_scraps"), normalizedSql)
