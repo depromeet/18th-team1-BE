@@ -102,6 +102,7 @@ class TagRepository(
         Tag(
             id = record[TagTable.ID]!!,
             emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
+            code = record[TagTable.CODE]!!,
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
             createdAt = record[TagTable.CREATED_AT]!!,
@@ -120,6 +121,7 @@ class TagRepository(
         listOf(
             TagTable.ID,
             TagTable.EMOTION_RANGE_ID,
+            TagTable.CODE,
             TagTable.LABEL,
             TagTable.TYPE,
             TagTable.CREATED_AT,

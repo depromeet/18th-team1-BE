@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 data class Tag(
     val id: Long,
     val emotionRangeId: Long?,
+    val code: String,
     val label: String,
     val type: TagType,
     val createdAt: LocalDateTime,
