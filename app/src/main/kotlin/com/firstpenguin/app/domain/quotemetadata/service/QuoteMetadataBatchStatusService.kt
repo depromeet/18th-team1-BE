@@ -57,7 +57,7 @@ class QuoteMetadataBatchStatusService(
             quoteMetadataBatchItemRepository.updateQuoteMetadataBatchItemsStatus(
                 jobId = jobId,
                 status = BatchItemStatus.FAILED,
-                errorMessage = "OpenAI batch status: ${batch.status.name}",
+                errorMessage = batch.failedMessage(),
             )
         }
     }
@@ -79,3 +79,5 @@ class QuoteMetadataBatchStatusService(
         val QUOTE_METADATA_JOB_TYPES = listOf(QuoteBatchType.QUOTE_METADATA)
     }
 }
+
+private fun OpenAiBatchStatusResponse.failedMessage(): String = errorMessage ?: "OpenAI batch status: ${status.name}"
