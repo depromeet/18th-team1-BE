@@ -124,6 +124,17 @@ class QuoteScrapUseCaseTest {
         assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
     }
 
+    @Test
+    fun `다중 취소 문장 ID가 0 이하이면 실패한다`() {
+        val exception =
+            assertFailsWith<CustomException> {
+                quoteScrapUseCase.deleteQuoteScraps(USER_ID, listOf(QUOTE_ID, 0L, -1L))
+            }
+
+        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
+        Mockito.verifyNoInteractions(quoteScrapService)
+    }
+
     private fun scrappedQuote(quoteId: Long): ScrappedQuote =
         ScrappedQuote(
             quoteId = quoteId,
