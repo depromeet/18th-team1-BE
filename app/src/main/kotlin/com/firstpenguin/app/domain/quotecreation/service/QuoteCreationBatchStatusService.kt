@@ -11,6 +11,8 @@ import com.firstpenguin.app.domain.quotebatch.repository.QuoteBatchJobRepository
 import com.firstpenguin.app.domain.quotecreation.dto.QuoteCreationBatchActiveJobStatusResponse
 import com.firstpenguin.app.domain.quotecreation.dto.QuoteCreationBatchStatusResponse
 import com.firstpenguin.app.global.enums.BatchItemStatus
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,7 +22,14 @@ class QuoteCreationBatchStatusService(
     private val jobRepository: QuoteBatchJobRepository,
     private val itemRepository: QuoteBatchItemRepository,
 ) {
-    fun getStatus(): QuoteCreationBatchStatusResponse =
+    fun getTotalStatus(): QuoteCreationBatchStatusResponse = createStatusResponse(findLatestActiveJob())
+
+    fun getStatus(jobId: Long): QuoteCreationBatchStatusResponse =
+        createStatusResponse(
+            getJob(jobId) ?: throw CustomException(ErrorCode.QUOTE_CREATION_BATCH_JOB_NOT_FOUND),
+        )
+
+    private fun createStatusResponse(job: QuoteBatchJob?): QuoteCreationBatchStatusResponse =
         QuoteCreationBatchStatusResponse(
             totalBookCount = bookRepository.countActiveBooks(),
             extractedBookCount = bookRepository.countBooksWithRecommendedQuotes(),
@@ -28,10 +37,12 @@ class QuoteCreationBatchStatusService(
             processingBookCount = itemRepository.countItems(QUOTE_CONTENT_JOB_TYPES, BatchItemStatus.activeStatuses()),
             failedBookCount = itemRepository.countItems(QUOTE_CONTENT_JOB_TYPES, listOf(BatchItemStatus.FAILED)),
             runningJobCount = jobRepository.countRunningJobs(QUOTE_CONTENT_JOB_TYPES),
-            activeJob = jobRepository.findActiveJob(QUOTE_CONTENT_JOB_TYPES)?.toResponse(),
+            activeJob = job?.toResponse(),
         )
 
-    fun getActiveJob(): QuoteBatchJob? = jobRepository.findActiveJob(QUOTE_CONTENT_JOB_TYPES)
+    fun getActiveJob(): QuoteBatchJob? = findLatestActiveJob()
+
+    private fun findLatestActiveJob(): QuoteBatchJob? = jobRepository.findActiveJob(QUOTE_CONTENT_JOB_TYPES)
 
     private fun countBooksNeedingCurrentQuoteExtraction(): Int =
         bookQuoteExtractionTargetRepository.countBooksNeedingQuotes(
