@@ -45,6 +45,11 @@ class QuoteMetadataBatchService(
         status = status,
     )
 
+    fun updateSubmittedCount(
+        jobId: Long,
+        submittedCount: Int,
+    ) = quoteBatchJobRepository.updateQuoteBatchJobSubmittedCount(jobId, submittedCount)
+
     fun markQuoteMetadataBatchSubmitted(
         jobId: Long,
         batch: OpenAiBatchResponse,
