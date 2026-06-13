@@ -14,7 +14,7 @@ class QuoteService(
 ) {
     fun findQuoteById(id: Long): Quote =
         quoteRepository.findQuoteById(id)
-            ?: throw CustomException(ErrorCode.NOT_FOUND)
+            ?: throw CustomException(ErrorCode.QUOTE_NOT_FOUND)
 
     fun getRandomQuote(): Quote = getRandomQuoteExcludingIds(emptyList())
 
