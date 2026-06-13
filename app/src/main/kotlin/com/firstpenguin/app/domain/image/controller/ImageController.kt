@@ -13,17 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.HttpHeaders
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
 @RestController
@@ -116,12 +110,11 @@ class ImageController(
         @Parameter(description = "스타일 타입 (4 또는 5)", example = "4") @RequestParam type: Int,
         @Parameter(description = "연도", example = "2026") @RequestParam year: Int,
         @Parameter(description = "월 (1~12)", example = "11") @RequestParam month: Int,
-    ): ResponseEntity<ByteArray> {
-        return ResponseEntity
+    ): ResponseEntity<ByteArray> =
+        ResponseEntity
             .ok()
             .contentType(MediaType.IMAGE_PNG)
             .body(imageUseCase.generateCalendarShareImage(authenticatedUser.id, type, year, month))
-    }
 
     @GetMapping("/share/quote", produces = [MediaType.IMAGE_PNG_VALUE])
     @Operation(

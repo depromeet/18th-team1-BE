@@ -24,33 +24,39 @@ object SharedQuoteImageHelper {
         coverImageUrl: String?,
     ): ByteArray =
         when (type) {
-            SHARE_VIEW_1_TYPE ->
+            SHARE_VIEW_1_TYPE -> {
                 generateShareView1(
                     createdAt = createdAt,
                     quote = quote,
                     title = title,
                     author = author,
                 )
+            }
 
-            SHARE_VIEW_2_TYPE ->
+            SHARE_VIEW_2_TYPE -> {
                 generateShareView2(
                     createdAt = createdAt,
                     quote = quote,
                     title = title,
                     author = author,
                 )
+            }
 
-            SHARE_VIEW_3_TYPE ->
+            SHARE_VIEW_3_TYPE -> {
                 generateShareView3(
                     createdAt = createdAt,
                     quote = quote,
                     title = title,
                     author = author,
-                    coverImageUrl = coverImageUrl?.takeIf { it.isNotBlank() }
-                        ?: throw IllegalArgumentException("type 3은 coverImageUrl이 필요합니다."),
+                    coverImageUrl =
+                        coverImageUrl?.takeIf { it.isNotBlank() }
+                            ?: throw IllegalArgumentException("type 3은 coverImageUrl이 필요합니다."),
                 )
+            }
 
-            else -> throw IllegalArgumentException("지원하지 않는 공유 이미지 type입니다: $type")
+            else -> {
+                throw IllegalArgumentException("지원하지 않는 공유 이미지 type입니다: $type")
+            }
         }
 
     fun generateShareView1(

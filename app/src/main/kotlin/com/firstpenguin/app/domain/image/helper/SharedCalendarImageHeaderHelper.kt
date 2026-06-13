@@ -79,8 +79,9 @@ internal object SharedCalendarImageHeaderHelper {
         centerX: Int,
         baseY: Int,
     ) {
-        if (coverImages.isEmpty())
+        if (coverImages.isEmpty()) {
             return
+        }
 
         val count = coverImages.size
         val stackCount = count.coerceAtMost(MAX_STACK_COUNT)
@@ -162,105 +163,108 @@ internal object SharedCalendarImageHeaderHelper {
     }
 }
 
-    private fun Graphics2D.configureRendering() {
-        setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-        setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
-        setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
-        setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+private fun Graphics2D.configureRendering() {
+    setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+    setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+    setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
+    setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+    setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+}
+
+private fun BufferedImage.isLightNear(
+    x: Int,
+    y: Int,
+): Boolean {
+    val sampleSize = 10
+    val scaleX = width.toFloat() / COVER_WIDTH
+    val scaleY = height.toFloat() / COVER_HEIGHT
+    val srcX = (x * scaleX).toInt().coerceIn(0, width - 1)
+    val srcY = (y * scaleY).toInt().coerceIn(0, height - 1)
+    var total = 0L
+    var count = 0
+    for (dy in -sampleSize..sampleSize) {
+        for (dx in -sampleSize..sampleSize) {
+            val px = (srcX + dx).coerceIn(0, width - 1)
+            val py = (srcY + dy).coerceIn(0, height - 1)
+            val rgb = getRGB(px, py)
+            total += ((rgb shr 16) and 0xFF) + ((rgb shr 8) and 0xFF) + (rgb and 0xFF)
+            count++
+        }
+    }
+    return total / (count * 3) >= LIGHT_COVER_THRESHOLD
+}
+
+private fun readTemplate(): BufferedImage =
+    ImageIO.read(SharedCalendarImageHeaderHelper::class.java.classLoader.getResourceAsStream(TEMPLATE_PATH))
+        ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
+
+private fun readImage(url: String): BufferedImage =
+    ImageIO.read(URI(url).toURL())
+        ?: throw IllegalStateException("이미지를 읽을 수 없습니다: $url")
+
+private fun font(
+    path: String,
+    size: Float,
+): Font = resourceFont(path, size) ?: Font(Font.SANS_SERIF, Font.PLAIN, size.toInt())
+
+private fun resourceFont(
+    path: String,
+    size: Float,
+): Font? =
+    runCatching {
+        val stream =
+            SharedCalendarImageHeaderHelper::class.java
+                .classLoader
+                .getResourceAsStream(path)
+                ?: return null
+        stream.useFont(size)
+    }.getOrNull()
+
+private fun InputStream.useFont(size: Float): Font =
+    use { stream ->
+        Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(size)
     }
 
-    private fun BufferedImage.isLightNear(x: Int, y: Int): Boolean {
-        val sampleSize = 10
-        val scaleX = width.toFloat() / COVER_WIDTH
-        val scaleY = height.toFloat() / COVER_HEIGHT
-        val srcX = (x * scaleX).toInt().coerceIn(0, width - 1)
-        val srcY = (y * scaleY).toInt().coerceIn(0, height - 1)
-        var total = 0L
-        var count = 0
-        for (dy in -sampleSize..sampleSize) {
-            for (dx in -sampleSize..sampleSize) {
-                val px = (srcX + dx).coerceIn(0, width - 1)
-                val py = (srcY + dy).coerceIn(0, height - 1)
-                val rgb = getRGB(px, py)
-                total += ((rgb shr 16) and 0xFF) + ((rgb shr 8) and 0xFF) + (rgb and 0xFF)
-                count++
-            }
-        }
-        return total / (count * 3) >= LIGHT_COVER_THRESHOLD
+private fun BufferedImage.toPngByteArray(): ByteArray =
+    ByteArrayOutputStream().use { output ->
+        ImageIO.write(this, IMAGE_FORMAT, output)
+        output.toByteArray()
     }
 
-    private fun readTemplate(): BufferedImage =
-        ImageIO.read(SharedCalendarImageHeaderHelper::class.java.classLoader.getResourceAsStream(TEMPLATE_PATH))
-            ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
+private val COLUMN_CENTERS = intArrayOf(160, 285, 410, 535, 660, 785, 910)
 
-    private fun readImage(url: String): BufferedImage =
-        ImageIO.read(URI(url).toURL())
-            ?: throw IllegalStateException("이미지를 읽을 수 없습니다: $url")
+private const val IMAGE_FORMAT = "png"
+private const val TEMPLATE_PATH = "images/shareviews/shareview_5.png"
 
-    private fun font(
-        path: String,
-        size: Float,
-    ): Font = resourceFont(path, size) ?: Font(Font.SANS_SERIF, Font.PLAIN, size.toInt())
+private const val HEADER_X = 87
+private const val HEADER_BASELINE_Y = 190
+private const val HEADER_FONT_SIZE = 90F
+private const val HEADER_FONT_PATH = "fonts/GT-Pressura-Bold-Trial.otf"
 
-    private fun resourceFont(
-        path: String,
-        size: Float,
-    ): Font? =
-        runCatching {
-            val stream =
-                SharedCalendarImageHeaderHelper::class.java
-                    .classLoader
-                    .getResourceAsStream(path)
-                    ?: return null
-            stream.useFont(size)
-        }.getOrNull()
+private const val FIRST_CELL_TOP = 585
+private const val SLOT_HEIGHT = 240
+private const val CELL_WIDTH = 110F
+private const val CELL_HEIGHT = 110F
+private const val CELL_ARC = 20F
 
-    private fun InputStream.useFont(size: Float): Font =
-        use { stream ->
-            Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(size)
-        }
+private const val DATE_FONT_PATH = "fonts/Pretendard-Medium.otf"
+private const val DATE_FONT_SIZE = 30F
+private const val LETTER_SPACING_RATIO = -0.02F
 
-    private fun BufferedImage.toPngByteArray(): ByteArray =
-        ByteArrayOutputStream().use { output ->
-            ImageIO.write(this, IMAGE_FORMAT, output)
-            output.toByteArray()
-        }
+private const val COVER_WIDTH = 100
+private const val COVER_HEIGHT = 155
+private const val COVER_ARC = 12F
+private const val MAX_STACK_COUNT = 2
+private const val STACK_OFFSET_X = 6
+private const val STACK_OFFSET_Y = -6
+private const val BADGE_RADIUS = 18
+private const val BADGE_INSET = 6
+private const val BADGE_FONT_SIZE = 22F
+private const val LIGHT_COVER_THRESHOLD = 220
+private val BADGE_BG_COLOR_DARK = Color(0x5C, 0x5C, 0x5C, 128)
+private val BADGE_BG_COLOR_LIGHT = Color(0xFF, 0xFF, 0xFF, 51)
 
-    private val COLUMN_CENTERS = intArrayOf(160, 285, 410, 535, 660, 785, 910)
+private val CELL_BG_COLOR = Color(0xF7, 0xF7, 0xF7)
+private val DAY_TEXT_COLOR = Color(0xDC, 0xDC, 0xDC)
 
-    private const val IMAGE_FORMAT = "png"
-    private const val TEMPLATE_PATH = "images/shareviews/shareview_5.png"
-
-    private const val HEADER_X = 87
-    private const val HEADER_BASELINE_Y = 190
-    private const val HEADER_FONT_SIZE = 90F
-    private const val HEADER_FONT_PATH = "fonts/GT-Pressura-Bold-Trial.otf"
-
-    private const val FIRST_CELL_TOP = 585
-    private const val SLOT_HEIGHT = 240
-    private const val CELL_WIDTH = 110F
-    private const val CELL_HEIGHT = 110F
-    private const val CELL_ARC = 20F
-
-    private const val DATE_FONT_PATH = "fonts/Pretendard-Medium.otf"
-    private const val DATE_FONT_SIZE = 30F
-    private const val LETTER_SPACING_RATIO = -0.02F
-
-    private const val COVER_WIDTH = 100
-    private const val COVER_HEIGHT = 155
-    private const val COVER_ARC = 12F
-    private const val MAX_STACK_COUNT = 2
-    private const val STACK_OFFSET_X = 6
-    private const val STACK_OFFSET_Y = -6
-    private const val BADGE_RADIUS = 18
-    private const val BADGE_INSET = 6
-    private const val BADGE_FONT_SIZE = 22F
-    private const val LIGHT_COVER_THRESHOLD = 220
-    private val BADGE_BG_COLOR_DARK = Color(0x5C, 0x5C, 0x5C, 128)
-    private val BADGE_BG_COLOR_LIGHT = Color(0xFF, 0xFF, 0xFF, 51)
-
-    private val CELL_BG_COLOR = Color(0xF7, 0xF7, 0xF7)
-    private val DAY_TEXT_COLOR = Color(0xDC, 0xDC, 0xDC)
-
-    private val HEADER_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH)
+private val HEADER_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH)
