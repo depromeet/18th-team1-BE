@@ -21,6 +21,8 @@ data class DiscoveryQuoteResponse(
     val author: String,
     @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover-placeholder.png")
     val bookCoverImageUrl: String,
+    @field:Schema(description = "책 장르", example = "한국소설", nullable = true)
+    val genre: String?,
     @field:Schema(description = "문장이 추천 이력에 등록된 시각", example = "2026-06-05T12:34:56")
     val recommendedAt: LocalDateTime,
     @get:JsonProperty("isScrapped")
@@ -37,6 +39,7 @@ data class DiscoveryQuoteResponse(
                 title = quote.title,
                 author = quote.author,
                 bookCoverImageUrl = quote.bookCoverImageUrl,
+                genre = quote.genre,
                 recommendedAt = quote.recommendedAt,
                 isScrapped = quote.isScrapped,
             )

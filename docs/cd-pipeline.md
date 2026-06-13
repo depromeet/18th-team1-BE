@@ -20,7 +20,8 @@ GitHub Actions (cd.yml)
 1. config 레포 pull (설정 파일 최신화)
 2. 최신 이미지 pull
 3. docker compose로 app 컨테이너 재시작 (DB 유지)
-4. 이전 이미지 정리
+4. 30초 내 헬스체크 통과 확인
+5. 이전 이미지 정리
 ```
 
 ## 구성 요소
@@ -29,15 +30,18 @@ GitHub Actions (cd.yml)
 
 ```
 [1단계 - 빌드]                      [2단계 - 실행]
-gradle:8.13-jdk21                   eclipse-temurin:21-jre
+eclipse-temurin:21-jdk              eclipse-temurin:21-jre
 ├── 소스코드 복사                    ├── jar만 복사
 ├── gradle bootJar                  └── java -jar app.jar
 └── jar 생성 (~1GB)                     (~300MB)
 ```
 
 - 빌드 도구, 소스코드는 최종 이미지에 포함되지 않음
-- 테스트는 CI에서 이미 통과했으므로 `-x test`로 스킵
+- Docker 빌드는 Gradle wrapper로 `clean bootJar`만 실행한다
+- 테스트는 CI와 pre-push에서 검증한다
 - yml 파일은 이미지에 포함하지 않음 (서버에서 볼륨 마운트)
+- 런타임 timezone은 `Asia/Seoul`로 고정
+- JVM 기본 인코딩은 `UTF-8`로 고정해 한글 에러 응답 깨짐을 방지
 
 ### 2. 이미지 레지스트리 (GHCR)
 
@@ -51,6 +55,12 @@ gradle:8.13-jdk21                   eclipse-temurin:21-jre
 - GitHub Actions에서 `GITHUB_TOKEN`으로 바로 인증 (별도 설정 불필요)
 - 클라우드 벤더 종속 없음 (OCI 이전 시에도 변경 불필요)
 - public 이미지 저장공간 무제한
+
+워크플로우는 `docker/setup-buildx-action@v3`로 Buildx를 먼저 설정한다.
+GitHub Actions cache export(`cache-from: type=gha`, `cache-to: type=gha`)를 사용하려면 기본 `docker` 드라이버가 아니라 Buildx builder가 필요하다.
+
+이미지 이름은 `${GITHUB_REPOSITORY,,}/api`로 소문자화한다.
+GitHub repository 이름에는 대문자가 포함될 수 있지만 Docker image reference 경로는 소문자 기준으로 맞춰야 한다.
 
 ### 3. GitHub Environment
 
@@ -73,6 +83,9 @@ gradle:8.13-jdk21                   eclipse-temurin:21-jre
 | `SERVER_USER` | SSH 사용자 (ubuntu) |
 | `SERVER_SSH_KEY` | 배포용 SSH 개인키 |
 | `DEPLOY_SCRIPT_PATH` | 배포 스크립트 절대 경로 (dev: `/opt/firstpenguin/scripts/deploy-dev.sh`, prod: `/opt/firstpenguin/scripts/deploy-prod.sh`) |
+
+`DEPLOY_SCRIPT_PATH`는 GitHub Environment variable이 아니라 secret으로 등록한다.
+CD workflow의 SSH step은 `${{ secrets.DEPLOY_SCRIPT_PATH }}`를 실행한다.
 
 ### SSH 키 생성 방법
 
@@ -140,8 +153,11 @@ docker ps --filter "name=firstpenguin"
 docker logs firstpenguin-api
 
 # 헬스 체크
-curl http://localhost:8080/actuator/health
+curl http://localhost:8080/api/actuator/health
 ```
+
+앱은 `server.servlet.context-path: /api`를 사용하므로, 외부 호출 경로에는 `/api` prefix가 포함된다.
+Spring Security permitAll 매칭은 context-path 내부 경로인 `/actuator/health`를 기준으로 설정한다.
 
 ## 롤백
 
