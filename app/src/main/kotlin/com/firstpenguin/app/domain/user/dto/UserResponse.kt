@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.user.dto
 
 import com.firstpenguin.app.domain.user.model.User
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDate
 
 @Schema(description = "내 정보 응답")
 data class UserResponse(
@@ -13,6 +14,8 @@ data class UserResponse(
     val nickname: String,
     @field:Schema(description = "프로필 이미지 URL. 연결된 이미지가 없으면 null", example = "https://cdn.example.com/profile.png")
     val profileImageUrl: String?,
+    @field:Schema(description = "가입한 날짜", example = "2026-06-13")
+    val createdAt: LocalDate,
 ) {
     companion object {
         fun from(
@@ -24,6 +27,7 @@ data class UserResponse(
                 email = user.email,
                 nickname = user.nickname,
                 profileImageUrl = profileImageUrl,
+                createdAt = user.createdAt.toLocalDate(),
             )
     }
 }
