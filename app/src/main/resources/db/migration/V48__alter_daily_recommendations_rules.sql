@@ -6,7 +6,7 @@ DROP INDEX IF EXISTS daily_recommendation_quotes_recommendation_display_order_ui
 DROP INDEX IF EXISTS daily_recommendation_tags_recommendation_tag_uidx;
 DROP INDEX IF EXISTS quote_batch_jobs_single_running_uidx;
 
-ALTER TABLE daily_recommendations
+ALTER TABLE IF EXISTS daily_recommendations
     RENAME COLUMN selected_emotion_range_id TO emotion_range_id;
 
 ALTER TABLE IF EXISTS daily_recommendations
