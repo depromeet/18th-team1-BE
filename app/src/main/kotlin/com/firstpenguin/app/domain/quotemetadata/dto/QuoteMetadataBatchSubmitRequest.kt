@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 
 private const val MIN_LIMIT = 1L
-private const val MAX_LIMIT = 1000L
+private const val MAX_LIMIT = 500L
 
 data class QuoteMetadataBatchSubmitRequest(
     @field:Min(MIN_LIMIT)

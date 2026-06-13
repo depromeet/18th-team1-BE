@@ -67,7 +67,7 @@ class QuoteCreationBatchStatusService(
             itemRepository.updateQuoteBatchItemsStatus(
                 jobId = jobId,
                 status = BatchItemStatus.FAILED,
-                errorMessage = "OpenAI batch status: ${batch.status.name}",
+                errorMessage = batch.failedMessage(),
             )
         }
     }
@@ -84,3 +84,5 @@ class QuoteCreationBatchStatusService(
         val QUOTE_CONTENT_JOB_TYPES = listOf(QuoteBatchType.QUOTE_EXTRACTION, QuoteBatchType.QUOTE_REVIEW)
     }
 }
+
+private fun OpenAiBatchStatusResponse.failedMessage(): String = errorMessage ?: "OpenAI batch status: ${status.name}"
