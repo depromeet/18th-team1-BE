@@ -82,7 +82,7 @@ class DiscoveryRepositoryTest {
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
@@ -114,7 +114,7 @@ class DiscoveryRepositoryTest {
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.CATEGORY,
+                BookTable.GENRE,
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
             )
