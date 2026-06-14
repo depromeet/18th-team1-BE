@@ -113,7 +113,9 @@ class RecommendationFallbackServiceTest {
                     emotionCandidates
                 }
 
-                else -> emptyList()
+                else -> {
+                    emptyList()
+                }
             }
         }
 

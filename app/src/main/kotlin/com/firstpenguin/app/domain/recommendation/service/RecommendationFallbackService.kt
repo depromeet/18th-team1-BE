@@ -42,8 +42,7 @@ class RecommendationFallbackService(
         return topScore < LOW_TOP_SCORE_THRESHOLD
     }
 
-    private fun List<EffectiveTag>.only(tagType: TagType): List<EffectiveTag> =
-        filter { tag -> tag.type == tagType }
+    private fun List<EffectiveTag>.only(tagType: TagType): List<EffectiveTag> = filter { tag -> tag.type == tagType }
 
     private fun List<() -> List<RecommendationCandidate>>.takeUntilEnough(
         accumulator: CandidateAccumulator,
