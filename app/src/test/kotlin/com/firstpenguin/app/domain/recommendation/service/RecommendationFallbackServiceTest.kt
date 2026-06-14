@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+private typealias Candidate = RecommendationCandidate
+
 class RecommendationFallbackServiceTest {
     @Test
     fun `후보가 충분하고 top score가 낮지 않으면 fallback 조회하지 않는다`() {
@@ -156,8 +158,7 @@ class RecommendationFallbackServiceTest {
             return randomCandidates
         }
 
-        override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<RecommendationCandidate> =
-            quoteIds.map(::candidate)
+        override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<Candidate> = quoteIds.map(::candidate)
 
         private fun record(call: String) {
             calls.add(call)
