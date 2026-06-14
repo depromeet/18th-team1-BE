@@ -50,6 +50,30 @@ class RecommendationFallbackServiceTest {
     }
 
     @Test
+    fun `semantic 후보는 emotion 다음 relaxed 이전에 보강한다`() {
+        val events = mutableListOf<String>()
+        val provider =
+            FakeRecommendationCandidateProvider(
+                randomCandidates = (5L..10L).map(::candidate),
+                events = events,
+            )
+        val service = RecommendationFallbackService(provider)
+
+        val result =
+            service.supplementCandidates(
+                effectiveTags = effectiveTags,
+                existingCandidates = listOf(candidate(1L)),
+                semanticCandidates = {
+                    events.add("SEMANTIC")
+                    listOf(candidate(2L), candidate(3L), candidate(4L))
+                },
+            )
+
+        assertEquals(listOf("NEED", "EMOTION", "SEMANTIC", "RELAXED", "RANDOM"), events)
+        assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
+    }
+
+    @Test
     fun `need emotion fallback은 해당 타입 effectiveTag만 전달한다`() {
         val provider = FakeRecommendationCandidateProvider(randomCandidates = (1L..10L).map(::candidate))
         val service = RecommendationFallbackService(provider)
@@ -91,6 +115,7 @@ class RecommendationFallbackServiceTest {
         private val emotionCandidates: List<RecommendationCandidate> = emptyList(),
         private val relaxedCandidates: List<RecommendationCandidate> = emptyList(),
         private val randomCandidates: List<RecommendationCandidate> = emptyList(),
+        private val events: MutableList<String>? = null,
     ) : RecommendationCandidateProvider {
         val calls = mutableListOf<String>()
         val capturedTypes = mutableListOf<List<TagType>>()
@@ -104,12 +129,12 @@ class RecommendationFallbackServiceTest {
 
             return when (tagTypes.singleOrNull()) {
                 TagType.NEED -> {
-                    calls.add("NEED")
+                    record("NEED")
                     needCandidates
                 }
 
                 TagType.EMOTION -> {
-                    calls.add("EMOTION")
+                    record("EMOTION")
                     emotionCandidates
                 }
 
@@ -120,15 +145,23 @@ class RecommendationFallbackServiceTest {
         }
 
         override fun findRelaxedCandidates(limit: Int): List<RecommendationCandidate> {
-            calls.add("RELAXED")
+            record("RELAXED")
 
             return relaxedCandidates
         }
 
         override fun findRandomCandidates(limit: Int): List<RecommendationCandidate> {
-            calls.add("RANDOM")
+            record("RANDOM")
 
             return randomCandidates
+        }
+
+        override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<RecommendationCandidate> =
+            quoteIds.map(::candidate)
+
+        private fun record(call: String) {
+            calls.add(call)
+            events?.add(call)
         }
     }
 

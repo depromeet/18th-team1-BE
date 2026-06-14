@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuot
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
+import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import org.springframework.stereotype.Component
 
 @Component
@@ -12,6 +13,7 @@ class RecommendationResultComposer(
     private val metadataScorer: MetadataScorer,
     private val recommendationRanker: RecommendationRanker,
     private val fallbackService: RecommendationFallbackService,
+    private val semanticProvider: RecommendationSemanticProvider,
 ) {
     fun compose(
         input: RecommendationInput,
@@ -19,15 +21,22 @@ class RecommendationResultComposer(
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
     ): RecommendationResult? {
-        val initialRankedQuotes = rank(input, effectiveTags, candidates, moodTagIdByCode)
+        val userEmbedding = semanticProvider.prepare(input)
+        val initialRankedQuotes = rank(input, effectiveTags, candidates, moodTagIdByCode, userEmbedding)
         val supplementedCandidates =
             fallbackService.supplementCandidates(
                 effectiveTags = effectiveTags,
                 existingCandidates = candidates,
                 rankedQuotes = initialRankedQuotes,
+                semanticCandidates = {
+                    semanticProvider.findSimilarCandidates(
+                        userEmbedding = userEmbedding,
+                        excludedQuoteIds = candidates.map { candidate -> candidate.quoteId },
+                    )
+                },
             )
         val rankedQuotes =
-            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode)
+            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, userEmbedding)
                 .diversifyRoleTags()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
@@ -44,15 +53,24 @@ class RecommendationResultComposer(
         effectiveTags: List<EffectiveTag>,
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
-    ): List<RankedRecommendationQuote> =
-        recommendationRanker.rank(candidates) { candidate ->
-            metadataScorer.score(
-                input = input,
-                effectiveTags = effectiveTags,
-                candidate = candidate,
-                moodTagIdByCode = moodTagIdByCode,
+        userEmbedding: UserSemanticEmbedding?,
+    ): List<RankedRecommendationQuote> {
+        val semanticScores =
+            semanticProvider.findScores(
+                userEmbedding = userEmbedding,
+                quoteIds = candidates.map { candidate -> candidate.quoteId },
             )
+
+        return recommendationRanker.rank(candidates) { candidate ->
+            metadataScorer
+                .score(
+                    input = input,
+                    effectiveTags = effectiveTags,
+                    candidate = candidate,
+                    moodTagIdByCode = moodTagIdByCode,
+                ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
         }
+    }
 
     private fun List<RankedRecommendationQuote>.diversifyRoleTags(): List<RankedRecommendationQuote> {
         val selectedQuotes = mutableListOf<RankedRecommendationQuote>()
@@ -92,5 +110,6 @@ class RecommendationResultComposer(
         const val RECOMMENDATION_RESULT_COUNT = 10
         const val MAX_SAME_ROLE_TAG_COUNT = 3
         const val NO_ROLE_TAG_COUNT = 0
+        const val DEFAULT_SEMANTIC_SCORE = 0.0
     }
 }

@@ -26,6 +26,8 @@ interface RecommendationCandidateProvider {
 
     fun findRandomCandidates(limit: Int = DEFAULT_CANDIDATE_LIMIT): List<RecommendationCandidate>
 
+    fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<RecommendationCandidate>
+
     companion object {
         const val DEFAULT_CANDIDATE_LIMIT = 300
     }
@@ -118,6 +120,28 @@ class RecommendationCandidateRepository(
             .fetch()
             .toRecommendationCandidates()
 
+    override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<RecommendationCandidate> {
+        if (quoteIds.isEmpty()) return emptyList()
+        val quoteIdOrder = quoteIds.withIndex().associate { (index, quoteId) -> quoteId to index }
+
+        return dsl
+            .select(CANDIDATE_ROW_FIELDS)
+            .from(QuoteTable.QUOTES)
+            .join(BookTable.BOOKS)
+            .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .leftJoin(QuoteMetadataTable.QUOTE_METADATA)
+            .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+            .leftJoin(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .on(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+            .leftJoin(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID).and(activeTagCondition()))
+            .where(activeQuoteAndBookCondition())
+            .and(QuoteTable.ID.`in`(quoteIds.distinct()))
+            .fetch()
+            .toRecommendationCandidates()
+            .sortedBy { candidate -> quoteIdOrder[candidate.quoteId] ?: Int.MAX_VALUE }
+    }
+
     private fun candidateQuoteIdsTable(
         hardFilterTagIds: List<Long>,
         limit: Int,
@@ -160,39 +184,6 @@ class RecommendationCandidateRepository(
             .map { tag -> tag.tagId }
             .distinct()
 
-    private fun List<Record>.toRecommendationCandidates(): List<RecommendationCandidate> =
-        groupBy { record -> record[QuoteTable.ID]!! }
-            .values
-            .map { records -> records.toRecommendationCandidate() }
-
-    private fun List<Record>.toRecommendationCandidate(): RecommendationCandidate {
-        val firstRecord = first()
-        val tagIdsByType = tagIdsByType()
-
-        return RecommendationCandidate(
-            quoteId = firstRecord[QuoteTable.ID]!!,
-            bookId = firstRecord[QuoteTable.BOOK_ID]!!,
-            content = firstRecord[QuoteTable.CONTENT]!!,
-            title = firstRecord[BookTable.TITLE]!!,
-            author = firstRecord[BookTable.AUTHOR]!!,
-            roleTagId = tagIdsByType[TagType.ROLE]?.firstOrNull(),
-            tagIdsByType = tagIdsByType,
-        )
-    }
-
-    private fun List<Record>.tagIdsByType(): Map<TagType, Set<Long>> =
-        mapNotNull { record ->
-            val tagId = record[TagTable.ID] ?: return@mapNotNull null
-            val tagType = record[TagTable.TYPE] ?: return@mapNotNull null
-
-            TagType.from(tagType) to tagId
-        }.groupBy { (tagType) -> tagType }
-            .mapValues { (_, records) ->
-                records
-                    .map { (_, tagId) -> tagId }
-                    .toSet()
-            }
-
     private companion object {
         const val CANDIDATE_QUOTE_IDS_TABLE = "candidate_quote_ids"
         const val CANDIDATE_QUOTE_ID_NAME = "quote_id"
@@ -212,3 +203,36 @@ class RecommendationCandidateRepository(
             )
     }
 }
+
+private fun List<Record>.toRecommendationCandidates(): List<RecommendationCandidate> =
+    groupBy { record -> record[QuoteTable.ID]!! }
+        .values
+        .map { records -> records.toRecommendationCandidate() }
+
+private fun List<Record>.toRecommendationCandidate(): RecommendationCandidate {
+    val firstRecord = first()
+    val tagIdsByType = tagIdsByType()
+
+    return RecommendationCandidate(
+        quoteId = firstRecord[QuoteTable.ID]!!,
+        bookId = firstRecord[QuoteTable.BOOK_ID]!!,
+        content = firstRecord[QuoteTable.CONTENT]!!,
+        title = firstRecord[BookTable.TITLE]!!,
+        author = firstRecord[BookTable.AUTHOR]!!,
+        roleTagId = tagIdsByType[TagType.ROLE]?.firstOrNull(),
+        tagIdsByType = tagIdsByType,
+    )
+}
+
+private fun List<Record>.tagIdsByType(): Map<TagType, Set<Long>> =
+    mapNotNull { record ->
+        val tagId = record[TagTable.ID] ?: return@mapNotNull null
+        val tagType = record[TagTable.TYPE] ?: return@mapNotNull null
+
+        TagType.from(tagType) to tagId
+    }.groupBy { (tagType) -> tagType }
+        .mapValues { (_, records) ->
+            records
+                .map { (_, tagId) -> tagId }
+                .toSet()
+        }

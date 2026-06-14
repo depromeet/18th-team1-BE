@@ -16,6 +16,7 @@ class RecommendationFallbackService(
         existingCandidates: List<RecommendationCandidate>,
         rankedQuotes: List<RankedRecommendationQuote> = emptyList(),
         minimumCandidateCount: Int = MINIMUM_CANDIDATE_COUNT,
+        semanticCandidates: () -> List<RecommendationCandidate> = { emptyList() },
     ): List<RecommendationCandidate> {
         val forceFallback = rankedQuotes.hasLowTopScore()
         if (!forceFallback && existingCandidates.size >= minimumCandidateCount) return existingCandidates
@@ -25,6 +26,7 @@ class RecommendationFallbackService(
             listOf(
                 { candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT) },
                 { candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT) },
+                semanticCandidates,
                 { candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT) },
                 { candidateProvider.findRandomCandidates(FALLBACK_FETCH_LIMIT) },
             )
