@@ -39,7 +39,8 @@ class RecommendationResultComposerTest {
     fun `role tag가 한쪽으로 몰리면 뒤쪽 role 후보를 앞당긴다`() {
         val composer = composer()
         val candidates =
-            (1L..8L).map { quoteId -> candidate(quoteId, roleTagId = ROLE_TAG_ID) }
+            (1L..8L)
+                .map { quoteId -> candidate(quoteId, roleTagId = ROLE_TAG_ID) }
                 .plus((9L..12L).map { quoteId -> candidate(quoteId, roleTagId = OTHER_ROLE_TAG_ID) })
 
         val result =
