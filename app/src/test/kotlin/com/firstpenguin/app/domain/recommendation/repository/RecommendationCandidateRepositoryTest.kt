@@ -16,6 +16,8 @@ import org.jooq.tools.jdbc.MockDataProvider
 import org.jooq.tools.jdbc.MockResult
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RecommendationCandidateRepositoryTest {
@@ -76,6 +78,49 @@ class RecommendationCandidateRepositoryTest {
         assertEquals("", capturedSql)
     }
 
+    @Test
+    fun `완화 후보 조회는 hard filter 없이 metadata 후보를 조회한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                RecommendationCandidateRepository(dsl).findRelaxedCandidates(limit = LIMIT)
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("join \"quote_metadata\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"quotes\".\"deleted_at\" is null"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"deleted_at\" is null"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"tags\".\"id\" in"), normalizedSql)
+    }
+
+    @Test
+    fun `랜덤 후보 조회는 quote 후보를 무작위로 조회한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                RecommendationCandidateRepository(dsl).findRandomCandidates(limit = LIMIT)
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("join \"quote_metadata\""), normalizedSql)
+        assertTrue(
+            normalizedSql.contains("order by rand()") || normalizedSql.contains("order by random()"),
+            normalizedSql,
+        )
+    }
+
+    @Test
+    fun `태그가 없는 랜덤 후보도 조회 결과로 변환한다`() {
+        val candidates =
+            withMockedResult({ dsl -> noTagCandidateResult(dsl) }) { dsl ->
+                RecommendationCandidateRepository(dsl).findRandomCandidates(limit = LIMIT)
+            }
+        val candidate = candidates.first()
+
+        assertEquals(1, candidates.size)
+        assertEquals(QUOTE_ID, candidate.quoteId)
+        assertNull(candidate.roleTagId)
+        assertEquals(emptyMap(), candidate.tagIdsByType)
+    }
+
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
         var capturedSql = ""
         lateinit var dsl: DSLContext
@@ -120,6 +165,19 @@ class RecommendationCandidateRepositoryTest {
             add(candidateRecord(dsl, EMOTION_TAG_ID, TagType.EMOTION))
             add(candidateRecord(dsl, NEED_TAG_ID, TagType.NEED))
             add(candidateRecord(dsl, MOOD_TAG_ID, TagType.MOOD))
+        }
+
+    private fun noTagCandidateResult(dsl: DSLContext): Result<Record> =
+        dsl.newResult(*CANDIDATE_FIELDS).apply {
+            add(
+                dsl.newRecord(*CANDIDATE_FIELDS).apply {
+                    set(QuoteTable.ID, QUOTE_ID)
+                    set(QuoteTable.BOOK_ID, BOOK_ID)
+                    set(QuoteTable.CONTENT, QUOTE_CONTENT)
+                    set(BookTable.TITLE, BOOK_TITLE)
+                    set(BookTable.AUTHOR, BOOK_AUTHOR)
+                },
+            )
         }
 
     private fun candidateRecord(

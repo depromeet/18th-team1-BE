@@ -16,13 +16,28 @@ import org.jooq.Table
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
-@Repository
-class RecommendationCandidateRepository(
-    private val dsl: DSLContext,
-) {
+interface RecommendationCandidateProvider {
     fun findCandidates(
         effectiveTags: Collection<EffectiveTag>,
         limit: Int = DEFAULT_CANDIDATE_LIMIT,
+    ): List<RecommendationCandidate>
+
+    fun findRelaxedCandidates(limit: Int = DEFAULT_CANDIDATE_LIMIT): List<RecommendationCandidate>
+
+    fun findRandomCandidates(limit: Int = DEFAULT_CANDIDATE_LIMIT): List<RecommendationCandidate>
+
+    companion object {
+        const val DEFAULT_CANDIDATE_LIMIT = 300
+    }
+}
+
+@Repository
+class RecommendationCandidateRepository(
+    private val dsl: DSLContext,
+) : RecommendationCandidateProvider {
+    override fun findCandidates(
+        effectiveTags: Collection<EffectiveTag>,
+        limit: Int,
     ): List<RecommendationCandidate> {
         val hardFilterTagIds = effectiveTags.hardFilterTagIds()
         if (hardFilterTagIds.isEmpty()) return emptyList()
@@ -45,6 +60,63 @@ class RecommendationCandidateRepository(
             .fetch()
             .toRecommendationCandidates()
     }
+
+    override fun findRelaxedCandidates(limit: Int): List<RecommendationCandidate> =
+        dsl
+            .select(CANDIDATE_ROW_FIELDS)
+            .from(
+                dsl
+                    .select(QuoteTable.ID.`as`(CANDIDATE_QUOTE_ID_NAME))
+                    .from(QuoteTable.QUOTES)
+                    .join(BookTable.BOOKS)
+                    .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+                    .join(QuoteMetadataTable.QUOTE_METADATA)
+                    .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+                    .where(activeQuoteAndBookCondition())
+                    .orderBy(QuoteTable.ID.asc())
+                    .limit(limit)
+                    .asTable(CANDIDATE_QUOTE_IDS_TABLE),
+            ).join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
+            .join(BookTable.BOOKS)
+            .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(QuoteMetadataTable.QUOTE_METADATA)
+            .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+            .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .on(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+            .join(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
+            .where(activeTagCondition())
+            .orderBy(QuoteTable.ID.asc())
+            .fetch()
+            .toRecommendationCandidates()
+
+    override fun findRandomCandidates(limit: Int): List<RecommendationCandidate> =
+        dsl
+            .select(CANDIDATE_ROW_FIELDS)
+            .from(
+                dsl
+                    .select(QuoteTable.ID.`as`(CANDIDATE_QUOTE_ID_NAME))
+                    .from(QuoteTable.QUOTES)
+                    .join(BookTable.BOOKS)
+                    .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+                    .where(activeQuoteAndBookCondition())
+                    .orderBy(DSL.rand())
+                    .limit(limit)
+                    .asTable(CANDIDATE_QUOTE_IDS_TABLE),
+            ).join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
+            .join(BookTable.BOOKS)
+            .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .leftJoin(QuoteMetadataTable.QUOTE_METADATA)
+            .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+            .leftJoin(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .on(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+            .leftJoin(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID).and(activeTagCondition()))
+            .orderBy(QuoteTable.ID.asc())
+            .fetch()
+            .toRecommendationCandidates()
 
     private fun candidateQuoteIdsTable(
         hardFilterTagIds: List<Long>,
@@ -109,15 +181,19 @@ class RecommendationCandidateRepository(
     }
 
     private fun List<Record>.tagIdsByType(): Map<TagType, Set<Long>> =
-        groupBy { record -> TagType.from(record[TagTable.TYPE]!!) }
+        mapNotNull { record ->
+            val tagId = record[TagTable.ID] ?: return@mapNotNull null
+            val tagType = record[TagTable.TYPE] ?: return@mapNotNull null
+
+            TagType.from(tagType) to tagId
+        }.groupBy { (tagType) -> tagType }
             .mapValues { (_, records) ->
                 records
-                    .map { record -> record[TagTable.ID]!! }
+                    .map { (_, tagId) -> tagId }
                     .toSet()
             }
 
     private companion object {
-        const val DEFAULT_CANDIDATE_LIMIT = 300
         const val CANDIDATE_QUOTE_IDS_TABLE = "candidate_quote_ids"
         const val CANDIDATE_QUOTE_ID_NAME = "quote_id"
         val CANDIDATE_QUOTE_ID: Field<Long> =
