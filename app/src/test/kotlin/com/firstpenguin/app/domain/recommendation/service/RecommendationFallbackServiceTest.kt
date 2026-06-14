@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+private typealias Candidate = RecommendationCandidate
+
 class RecommendationFallbackServiceTest {
     @Test
     fun `후보가 충분하고 top score가 낮지 않으면 fallback 조회하지 않는다`() {
@@ -46,6 +48,30 @@ class RecommendationFallbackServiceTest {
             )
 
         assertEquals(listOf("NEED", "EMOTION", "RELAXED", "RANDOM"), provider.calls)
+        assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
+    }
+
+    @Test
+    fun `semantic 후보는 emotion 다음 relaxed 이전에 보강한다`() {
+        val events = mutableListOf<String>()
+        val provider =
+            FakeRecommendationCandidateProvider(
+                randomCandidates = (5L..10L).map(::candidate),
+                events = events,
+            )
+        val service = RecommendationFallbackService(provider)
+
+        val result =
+            service.supplementCandidates(
+                effectiveTags = effectiveTags,
+                existingCandidates = listOf(candidate(1L)),
+                semanticCandidates = {
+                    events.add("SEMANTIC")
+                    listOf(candidate(2L), candidate(3L), candidate(4L))
+                },
+            )
+
+        assertEquals(listOf("NEED", "EMOTION", "SEMANTIC", "RELAXED", "RANDOM"), events)
         assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
     }
 
@@ -91,6 +117,7 @@ class RecommendationFallbackServiceTest {
         private val emotionCandidates: List<RecommendationCandidate> = emptyList(),
         private val relaxedCandidates: List<RecommendationCandidate> = emptyList(),
         private val randomCandidates: List<RecommendationCandidate> = emptyList(),
+        private val events: MutableList<String>? = null,
     ) : RecommendationCandidateProvider {
         val calls = mutableListOf<String>()
         val capturedTypes = mutableListOf<List<TagType>>()
@@ -104,12 +131,12 @@ class RecommendationFallbackServiceTest {
 
             return when (tagTypes.singleOrNull()) {
                 TagType.NEED -> {
-                    calls.add("NEED")
+                    record("NEED")
                     needCandidates
                 }
 
                 TagType.EMOTION -> {
-                    calls.add("EMOTION")
+                    record("EMOTION")
                     emotionCandidates
                 }
 
@@ -120,15 +147,22 @@ class RecommendationFallbackServiceTest {
         }
 
         override fun findRelaxedCandidates(limit: Int): List<RecommendationCandidate> {
-            calls.add("RELAXED")
+            record("RELAXED")
 
             return relaxedCandidates
         }
 
         override fun findRandomCandidates(limit: Int): List<RecommendationCandidate> {
-            calls.add("RANDOM")
+            record("RANDOM")
 
             return randomCandidates
+        }
+
+        override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<Candidate> = quoteIds.map(::candidate)
+
+        private fun record(call: String) {
+            calls.add(call)
+            events?.add(call)
         }
     }
 

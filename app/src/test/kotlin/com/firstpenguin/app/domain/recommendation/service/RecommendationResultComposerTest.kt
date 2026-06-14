@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
+import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import com.firstpenguin.app.domain.recommendation.policy.MoodTagPolicy
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
 import com.firstpenguin.app.global.enums.TagType
@@ -76,6 +77,27 @@ class RecommendationResultComposerTest {
         assertEquals((1L..10L).toList(), result?.quotes?.map { quote -> quote.quoteId })
     }
 
+    @Test
+    fun `canonicalIntent가 있으면 semanticScore를 최종 정렬에 반영한다`() {
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("불안한 마음을 진정시키고 싶다", listOf(0.1)),
+                semanticScores = mapOf(2L to 1.0),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+
+        val result =
+            composer.compose(
+                input = recommendationInput(canonicalIntent = "불안한 마음을 진정시키고 싶다"),
+                effectiveTags = effectiveTags,
+                candidates = listOf(candidate(1L, roleTagId = 1L), candidate(2L, roleTagId = 2L)),
+                moodTagIdByCode = emptyMap(),
+            )
+
+        assertEquals(2L, result?.mainQuote?.quoteId)
+        assertEquals(1.0, result?.mainQuote?.score?.semanticScore)
+    }
+
     private class FakeRecommendationCandidateProvider(
         private val randomCandidates: List<RecommendationCandidate> = emptyList(),
     ) : RecommendationCandidateProvider {
@@ -101,6 +123,37 @@ class RecommendationResultComposerTest {
 
             return randomCandidates
         }
+
+        override fun findCandidatesByQuoteIds(quoteIds: List<Long>): List<RecommendationCandidate> =
+            quoteIds.map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+    }
+
+    private class FakeRecommendationSemanticProvider(
+        private val userEmbedding: UserSemanticEmbedding? = null,
+        private val semanticScores: Map<Long, Double> = emptyMap(),
+        private val similarCandidates: List<RecommendationCandidate> = emptyList(),
+    ) : RecommendationSemanticProvider {
+        override fun prepare(input: RecommendationInput): UserSemanticEmbedding? = userEmbedding
+
+        override fun findScores(
+            userEmbedding: UserSemanticEmbedding?,
+            quoteIds: Collection<Long>,
+        ): Map<Long, Double> =
+            if (userEmbedding == null) {
+                emptyMap()
+            } else {
+                semanticScores.filterKeys { quoteId -> quoteId in quoteIds }
+            }
+
+        override fun findSimilarCandidates(
+            userEmbedding: UserSemanticEmbedding?,
+            excludedQuoteIds: Collection<Long>,
+        ): List<RecommendationCandidate> =
+            if (userEmbedding == null) {
+                emptyList()
+            } else {
+                similarCandidates.filterNot { candidate -> candidate.quoteId in excludedQuoteIds }
+            }
     }
 
     private companion object {
@@ -129,14 +182,16 @@ class RecommendationResultComposerTest {
 
         fun composer(
             candidateProvider: RecommendationCandidateProvider = FakeRecommendationCandidateProvider(),
+            semanticProvider: RecommendationSemanticProvider = FakeRecommendationSemanticProvider(),
         ): RecommendationResultComposer =
             RecommendationResultComposer(
                 metadataScorer = MetadataScorer(MoodTagPolicy(), TypeScoreCalculator()),
                 recommendationRanker = RecommendationRanker(),
                 fallbackService = RecommendationFallbackService(candidateProvider),
+                semanticProvider = semanticProvider,
             )
 
-        fun recommendationInput(): RecommendationInput =
+        fun recommendationInput(canonicalIntent: String? = null): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
                 emotionRangeId = EMOTION_RANGE_ID,
@@ -147,7 +202,7 @@ class RecommendationResultComposerTest {
                 analysis =
                     UserInputAnalysis(
                         intentType = IntentType.EMOTION_NEED_BASED,
-                        canonicalIntent = null,
+                        canonicalIntent = canonicalIntent,
                         tagCandidates = emptyList(),
                     ),
             )

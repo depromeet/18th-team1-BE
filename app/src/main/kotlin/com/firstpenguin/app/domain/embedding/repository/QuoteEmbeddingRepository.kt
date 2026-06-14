@@ -23,6 +23,61 @@ import java.time.LocalDateTime
 class QuoteEmbeddingRepository(
     private val dsl: DSLContext,
 ) {
+    fun findCosineSimilarities(
+        quoteIds: Collection<Long>,
+        userEmbedding: List<Double>,
+        embeddingModel: String = OpenAiEmbeddingModelVersion.V1.model,
+    ): Map<Long, Double> {
+        if (quoteIds.isEmpty()) return emptyMap()
+        val semanticScore =
+            DSL
+                .field(
+                    "1 - ({0} <=> {1})",
+                    Double::class.java,
+                    QuoteEmbeddingTable.EMBEDDING,
+                    vectorField(userEmbedding),
+                ).`as`(SEMANTIC_SCORE_ALIAS)
+
+        return dsl
+            .select(QuoteEmbeddingTable.QUOTE_ID, semanticScore)
+            .from(QuoteEmbeddingTable.QUOTE_EMBEDDINGS)
+            .where(QuoteEmbeddingTable.QUOTE_ID.`in`(quoteIds.distinct()))
+            .and(QuoteEmbeddingTable.EMBEDDING_MODEL.eq(embeddingModel))
+            .fetchMap(QuoteEmbeddingTable.QUOTE_ID, semanticScore)
+    }
+
+    fun findMostSimilarQuoteIds(
+        userEmbedding: List<Double>,
+        excludedQuoteIds: Collection<Long>,
+        limit: Int,
+        embeddingModel: String = OpenAiEmbeddingModelVersion.V1.model,
+    ): List<Long> {
+        if (limit <= MIN_SIMILAR_QUOTE_LIMIT) return emptyList()
+        val excludedIds = excludedQuoteIds.distinct()
+        val semanticScore =
+            DSL
+                .field(
+                    "1 - ({0} <=> {1})",
+                    Double::class.java,
+                    QuoteEmbeddingTable.EMBEDDING,
+                    vectorField(userEmbedding),
+                )
+
+        return dsl
+            .select(QuoteEmbeddingTable.QUOTE_ID)
+            .from(QuoteEmbeddingTable.QUOTE_EMBEDDINGS)
+            .where(QuoteEmbeddingTable.EMBEDDING_MODEL.eq(embeddingModel))
+            .and(
+                if (excludedIds.isEmpty()) {
+                    DSL.trueCondition()
+                } else {
+                    QuoteEmbeddingTable.QUOTE_ID.notIn(excludedIds)
+                },
+            ).orderBy(semanticScore.desc(), QuoteEmbeddingTable.QUOTE_ID.asc())
+            .limit(limit)
+            .fetch(QuoteEmbeddingTable.QUOTE_ID)
+    }
+
     fun findMetadataTargetsByJobId(
         jobId: Long,
         embeddingModel: String,
@@ -103,8 +158,10 @@ class QuoteEmbeddingRepository(
         )
 
     private companion object {
+        private const val MIN_SIMILAR_QUOTE_LIMIT = 0
         private const val VECTOR_PREFIX = "["
         private const val VECTOR_POSTFIX = "]"
+        private const val SEMANTIC_SCORE_ALIAS = "semantic_score"
         private const val EXISTING_EMBEDDING_TEXT_HASH_ALIAS = "existing_embedding_text_hash"
         private val BATCH_ITEM_QUOTE_ID = QuoteBatchItemTable.TARGET_ID
         private val METADATA_QUOTE_ID = QuoteMetadataTable.QUOTE_ID

@@ -121,6 +121,16 @@ class RecommendationCandidateRepositoryTest {
         assertEquals(emptyMap(), candidate.tagIdsByType)
     }
 
+    @Test
+    fun `quoteId 목록으로 후보를 조회하고 요청 순서를 유지한다`() {
+        val candidates =
+            withMockedResult({ dsl -> orderedCandidateResult(dsl) }) { dsl ->
+                RecommendationCandidateRepository(dsl).findCandidatesByQuoteIds(listOf(2L, 1L))
+            }
+
+        assertEquals(listOf(2L, 1L), candidates.map { candidate -> candidate.quoteId })
+    }
+
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
         var capturedSql = ""
         lateinit var dsl: DSLContext
@@ -180,13 +190,20 @@ class RecommendationCandidateRepositoryTest {
             )
         }
 
+    private fun orderedCandidateResult(dsl: DSLContext): Result<Record> =
+        dsl.newResult(*CANDIDATE_FIELDS).apply {
+            add(candidateRecord(dsl, quoteId = 1L, tagId = EMOTION_TAG_ID, tagType = TagType.EMOTION))
+            add(candidateRecord(dsl, quoteId = 2L, tagId = NEED_TAG_ID, tagType = TagType.NEED))
+        }
+
     private fun candidateRecord(
         dsl: DSLContext,
         tagId: Long,
         tagType: TagType,
+        quoteId: Long = QUOTE_ID,
     ): Record =
         dsl.newRecord(*CANDIDATE_FIELDS).apply {
-            set(QuoteTable.ID, QUOTE_ID)
+            set(QuoteTable.ID, quoteId)
             set(QuoteTable.BOOK_ID, BOOK_ID)
             set(QuoteTable.CONTENT, QUOTE_CONTENT)
             set(BookTable.TITLE, BOOK_TITLE)
