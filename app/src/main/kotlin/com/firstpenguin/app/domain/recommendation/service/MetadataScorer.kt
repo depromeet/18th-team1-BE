@@ -2,10 +2,8 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.IntentType
-import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
-import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import com.firstpenguin.app.domain.recommendation.policy.IntentFocusWeightPolicy
 import com.firstpenguin.app.domain.recommendation.policy.MoodTagPolicy
@@ -17,41 +15,6 @@ class MetadataScorer(
     private val moodTagPolicy: MoodTagPolicy,
     private val typeScoreCalculator: TypeScoreCalculator,
 ) {
-    fun recommend(
-        input: RecommendationInput,
-        effectiveTags: List<EffectiveTag>,
-        candidates: List<RecommendationCandidate>,
-        moodTagIdByCode: Map<String, Long>,
-    ): RecommendationResult? {
-        val rankedQuotes = rank(input, effectiveTags, candidates, moodTagIdByCode)
-        if (rankedQuotes.isEmpty()) return null
-
-        return RecommendationResult(
-            mainQuote = rankedQuotes.first(),
-            quotes = rankedQuotes,
-        )
-    }
-
-    fun rank(
-        input: RecommendationInput,
-        effectiveTags: List<EffectiveTag>,
-        candidates: List<RecommendationCandidate>,
-        moodTagIdByCode: Map<String, Long>,
-    ): List<RankedRecommendationQuote> =
-        candidates
-            .map { candidate -> candidate to score(input, effectiveTags, candidate, moodTagIdByCode) }
-            .sortedWith(
-                compareByDescending<Pair<RecommendationCandidate, RecommendationScoreBreakdown>> {
-                    it.second.finalScore
-                }.thenBy { it.first.quoteId },
-            ).mapIndexed { index, (candidate, score) ->
-                RankedRecommendationQuote(
-                    rank = index + FIRST_RANK,
-                    candidate = candidate,
-                    score = score,
-                )
-            }
-
     fun score(
         input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
@@ -82,7 +45,7 @@ class MetadataScorer(
             moodScore = moodScore,
             metadataScore = metadataScore,
             semanticScore = DEFAULT_SEMANTIC_SCORE,
-            finalScore = metadataScore,
+            finalScore = DEFAULT_FINAL_SCORE,
         )
     }
 
@@ -137,8 +100,8 @@ class MetadataScorer(
     private fun RecommendationCandidate.tagIds(tagType: TagType): Set<Long> = tagIdsByType[tagType].orEmpty()
 
     private companion object {
-        const val FIRST_RANK = 1
         const val DEFAULT_SEMANTIC_SCORE = 0.0
+        const val DEFAULT_FINAL_SCORE = 0.0
         const val NO_WEIGHT = 0.0
     }
 }

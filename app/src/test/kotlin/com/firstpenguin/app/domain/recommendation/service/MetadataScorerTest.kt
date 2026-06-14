@@ -17,7 +17,7 @@ class MetadataScorerTest {
     private val scorer = MetadataScorer(MoodTagPolicy(), TypeScoreCalculator())
 
     @Test
-    fun `metadataScore 기준으로 후보를 정렬한다`() {
+    fun `metadataScore를 계산하고 finalScore는 계산하지 않는다`() {
         val input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED)
         val effectiveTags =
             listOf(
@@ -46,18 +46,24 @@ class MetadataScorerTest {
                     ),
             )
 
-        val result =
-            scorer.rank(
+        val highMatchScore =
+            scorer.score(
                 input = input,
                 effectiveTags = effectiveTags,
-                candidates = listOf(lowMatchCandidate, highMatchCandidate),
+                candidate = highMatchCandidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+        val lowMatchScore =
+            scorer.score(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidate = lowMatchCandidate,
                 moodTagIdByCode = moodTagIdByCode,
             )
 
-        assertEquals(listOf(1L, 2L), result.map { quote -> quote.quoteId })
-        assertEquals(1, result.first().rank)
-        assertEquals(result.first().score.metadataScore, result.first().score.finalScore, DELTA)
-        assertEquals(0.0, result.first().score.semanticScore, DELTA)
+        assertTrue(highMatchScore.metadataScore > lowMatchScore.metadataScore)
+        assertEquals(0.0, highMatchScore.semanticScore, DELTA)
+        assertEquals(0.0, highMatchScore.finalScore, DELTA)
     }
 
     @Test
@@ -78,24 +84,6 @@ class MetadataScorerTest {
             )
 
         assertTrue(result.moodScore > 0.0)
-    }
-
-    @Test
-    fun `추천 결과는 첫 번째 정렬 후보를 mainQuote로 사용한다`() {
-        val result =
-            scorer.recommend(
-                input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED),
-                effectiveTags = listOf(effectiveTag(NEED_COMFORT_ID, "NEED_COMFORT", TagType.NEED, 1.0)),
-                candidates =
-                    listOf(
-                        candidate(quoteId = 2L, tagIdsByType = emptyMap()),
-                        candidate(quoteId = 1L, tagIdsByType = mapOf(TagType.NEED to setOf(NEED_COMFORT_ID))),
-                    ),
-                moodTagIdByCode = moodTagIdByCode,
-            )
-
-        assertEquals(1L, result?.mainQuote?.quoteId)
-        assertEquals(listOf(1L, 2L), result?.quotes?.map { quote -> quote.quoteId })
     }
 
     private fun recommendationInput(intentType: IntentType): RecommendationInput =
