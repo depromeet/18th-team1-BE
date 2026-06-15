@@ -57,6 +57,10 @@ enum class ErrorCode(
     RECOMMENDATION_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 문장을 선택하지 않은 추천입니다."),
     INVALID_RECOMMENDATION_NEED_INPUT(HttpStatus.BAD_REQUEST, "기대 태그 또는 직접 입력 문장 중 하나만 선택해야 합니다."),
 
+    // MonthlySettlement
+    MONTHLY_SETTLEMENT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "확정되지 않은 월말 결산은 조회할 수 없습니다."),
+    MONTHLY_SETTLEMENT_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "월말 결산 생성에 실패했습니다."),
+
     // Book
     BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "책이 존재하지 않습니다."),
 
