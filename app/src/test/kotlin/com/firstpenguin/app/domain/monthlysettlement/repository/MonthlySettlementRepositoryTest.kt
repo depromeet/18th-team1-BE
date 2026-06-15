@@ -11,6 +11,7 @@ import org.jooq.tools.jdbc.MockDataProvider
 import org.jooq.tools.jdbc.MockResult
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -171,6 +172,6 @@ class MonthlySettlementRepositoryTest {
         const val EMOTION_TAG_LIMIT = 10
         const val GENRE = "추리/미스터리 소설"
         val START: LocalDate = LocalDate.of(YEAR, MONTH, 1)
-        val END_EXCLUSIVE: LocalDate = LocalDate.of(YEAR, MONTH + 1, 1)
+        val END_EXCLUSIVE: LocalDate = YearMonth.of(YEAR, MONTH).plusMonths(1).atDay(1)
     }
 }
