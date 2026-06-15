@@ -86,6 +86,31 @@ class MetadataScorerTest {
         assertTrue(result.moodScore > 0.0)
     }
 
+    @Test
+    fun `rarity weight가 있으면 흔한 metadata tag 점수를 낮춘다`() {
+        val input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED)
+        val effectiveTags = listOf(effectiveTag(NEED_COMFORT_ID, "NEED_COMFORT", TagType.NEED, 1.0))
+        val candidate = candidate(quoteId = 1L, tagIdsByType = mapOf(TagType.NEED to setOf(NEED_COMFORT_ID)))
+
+        val normalScore =
+            scorer.score(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidate = candidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+        val rarityWeightedScore =
+            scorer.score(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidate = candidate,
+                moodTagIdByCode = moodTagIdByCode,
+                tagRarityWeights = mapOf(NEED_COMFORT_ID to 0.55),
+            )
+
+        assertTrue(rarityWeightedScore.needScore < normalScore.needScore)
+    }
+
     private fun recommendationInput(intentType: IntentType): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,

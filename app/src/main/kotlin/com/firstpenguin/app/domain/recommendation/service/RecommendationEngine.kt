@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
+import com.firstpenguin.app.domain.recommendation.repository.RecommendationTagRarityRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -19,6 +20,7 @@ class RecommendationEngine(
     private val userInputAnalysisService: UserInputAnalysisService,
     private val effectiveTagBuilder: EffectiveTagBuilder,
     private val candidateProvider: RecommendationCandidateProvider,
+    private val tagRarityRepository: RecommendationTagRarityRepository,
     private val resultComposer: RecommendationResultComposer,
 ) {
     fun recommend(
@@ -34,6 +36,7 @@ class RecommendationEngine(
                 effectiveTags = effectiveTags,
                 candidates = candidates,
                 moodTagIdByCode = tagRepository.getActiveMoodTagIdByCode(),
+                tagRarityWeights = tagRarityRepository.findMetadataTagRarityWeights(),
             ) ?: notEnoughQuotes()
 
         if (result.quotes.size < RECOMMENDATION_RESULT_QUOTE_COUNT) {

@@ -20,9 +20,11 @@ class RecommendationResultComposer(
         effectiveTags: List<EffectiveTag>,
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): RecommendationResult? {
         val userEmbedding = semanticProvider.prepare(input)
-        val initialRankedQuotes = rank(input, effectiveTags, candidates, moodTagIdByCode, userEmbedding)
+        val initialRankedQuotes =
+            rank(input, effectiveTags, candidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
         val supplementedCandidates =
             fallbackService.supplementCandidates(
                 effectiveTags = effectiveTags,
@@ -36,7 +38,7 @@ class RecommendationResultComposer(
                 },
             )
         val rankedQuotes =
-            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, userEmbedding)
+            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
                 .diversifyRoleTags()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
@@ -53,6 +55,7 @@ class RecommendationResultComposer(
         effectiveTags: List<EffectiveTag>,
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<RankedRecommendationQuote> {
         val semanticScores =
@@ -68,6 +71,7 @@ class RecommendationResultComposer(
                     effectiveTags = effectiveTags,
                     candidate = candidate,
                     moodTagIdByCode = moodTagIdByCode,
+                    tagRarityWeights = tagRarityWeights,
                 ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
         }
     }

@@ -20,13 +20,14 @@ class MetadataScorer(
         effectiveTags: List<EffectiveTag>,
         candidate: RecommendationCandidate,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): RecommendationScoreBreakdown {
         val intentType = input.analysis?.intentType ?: IntentType.EMOTION_NEED_BASED
-        val needScore = typeScore(TagType.NEED, effectiveTags, candidate)
-        val emotionScore = typeScore(TagType.EMOTION, effectiveTags, candidate)
+        val needScore = typeScore(TagType.NEED, effectiveTags, candidate, tagRarityWeights)
+        val emotionScore = typeScore(TagType.EMOTION, effectiveTags, candidate, tagRarityWeights)
         val contextScore = typeScore(TagType.CONTEXT, effectiveTags, candidate)
         val situationScore = typeScore(TagType.SITUATION, effectiveTags, candidate)
-        val moodScore = moodScore(input, effectiveTags, candidate, moodTagIdByCode)
+        val moodScore = moodScore(input, effectiveTags, candidate, moodTagIdByCode, tagRarityWeights)
         val metadataScore =
             metadataScore(
                 intentType = intentType,
@@ -53,10 +54,12 @@ class MetadataScorer(
         tagType: TagType,
         effectiveTags: List<EffectiveTag>,
         candidate: RecommendationCandidate,
+        tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): Double =
         typeScoreCalculator.calculate(
             targetTags = effectiveTags.filter { tag -> tag.type == tagType },
             candidateTagIds = candidate.tagIds(tagType),
+            tagRarityWeights = tagRarityWeights,
         )
 
     private fun moodScore(
@@ -64,6 +67,7 @@ class MetadataScorer(
         effectiveTags: List<EffectiveTag>,
         candidate: RecommendationCandidate,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double>,
     ): Double {
         val targetMoodTagIds =
             moodTagPolicy
@@ -73,6 +77,7 @@ class MetadataScorer(
         return typeScoreCalculator.calculate(
             targetTagIds = targetMoodTagIds,
             candidateTagIds = candidate.tagIds(TagType.MOOD),
+            tagRarityWeights = tagRarityWeights,
         )
     }
 
