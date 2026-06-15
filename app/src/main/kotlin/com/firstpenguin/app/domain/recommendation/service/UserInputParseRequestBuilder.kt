@@ -1,0 +1,112 @@
+package com.firstpenguin.app.domain.recommendation.service
+
+import com.firstpenguin.app.domain.openai.dto.OpenAiResponsesRequest
+import com.firstpenguin.app.domain.openai.dto.OpenAiResponsesTextRequest
+import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
+import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVersion
+import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
+import com.firstpenguin.app.global.enums.TagType
+import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
+
+private const val OPENAI_REASONING_EFFORT = "low"
+private const val OPENAI_TEXT_VERBOSITY = "low"
+
+private val USER_INPUT_PARSE_PROMPT_GUIDE =
+    """
+너는 감정 기반 문장 추천 서비스의 사용자 입력 분석기다.
+
+너의 역할은 사용자의 free text와 diary text를 분석하여 추천 엔진이 사용할 intentType, canonicalIntent,
+타입별 tag candidate를 반환하는 것이다.
+
+중요 규칙:
+1. 반드시 제공된 tagCode 중에서만 선택하라.
+2. feelingText는 사용자가 원하는 추천 의도를 나타내는 가장 중요한 텍스트다.
+3. diaryText는 배경 정보로만 사용하라.
+4. feelingText와 diaryText가 충돌하면 feelingText를 우선하라.
+5. context/situation tag를 중심으로 추출하라.
+6. emotion/need tag는 명확한 근거가 있을 때만 추출하라.
+7. 개수를 채우기 위해 약한 태그를 선택하지 마라.
+8. hasSelectedNeedTag가 false이고 feelingText가 있으면 allowed NEED tag 중
+    feelingText와 가장 일치하는 NEED tag를 반드시 1개 반환하라.
+9. hasSelectedNeedTag가 true이면 need tag도 emotion tag와 동일하게 12번 규칙을 따른다.
+10. context tag는 실제 장소, 날씨, 시간, 활동, 장면이 직접 드러날 때만 선택하라.
+11. situation tag는 실제 삶의 문제, 사건, 관계, 주제가 직접 드러날 때만 선택하라.
+12. 은유적 표현만으로 context나 situation을 선택하지 마라.
+13. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
+
+[intentType 기준]
+- EMOTION_NEED_BASED: 감정과 필요한 반응이 중심이다.
+- CONTEXT_BASED: 날씨, 시간, 장소, 활동 같은 맥락이 추천 의도에 직접적이다.
+- SITUATION_BASED: 실패, 관계, 일, 이별, 변화 같은 삶의 사건이 중심이다.
+- MIXED: 감정, 필요, 상황, 성찰이 섞여 있거나 관점 전환/마음정리가 중심이다.
+
+[canonicalIntent 작성 기준]
+- 한국어 한 문장으로 작성하라.
+- 사용자의 현재 마음과 원하는 도움을 요약하라.
+- quote, 문장, 추천 결과를 설명하지 마라.
+- tagCode나 label을 단순 나열하지 마라.
+- 35~90자 사이를 권장한다.
+- 좋은 형태: 실패한 뒤 불안하고 위축된 마음을 다독이며 다시 관점을 정리하고 싶다
+- 나쁜 형태: 이 사용자에게 위로와 관점 전환 태그가 적합하다
+    """.trimIndent()
+
+@Component
+class UserInputParseRequestBuilder(
+    private val jsonMapper: JsonMapper,
+) {
+    fun build(
+        input: RecommendationInput,
+        tagGroups: Map<TagType, List<TagOption>>,
+    ): OpenAiResponsesRequest =
+        OpenAiResponsesRequest(
+            model = RecommendationAiModelVersion.USER_INPUT_ANALYSIS_V1.model,
+            reasoning = mapOf("effort" to OPENAI_REASONING_EFFORT),
+            input = buildPrompt(input, tagGroups),
+            text =
+                OpenAiResponsesTextRequest(
+                    format = userInputParseSchema(tagGroups),
+                    verbosity = OPENAI_TEXT_VERBOSITY,
+                ),
+        )
+
+    private fun buildPrompt(
+        input: RecommendationInput,
+        tagGroups: Map<TagType, List<TagOption>>,
+    ): String =
+        listOf(
+            USER_INPUT_PARSE_PROMPT_GUIDE,
+            requestPayload(input, tagGroups),
+        ).joinToString("\n\n")
+
+    private fun requestPayload(
+        input: RecommendationInput,
+        tagGroups: Map<TagType, List<TagOption>>,
+    ): String =
+        """
+        [분석 대상 사용자 입력]
+        ${jsonMapper.writeValueAsString(input.toPayload(tagGroups))}
+        """.trimIndent()
+
+    private fun RecommendationInput.toPayload(tagGroups: Map<TagType, List<TagOption>>): Map<String, Any?> =
+        mapOf(
+            "hasSelectedNeedTag" to (needTag != null),
+            "feelingText" to feelingText.normalizedText(),
+            "diaryText" to diaryText.normalizedText(),
+            "allowedTags" to tagGroups.toAllowedTagsPayload(),
+        )
+
+    private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
+
+    private fun Map<TagType, List<TagOption>>.toAllowedTagsPayload(): Map<String, List<Map<String, String>>> =
+        USER_INPUT_PARSE_TAG_TYPES.associate { type ->
+            type.name to get(type).orEmpty().map { option -> option.toPayload() }
+        }
+
+    private fun TagOption.toPayload(): Map<String, String> =
+        mapOf(
+            "label" to label,
+            "tagCode" to code,
+            "description" to description.orEmpty(),
+        )
+}

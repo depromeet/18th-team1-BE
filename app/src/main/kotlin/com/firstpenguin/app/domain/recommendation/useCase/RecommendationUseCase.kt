@@ -8,6 +8,7 @@ import com.firstpenguin.app.domain.recommendation.dto.RecommendationPeriodRespon
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
 import com.firstpenguin.app.domain.recommendation.service.RecommendationCommandService
+import com.firstpenguin.app.domain.recommendation.service.RecommendationEngine
 import com.firstpenguin.app.domain.recommendation.service.RecommendationRequestValidator
 import com.firstpenguin.app.domain.recommendation.service.RecommendationResponseMapper
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
@@ -19,83 +20,55 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 private const val NEXT_RECOMMENDATION_QUOTE_COUNT = 9
+private const val FIRST_RECOMMENDATION_QUOTE_COUNT = 1
 
 @Service
 class RecommendationUseCase(
     private val quoteService: QuoteService,
+    private val recommendationEngine: RecommendationEngine,
+    private val recommendationCommandUseCase: RecommendationCommandUseCase,
     private val recommendationService: RecommendationService,
     private val recommendationCommandService: RecommendationCommandService,
     private val recommendationValidationService: RecommendationValidationService,
     private val recommendationRequestValidator: RecommendationRequestValidator,
     private val recommendationResponseMapper: RecommendationResponseMapper,
 ) {
-    @Transactional
     fun recommendQuote(
         userId: Long,
         request: RecommendationRequest,
     ): RecommendationResponse {
         recommendationRequestValidator.validate(request)
-
-        val selectedTagIds = request.emotionTagIds + listOfNotNull(request.needTagId)
-
-        recommendationService.lockRecommendationCreation(userId)
         recommendationService.findOngoingRecommendation(userId)?.let { recommendation ->
             return recommendationResponseMapper.toRecommendationResponse(recommendation)
         }
-
         recommendationValidationService.validateRecommendationCreatable(userId)
 
-        val recommendationId =
-            recommendationService.createRecommendation(
-                userId = userId,
-                feelingText = request.feelingText.normalizedText(),
-                diaryText = request.diaryText,
-                emotionRangeId = request.emotionRangeId,
-            )
-        val randomQuote = quoteService.getRandomQuote()
-
-        recommendationService.createRecommendationTags(
-            recommendationId = recommendationId,
-            tagIds = selectedTagIds,
-        )
-        recommendationService.createRecommendationQuotes(
-            recommendationId = recommendationId,
-            quoteIds = listOf(randomQuote.id),
-        )
-
-        return recommendationResponseMapper.toRecommendationResponse(
-            recommendationId = recommendationId,
-            quote = randomQuote,
+        return recommendationCommandUseCase.saveRecommendationResult(
+            userId = userId,
+            request = request,
+            result = recommendationEngine.recommend(userId, request),
         )
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun getNextRecommendationQuotes(
         userId: Long,
         recommendationId: Long,
     ): List<QuoteResponse> {
-        val recommendation = recommendationValidationService.validateRecommendation(userId, recommendationId)
+        val recommendation =
+            recommendationValidationService.validateRecommendation(
+                userId = userId,
+                recommendationId = recommendationId,
+                lockForUpdate = false,
+            )
         recommendationValidationService.validateRecommendationOngoing(recommendation)
 
-        val recommendationHistory = recommendationService.getRecommendationHistory(recommendationId)
-        recommendationValidationService.validateRecommendationCount(
-            currentCount = recommendationHistory.size,
-            nextCount = NEXT_RECOMMENDATION_QUOTE_COUNT,
-        )
-
-        val quoteIdHistory = recommendationHistory.map { recommendationQuote -> recommendationQuote.quoteId }
-        val nextQuotes =
-            quoteService.getRandomQuotesExcludingIds(
-                excludedQuoteIds = quoteIdHistory,
-                count = NEXT_RECOMMENDATION_QUOTE_COUNT,
-            )
-
-        recommendationService.createRecommendationQuotes(
-            recommendationId = recommendationId,
-            quoteIds = nextQuotes.map { quote -> quote.id },
-        )
-
-        return nextQuotes.map(recommendationResponseMapper::toQuoteResponse)
+        return recommendationService
+            .getRecommendationHistory(recommendationId)
+            .drop(FIRST_RECOMMENDATION_QUOTE_COUNT)
+            .take(NEXT_RECOMMENDATION_QUOTE_COUNT)
+            .map { recommendationQuote -> quoteService.findQuoteById(recommendationQuote.quoteId) }
+            .map(recommendationResponseMapper::toQuoteResponse)
     }
 
     @Transactional
@@ -189,5 +162,3 @@ class RecommendationUseCase(
         )
     }
 }
-
-private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }

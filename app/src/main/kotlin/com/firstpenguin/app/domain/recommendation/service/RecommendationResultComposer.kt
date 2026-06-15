@@ -3,8 +3,10 @@ package com.firstpenguin.app.domain.recommendation.service
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
+import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import org.springframework.stereotype.Component
 
@@ -20,9 +22,16 @@ class RecommendationResultComposer(
         effectiveTags: List<EffectiveTag>,
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): RecommendationResult? {
         val userEmbedding = semanticProvider.prepare(input)
-        val initialRankedQuotes = rank(input, effectiveTags, candidates, moodTagIdByCode, userEmbedding)
+        val primaryCandidates =
+            sourceCandidates(
+                candidates = candidates,
+                source = RecommendationCandidateSource.PRIMARY,
+            )
+        val initialRankedQuotes =
+            rank(input, effectiveTags, primaryCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
         val supplementedCandidates =
             fallbackService.supplementCandidates(
                 effectiveTags = effectiveTags,
@@ -36,7 +45,7 @@ class RecommendationResultComposer(
                 },
             )
         val rankedQuotes =
-            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, userEmbedding)
+            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
                 .diversifyRoleTags()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
@@ -51,26 +60,39 @@ class RecommendationResultComposer(
     private fun rank(
         input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
-        candidates: List<RecommendationCandidate>,
+        candidates: List<SourcedRecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<RankedRecommendationQuote> {
+        val recommendationCandidates = candidates.map { candidate -> candidate.candidate }
+        val sourceByQuoteId = candidates.associate { candidate -> candidate.quoteId to candidate.source }
         val semanticScores =
             semanticProvider.findScores(
                 userEmbedding = userEmbedding,
-                quoteIds = candidates.map { candidate -> candidate.quoteId },
+                quoteIds = recommendationCandidates.map { candidate -> candidate.quoteId },
             )
 
-        return recommendationRanker.rank(candidates) { candidate ->
-            metadataScorer
-                .score(
-                    input = input,
-                    effectiveTags = effectiveTags,
-                    candidate = candidate,
-                    moodTagIdByCode = moodTagIdByCode,
-                ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
-        }
+        return recommendationRanker
+            .rank(recommendationCandidates) { candidate ->
+                metadataScorer
+                    .score(
+                        input = input,
+                        effectiveTags = effectiveTags,
+                        candidate = candidate,
+                        moodTagIdByCode = moodTagIdByCode,
+                        tagRarityWeights = tagRarityWeights,
+                    ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
+            }.map { quote ->
+                quote.copy(source = sourceByQuoteId.getValue(quote.quoteId))
+            }
     }
+
+    private fun sourceCandidates(
+        candidates: List<RecommendationCandidate>,
+        source: RecommendationCandidateSource,
+    ): List<SourcedRecommendationCandidate> =
+        candidates.map { candidate -> SourcedRecommendationCandidate(candidate = candidate, source = source) }
 
     private fun List<RankedRecommendationQuote>.diversifyRoleTags(): List<RankedRecommendationQuote> {
         val selectedQuotes = mutableListOf<RankedRecommendationQuote>()

@@ -36,6 +36,20 @@ class TypeScoreCalculatorTest {
         assertEquals(0.875, result, DELTA)
     }
 
+    @Test
+    fun `흔한 tag는 rarity weight만큼 매칭 점수를 낮춘다`() {
+        val targetTags = listOf(effectiveTag(tagId = 1L, importance = 1.0))
+
+        val result =
+            calculator.calculate(
+                targetTags = targetTags,
+                candidateTagIds = setOf(1L),
+                tagRarityWeights = mapOf(1L to 0.55),
+            )
+
+        assertEquals(0.55, result, DELTA)
+    }
+
     private fun effectiveTag(
         tagId: Long,
         importance: Double,

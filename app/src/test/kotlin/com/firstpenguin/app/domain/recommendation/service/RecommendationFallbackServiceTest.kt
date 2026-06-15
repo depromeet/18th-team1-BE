@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.recommendation.service
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
 import com.firstpenguin.app.global.enums.TagType
@@ -26,7 +27,7 @@ class RecommendationFallbackServiceTest {
                 rankedQuotes = listOf(rankedQuote(existingCandidates.first(), finalScore = HIGH_SCORE)),
             )
 
-        assertEquals(existingCandidates, result)
+        assertEquals(existingCandidates, result.map { candidate -> candidate.candidate })
         assertTrue(provider.calls.isEmpty())
     }
 
@@ -49,6 +50,8 @@ class RecommendationFallbackServiceTest {
 
         assertEquals(listOf("NEED", "EMOTION", "RELAXED", "RANDOM"), provider.calls)
         assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
+        assertEquals(RecommendationCandidateSource.PRIMARY, result.first().source)
+        assertEquals(RecommendationCandidateSource.FALLBACK_RANDOM, result.last().source)
     }
 
     @Test
