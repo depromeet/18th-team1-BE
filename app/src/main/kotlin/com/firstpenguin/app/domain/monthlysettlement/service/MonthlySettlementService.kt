@@ -90,7 +90,12 @@ class MonthlySettlementService(
             monthlySettlementQuoteAggregationRepository.findMostFrequentGenre(userId, start, endExclusive)
         val monthlyBooks = findMonthlyBooks(userId, yearMonth, mostFrequentGenre)
         val monthlyBook =
-            monthlySettlementEmotionAggregationRepository.findMonthlyBookCandidateByEmotionTagId(topEmotionTag.tagId)
+            monthlySettlementEmotionAggregationRepository.findMonthlyBookCandidateByEmotionTagId(
+                userId = userId,
+                start = start,
+                endExclusive = endExclusive,
+                tagId = topEmotionTag.tagId,
+            )
 
         return MonthlySettlementCreateCommand(
             userId = userId,

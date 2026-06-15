@@ -7,6 +7,7 @@ import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSele
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTagTable
+import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTagTable
 import com.firstpenguin.app.global.enums.TagType
@@ -46,17 +47,27 @@ class MonthlySettlementEmotionAggregationRepository(
             .mapIndexed(::toEmotionTagCount)
     }
 
-    fun findMonthlyBookCandidateByEmotionTagId(tagId: Long): MonthlySettlementSelectedBook? =
+    fun findMonthlyBookCandidateByEmotionTagId(
+        userId: Long,
+        start: LocalDate,
+        endExclusive: LocalDate,
+        tagId: Long,
+    ): MonthlySettlementSelectedBook? =
         dsl
             .select(MONTHLY_SELECTED_BOOK_FIELDS)
-            .from(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
-            .join(QuoteMetadataTable.QUOTE_METADATA)
-            .on(QuoteMetadataTable.ID.eq(QuoteMetadataTagTable.QUOTE_METADATA_ID))
+            .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
+            .join(RecommendationTable.RECOMMENDATIONS)
+            .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
             .join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
+            .join(QuoteMetadataTable.QUOTE_METADATA)
             .on(QuoteTable.ID.eq(QuoteMetadataTable.QUOTE_ID))
+            .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .on(QuoteMetadataTable.ID.eq(QuoteMetadataTagTable.QUOTE_METADATA_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
-            .where(QuoteMetadataTagTable.TAG_ID.eq(tagId))
+            .where(monthlyRecommendationCondition(userId, start, endExclusive))
+            .and(QuoteMetadataTagTable.TAG_ID.eq(tagId))
             .and(activeQuoteAndBookCondition())
             .and(bookGenreExists())
             .orderBy(DSL.rand())

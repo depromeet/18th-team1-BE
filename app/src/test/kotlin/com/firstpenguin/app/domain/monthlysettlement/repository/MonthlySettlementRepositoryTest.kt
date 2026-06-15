@@ -86,13 +86,28 @@ class MonthlySettlementRepositoryTest {
     }
 
     @Test
-    fun `이달의 책 후보는 quote metadata tag에서 랜덤으로 고른다`() {
+    fun `이달의 책 후보는 사용자 월 추천 이력 안에서 quote metadata tag 기준으로 랜덤 선택한다`() {
         val capturedSql =
             captureSql { dsl ->
-                MonthlySettlementEmotionAggregationRepository(dsl).findMonthlyBookCandidateByEmotionTagId(TAG_ID)
+                MonthlySettlementEmotionAggregationRepository(dsl).findMonthlyBookCandidateByEmotionTagId(
+                    userId = USER_ID,
+                    start = START,
+                    endExclusive = END_EXCLUSIVE,
+                    tagId = TAG_ID,
+                )
             }
         val normalizedSql = capturedSql.normalized()
 
+        assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"recommendations\".\"user_id\" = ?"), normalizedSql)
+        assertTrue(
+            normalizedSql.contains("\"recommendations\".\"recommendation_date\" >= cast(? as date)"),
+            normalizedSql,
+        )
+        assertTrue(
+            normalizedSql.contains("\"recommendations\".\"recommendation_date\" < cast(? as date)"),
+            normalizedSql,
+        )
         assertTrue(normalizedSql.contains("quote_metadata_tags"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_metadata"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_metadata_tags\".\"tag_id\" = ?"), normalizedSql)
