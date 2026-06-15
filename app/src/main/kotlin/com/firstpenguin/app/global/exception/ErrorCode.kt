@@ -70,7 +70,8 @@ enum class ErrorCode(
     OPENAI_FILE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 파일 업로드에 실패했습니다."),
     OPENAI_BATCH_CREATE_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 생성에 실패했습니다."),
     OPENAI_BATCH_STATUS_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 배치 상태 조회에 실패했습니다."),
-    QUOTE_BATCH_JOB_IS_RUNNING(HttpStatus.CONFLICT, "현재 배치 작업이 진행 중입니다."),
+    OPENAI_RESPONSES_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "OpenAI 실시간 응답 요청에 실패했습니다."),
+    OPENAI_RESPONSES_OUTPUT_TEXT_NOT_FOUND(HttpStatus.BAD_GATEWAY, "OpenAI 실시간 응답 결과를 찾을 수 없습니다."),
     INVALID_QUOTE_BATCH_JOB_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 배치 상태가 올바르지 않습니다."),
     INVALID_QUOTE_BATCH_ITEMS_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "문구 배치 대상 상태가 올바르지 않습니다."),
 
