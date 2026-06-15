@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.recommendation.dto
 
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.recommendation.model.Recommendation
+import com.firstpenguin.app.global.enums.EmotionRangeName
 import java.time.LocalDate
 
 data class RecommendationPeriodResponse(
@@ -26,6 +27,7 @@ data class RecommendationPeriodResponse(
 data class RecommendationPeriodItemResponse(
     val recommendationId: Long,
     val recommendationDate: LocalDate,
+    val emotionRangeName: EmotionRangeName,
     val quote: QuoteResponse,
 ) {
     companion object {
@@ -36,6 +38,7 @@ data class RecommendationPeriodItemResponse(
             RecommendationPeriodItemResponse(
                 recommendationId = recommendation.id,
                 recommendationDate = recommendation.recommendationDate,
+                emotionRangeName = recommendation.emotionRangeName,
                 quote = quote,
             )
     }
