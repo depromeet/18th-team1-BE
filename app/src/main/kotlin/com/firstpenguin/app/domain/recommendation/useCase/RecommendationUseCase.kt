@@ -55,7 +55,12 @@ class RecommendationUseCase(
         userId: Long,
         recommendationId: Long,
     ): List<QuoteResponse> {
-        val recommendation = recommendationValidationService.validateRecommendation(userId, recommendationId)
+        val recommendation =
+            recommendationValidationService.validateRecommendation(
+                userId = userId,
+                recommendationId = recommendationId,
+                lockForUpdate = false,
+            )
         recommendationValidationService.validateRecommendationOngoing(recommendation)
 
         return recommendationService

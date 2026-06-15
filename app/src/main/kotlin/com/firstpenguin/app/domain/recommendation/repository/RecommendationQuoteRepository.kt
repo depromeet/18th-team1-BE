@@ -1,6 +1,9 @@
 package com.firstpenguin.app.domain.recommendation.repository
 
+import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.RecommendationQuote
+import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -14,30 +17,47 @@ import java.time.LocalDateTime
 class RecommendationQuoteRepository(
     private val dsl: DSLContext,
 ) {
-    fun insertRecommendationQuote(
+    fun insertRankedRecommendationQuotes(
         recommendationId: Long,
-        quoteIds: List<Long>,
+        rankedQuotes: List<RankedRecommendationQuote>,
         nextDisplayOrder: Int,
     ) {
-        if (quoteIds.isEmpty()) return
+        if (rankedQuotes.isEmpty()) return
 
         val now = LocalDateTime.now()
-
         var insertStep =
             dsl.insertInto(
                 RecommendationQuoteTable.RECOMMENDATION_QUOTES,
                 RecommendationQuoteTable.RECOMMENDATION_ID,
                 RecommendationQuoteTable.QUOTE_ID,
                 RecommendationQuoteTable.DISPLAY_ORDER,
+                RecommendationQuoteTable.CANDIDATE_SOURCE,
+                RecommendationQuoteTable.NEED_SCORE,
+                RecommendationQuoteTable.EMOTION_SCORE,
+                RecommendationQuoteTable.CONTEXT_SCORE,
+                RecommendationQuoteTable.SITUATION_SCORE,
+                RecommendationQuoteTable.MOOD_SCORE,
+                RecommendationQuoteTable.METADATA_SCORE,
+                RecommendationQuoteTable.SEMANTIC_SCORE,
+                RecommendationQuoteTable.FINAL_SCORE,
                 RecommendationQuoteTable.CREATED_AT,
             )
 
-        quoteIds.forEachIndexed { index, quoteId ->
+        rankedQuotes.forEachIndexed { index, rankedQuote ->
             insertStep =
                 insertStep.values(
                     recommendationId,
-                    quoteId,
+                    rankedQuote.quoteId,
                     nextDisplayOrder + index,
+                    rankedQuote.source.name,
+                    rankedQuote.score.needScore,
+                    rankedQuote.score.emotionScore,
+                    rankedQuote.score.contextScore,
+                    rankedQuote.score.situationScore,
+                    rankedQuote.score.moodScore,
+                    rankedQuote.score.metadataScore,
+                    rankedQuote.score.semanticScore,
+                    rankedQuote.score.finalScore,
                     now,
                 )
         }
@@ -84,16 +104,48 @@ class RecommendationQuoteRepository(
             recommendationId = record[RecommendationQuoteTable.RECOMMENDATION_ID]!!,
             quoteId = record[RecommendationQuoteTable.QUOTE_ID]!!,
             displayOrder = record[RecommendationQuoteTable.DISPLAY_ORDER]!!,
+            candidateSource = record.toCandidateSource(),
+            score = record.toScoreBreakdown(),
             createdAt = record[RecommendationQuoteTable.CREATED_AT]!!,
         )
 
+    private fun Record.toCandidateSource(): RecommendationCandidateSource? =
+        this[RecommendationQuoteTable.CANDIDATE_SOURCE]
+            ?.let(RecommendationCandidateSource::valueOf)
+
+    private fun Record.toScoreBreakdown(): RecommendationScoreBreakdown? {
+        val finalScore = this[RecommendationQuoteTable.FINAL_SCORE] ?: return null
+
+        return RecommendationScoreBreakdown(
+            needScore = this[RecommendationQuoteTable.NEED_SCORE] ?: DEFAULT_SCORE,
+            emotionScore = this[RecommendationQuoteTable.EMOTION_SCORE] ?: DEFAULT_SCORE,
+            contextScore = this[RecommendationQuoteTable.CONTEXT_SCORE] ?: DEFAULT_SCORE,
+            situationScore = this[RecommendationQuoteTable.SITUATION_SCORE] ?: DEFAULT_SCORE,
+            moodScore = this[RecommendationQuoteTable.MOOD_SCORE] ?: DEFAULT_SCORE,
+            metadataScore = this[RecommendationQuoteTable.METADATA_SCORE] ?: DEFAULT_SCORE,
+            semanticScore = this[RecommendationQuoteTable.SEMANTIC_SCORE] ?: DEFAULT_SCORE,
+            finalScore = finalScore,
+        )
+    }
+
     private companion object {
+        const val DEFAULT_SCORE = 0.0
+
         val RECOMMENDATION_QUOTE_FIELDS: List<Field<*>> =
             listOf(
                 RecommendationQuoteTable.ID,
                 RecommendationQuoteTable.RECOMMENDATION_ID,
                 RecommendationQuoteTable.QUOTE_ID,
                 RecommendationQuoteTable.DISPLAY_ORDER,
+                RecommendationQuoteTable.CANDIDATE_SOURCE,
+                RecommendationQuoteTable.NEED_SCORE,
+                RecommendationQuoteTable.EMOTION_SCORE,
+                RecommendationQuoteTable.CONTEXT_SCORE,
+                RecommendationQuoteTable.SITUATION_SCORE,
+                RecommendationQuoteTable.MOOD_SCORE,
+                RecommendationQuoteTable.METADATA_SCORE,
+                RecommendationQuoteTable.SEMANTIC_SCORE,
+                RecommendationQuoteTable.FINAL_SCORE,
                 RecommendationQuoteTable.CREATED_AT,
             )
     }

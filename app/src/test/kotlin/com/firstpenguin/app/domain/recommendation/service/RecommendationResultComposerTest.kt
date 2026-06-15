@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
@@ -75,6 +76,8 @@ class RecommendationResultComposerTest {
 
         assertEquals(listOf("NEED", "EMOTION", "RELAXED", "RANDOM"), provider.calls)
         assertEquals((1L..10L).toList(), result?.quotes?.map { quote -> quote.quoteId })
+        assertEquals(RecommendationCandidateSource.PRIMARY, result?.quotes?.first()?.source)
+        assertEquals(RecommendationCandidateSource.FALLBACK_RANDOM, result?.quotes?.last()?.source)
     }
 
     @Test
