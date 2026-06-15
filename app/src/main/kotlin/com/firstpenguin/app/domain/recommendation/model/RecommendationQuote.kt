@@ -7,5 +7,7 @@ data class RecommendationQuote(
     val recommendationId: Long,
     val quoteId: Long,
     val displayOrder: Int,
+    val candidateSource: RecommendationCandidateSource?,
+    val score: RecommendationScoreBreakdown?,
     val createdAt: LocalDateTime,
 )

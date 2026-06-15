@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.recommendation.service
 
+import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.Recommendation
 import com.firstpenguin.app.domain.recommendation.model.RecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationTag
@@ -30,15 +31,15 @@ class RecommendationService(
             emotionRangeId = emotionRangeId,
         )
 
-    fun createRecommendationQuotes(
+    fun createRankedRecommendationQuotes(
         recommendationId: Long,
-        quoteIds: List<Long>,
+        rankedQuotes: List<RankedRecommendationQuote>,
     ) {
         val maxDisplayOrder = recommendationQuoteRepository.getMaxDisplayOrder(recommendationId)
 
-        recommendationQuoteRepository.insertRecommendationQuote(
+        recommendationQuoteRepository.insertRankedRecommendationQuotes(
             recommendationId = recommendationId,
-            quoteIds = quoteIds,
+            rankedQuotes = rankedQuotes,
             nextDisplayOrder = maxDisplayOrder + 1,
         )
     }

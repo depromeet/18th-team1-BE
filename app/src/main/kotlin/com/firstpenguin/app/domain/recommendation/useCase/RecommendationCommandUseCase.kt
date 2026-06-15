@@ -35,9 +35,9 @@ class RecommendationCommandUseCase(
             recommendationId = recommendationId,
             tagIds = request.selectedTagIds(),
         )
-        recommendationService.createRecommendationQuotes(
+        recommendationService.createRankedRecommendationQuotes(
             recommendationId = recommendationId,
-            quoteIds = result.quotes.map { quote -> quote.quoteId },
+            rankedQuotes = result.quotes,
         )
 
         return recommendationResponseMapper.toRecommendationResponse(
