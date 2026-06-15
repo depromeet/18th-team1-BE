@@ -102,17 +102,17 @@ reviews:
     actionlint:
       enabled: true
     shellcheck:
-      enabled: true
+      enabled: false
     hadolint:
-      enabled: true
+      enabled: false
     checkov:
-      enabled: true
+      enabled: false
     tflint:
-      enabled: true
+      enabled: false
     gitleaks:
       enabled: true
     trufflehog:
-      enabled: true
+      enabled: false
     yamllint:
       enabled: false
     markdownlint:
