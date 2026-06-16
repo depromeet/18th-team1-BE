@@ -95,11 +95,12 @@ class RecommendationResultComposer(
         candidates.map { candidate -> SourcedRecommendationCandidate(candidate = candidate, source = source) }
 
     private fun List<RankedRecommendationQuote>.diversifyRoleTags(): List<RankedRecommendationQuote> {
-        val selectedQuotes = mutableListOf<RankedRecommendationQuote>()
+        val scorePriorityQuotes = take(SCORE_PRIORITY_QUOTE_COUNT)
+        val selectedQuotes = scorePriorityQuotes.toMutableList()
         val deferredQuotes = mutableListOf<RankedRecommendationQuote>()
-        val roleTagCounts = mutableMapOf<Long, Int>()
+        val roleTagCounts = scorePriorityQuotes.roleTagCounts()
 
-        forEach { quote ->
+        drop(SCORE_PRIORITY_QUOTE_COUNT).forEach { quote ->
             if (selectedQuotes.size >= RECOMMENDATION_RESULT_COUNT) return selectedQuotes
             if (quote.isRoleTagLimitExceeded(roleTagCounts)) {
                 deferredQuotes.add(quote)
@@ -113,6 +114,12 @@ class RecommendationResultComposer(
             .plus(deferredQuotes)
             .distinctBy { quote -> quote.quoteId }
     }
+
+    private fun List<RankedRecommendationQuote>.roleTagCounts(): MutableMap<Long, Int> =
+        mapNotNull { quote -> quote.candidate.roleTagId }
+            .groupingBy { roleTagId -> roleTagId }
+            .eachCount()
+            .toMutableMap()
 
     private fun RankedRecommendationQuote.isRoleTagLimitExceeded(roleTagCounts: Map<Long, Int>): Boolean {
         val roleTagId = candidate.roleTagId ?: return false
@@ -130,6 +137,7 @@ class RecommendationResultComposer(
     private companion object {
         const val FIRST_RANK = 1
         const val RECOMMENDATION_RESULT_COUNT = 10
+        const val SCORE_PRIORITY_QUOTE_COUNT = 5
         const val MAX_SAME_ROLE_TAG_COUNT = 3
         const val NO_ROLE_TAG_COUNT = 0
         const val DEFAULT_SEMANTIC_SCORE = 0.0
