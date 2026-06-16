@@ -66,7 +66,8 @@ class HomeUseCase(
             )
         val ongoingRecommendation = todayRecommendations.lastOrNull { recommendation -> recommendation.quoteId == null }
         val canCreateTodayRecommendation =
-            !recommendationService.hasReachedRecommendationLimit(todayRecommendations.size)
+            ongoingRecommendation == null &&
+                !recommendationService.hasReachedRecommendationLimit(todayRecommendations.size)
 
         return TodayStatusResponse(
             hasOngoingRecommendation = ongoingRecommendation != null,

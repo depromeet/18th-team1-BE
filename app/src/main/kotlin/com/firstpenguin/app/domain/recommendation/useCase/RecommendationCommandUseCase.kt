@@ -8,6 +8,8 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.service.RecommendationResponseMapper
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import com.firstpenguin.app.domain.recommendation.service.RecommendationValidationService
+import com.firstpenguin.app.global.exception.CustomException
+import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
@@ -29,12 +31,15 @@ class RecommendationCommandUseCase(
     ): RecommendationResponse {
         recommendationService.lockRecommendationCreation(userId)
 
-        val ongoingRecommendation = recommendationService.findOngoingRecommendation(userId)
-        if (ongoingRecommendation != null) {
-            return recommendationResponseMapper.toRecommendationResponse(ongoingRecommendation)
-        }
+        validateNoOngoingRecommendation(userId)
 
         return saveNewRecommendationResult(userId, request, result)
+    }
+
+    private fun validateNoOngoingRecommendation(userId: Long) {
+        if (recommendationService.findOngoingRecommendation(userId) != null) {
+            throw CustomException(ErrorCode.RECOMMENDATION_ALREADY_ONGOING)
+        }
     }
 
     private fun saveNewRecommendationResult(

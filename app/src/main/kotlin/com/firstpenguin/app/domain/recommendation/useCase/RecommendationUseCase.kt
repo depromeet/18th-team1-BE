@@ -38,9 +38,7 @@ class RecommendationUseCase(
         request: RecommendationRequest,
     ): RecommendationResponse {
         recommendationRequestValidator.validate(request)
-        recommendationService.findOngoingRecommendation(userId)?.let { recommendation ->
-            return recommendationResponseMapper.toRecommendationResponse(recommendation)
-        }
+        validateNoOngoingRecommendation(userId)
         recommendationValidationService.validateRecommendationCreatable(userId)
 
         return recommendationCommandUseCase.saveRecommendationResult(
@@ -48,6 +46,12 @@ class RecommendationUseCase(
             request = request,
             result = recommendationEngine.recommend(userId, request),
         )
+    }
+
+    private fun validateNoOngoingRecommendation(userId: Long) {
+        if (recommendationService.findOngoingRecommendation(userId) != null) {
+            throw CustomException(ErrorCode.RECOMMENDATION_ALREADY_ONGOING)
+        }
     }
 
     @Transactional(readOnly = true)

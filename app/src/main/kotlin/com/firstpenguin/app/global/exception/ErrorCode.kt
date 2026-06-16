@@ -53,6 +53,7 @@ enum class ErrorCode(
     FORBIDDEN_RECOMMENDATION(HttpStatus.FORBIDDEN, "본인의 추천 기록만 사용할 수 있습니다."),
     RECOMMENDATION_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 추천은 최대 5개까지 생성할 수 있습니다."),
     RECOMMENDATION_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "추천 기록 생성에 실패했습니다."),
+    RECOMMENDATION_ALREADY_ONGOING(HttpStatus.CONFLICT, "진행 중인 추천이 있습니다. 기존 추천에서 문장을 먼저 선택해주세요."),
     RECOMMENDATION_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 문장을 선택한 추천입니다."),
     RECOMMENDATION_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 문장을 선택하지 않은 추천입니다."),
     INVALID_RECOMMENDATION_NEED_INPUT(HttpStatus.BAD_REQUEST, "기대 태그 또는 직접 입력 문장 중 하나만 선택해야 합니다."),
