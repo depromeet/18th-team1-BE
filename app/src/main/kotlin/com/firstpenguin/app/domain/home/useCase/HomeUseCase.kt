@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
-private const val RANDOM_QUOTE_COUNT = 10
+private const val RANDOM_QUOTE_COUNT = 14
 
 @Component
 class HomeUseCase(
