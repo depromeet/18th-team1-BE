@@ -117,6 +117,7 @@ class TagRepository(
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
             createdAt = record[TagTable.CREATED_AT]!!,
+            displayGroup = record[TagTable.DISPLAY_GROUP],
         )
 
     private fun toTagOption(record: Record): TagOption =
@@ -135,6 +136,7 @@ class TagRepository(
             TagTable.CODE,
             TagTable.LABEL,
             TagTable.TYPE,
+            TagTable.DISPLAY_GROUP,
             TagTable.CREATED_AT,
         )
 }

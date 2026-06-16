@@ -8,6 +8,7 @@ data class TagDto(
     val label: String,
     val type: TagType,
     val emotionRangeId: Long?,
+    val displayGroup: String?,
 ) {
     companion object {
         fun from(tag: Tag): TagDto =
@@ -16,6 +17,7 @@ data class TagDto(
                 label = tag.label,
                 type = tag.type,
                 emotionRangeId = tag.emotionRangeId,
+                displayGroup = tag.displayGroup,
             )
     }
 }
