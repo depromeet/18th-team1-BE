@@ -11,7 +11,6 @@ import tools.jackson.databind.json.JsonMapper
 
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
-private const val MINI_MODEL_DIARY_TEXT_LENGTH = 80
 private const val USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX = "user-input-analysis-v1"
 
 private val USER_INPUT_PARSE_PROMPT_GUIDE =
@@ -62,7 +61,7 @@ class UserInputParseRequestBuilder(
         tagGroups: Map<TagType, List<TagOption>>,
     ): OpenAiResponsesRequest =
         OpenAiResponsesRequest(
-            model = input.modelVersion().model,
+            model = USER_INPUT_ANALYSIS_MODEL.model,
             reasoning = mapOf("effort" to OPENAI_REASONING_EFFORT),
             input = buildPrompt(input, tagGroups),
             text =
@@ -70,7 +69,7 @@ class UserInputParseRequestBuilder(
                     format = userInputParseSchema(tagGroups),
                     verbosity = OPENAI_TEXT_VERBOSITY,
                 ),
-            promptCacheKey = input.modelVersion().promptCacheKey,
+            promptCacheKey = USER_INPUT_ANALYSIS_MODEL.promptCacheKey,
         )
 
     private fun buildPrompt(
@@ -120,12 +119,4 @@ class UserInputParseRequestBuilder(
 private val RecommendationAiModelVersion.promptCacheKey: String
     get() = "$USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX-$model"
 
-private fun RecommendationInput.modelVersion(): RecommendationAiModelVersion {
-    if (diaryText.normalizedLength() >= MINI_MODEL_DIARY_TEXT_LENGTH) {
-        return RecommendationAiModelVersion.USER_INPUT_ANALYSIS_MINI_V1
-    }
-
-    return RecommendationAiModelVersion.USER_INPUT_ANALYSIS_NANO_V1
-}
-
-private fun String?.normalizedLength(): Int = this?.trim()?.length ?: 0
+private val USER_INPUT_ANALYSIS_MODEL = RecommendationAiModelVersion.USER_INPUT_ANALYSIS_V1

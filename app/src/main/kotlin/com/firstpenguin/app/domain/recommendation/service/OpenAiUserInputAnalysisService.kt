@@ -10,8 +10,6 @@ import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Service
 
-private const val MIN_DIARY_TEXT_LENGTH_FOR_ANALYSIS = 20
-
 @Service
 class OpenAiUserInputAnalysisService(
     private val tagRepository: TagRepository,
@@ -21,10 +19,6 @@ class OpenAiUserInputAnalysisService(
 ) : UserInputAnalysisService {
     override fun analyze(input: RecommendationInput): UserInputAnalysis? =
         when {
-            input.shouldSkipAnalysis() -> {
-                null
-            }
-
             !input.hasText() -> {
                 null
             }
@@ -75,9 +69,3 @@ class OpenAiUserInputAnalysisService(
             llmElapsedMs = llmElapsedMs,
         )
 }
-
-private fun RecommendationInput.shouldSkipAnalysis(): Boolean = needTag != null && diaryText.isBlankOrShort()
-
-private fun String?.isBlankOrShort(): Boolean = normalizedLength() < MIN_DIARY_TEXT_LENGTH_FOR_ANALYSIS
-
-private fun String?.normalizedLength(): Int = this?.trim()?.length ?: 0

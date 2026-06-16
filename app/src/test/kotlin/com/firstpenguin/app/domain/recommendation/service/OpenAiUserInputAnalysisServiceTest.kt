@@ -50,15 +50,15 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(IntentType.CONTEXT_BASED, result.intentType)
         assertEquals("비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다", result.canonicalIntent)
         assertEquals(listOf(NEED_TAG_ID, CONTEXT_TAG_ID), result.tagCandidates.map { candidate -> candidate.tagId })
-        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, result.llmModel)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, result.llmModel)
         assertEquals(1, result.llmModelVersion)
         assertEquals(OPEN_AI_INPUT_TOKENS, result.inputTokens)
         assertEquals(OPEN_AI_CACHED_TOKENS, result.cachedTokens)
         assertEquals(OPEN_AI_OUTPUT_TOKENS, result.outputTokens)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
-        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, openAi.lastRequest.model)
-        assertEquals("user-input-analysis-v1-gpt-5-nano", openAi.lastRequest.promptCacheKey)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
+        assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
@@ -96,8 +96,8 @@ class OpenAiUserInputAnalysisServiceTest {
     }
 
     @Test
-    fun `needTag가 있고 diaryText가 짧으면 LLM을 호출하지 않는다`() {
-        val openAi = openAiResponsesClient()
+    fun `needTag가 있고 diaryText가 짧아도 LLM을 호출한다`() {
+        val openAi = openAiResponsesClient(outputText = outputText)
         val service = service(client = openAi.client)
 
         val result =
@@ -109,8 +109,10 @@ class OpenAiUserInputAnalysisServiceTest {
                 ),
             )
 
-        assertNull(result)
-        Mockito.verifyNoInteractions(openAi.client)
+        requireNotNull(result)
+        assertTrue(openAi.lastRequest.input.contains("오늘 힘들다"))
+        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
     }
 
     @Test
@@ -129,11 +131,11 @@ class OpenAiUserInputAnalysisServiceTest {
 
         requireNotNull(result)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
-        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, openAi.lastRequest.model)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
     }
 
     @Test
-    fun `diaryText가 80자 이상이면 mini 모델을 사용한다`() {
+    fun `diaryText 길이와 관계없이 mini 모델을 사용한다`() {
         val openAi = openAiResponsesClient(outputText = outputText)
         val service = service(client = openAi.client)
 
@@ -147,7 +149,7 @@ class OpenAiUserInputAnalysisServiceTest {
             )
 
         requireNotNull(result)
-        assertEquals(USER_INPUT_ANALYSIS_MINI_MODEL, openAi.lastRequest.model)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
     }
 
     @Test
@@ -164,8 +166,7 @@ class OpenAiUserInputAnalysisServiceTest {
         const val EMOTION_RANGE_ID = 1L
         const val NEED_TAG_ID = 10L
         const val CONTEXT_TAG_ID = 20L
-        const val USER_INPUT_ANALYSIS_NANO_MODEL = "gpt-5-nano"
-        const val USER_INPUT_ANALYSIS_MINI_MODEL = "gpt-5-mini"
+        const val USER_INPUT_ANALYSIS_MODEL = "gpt-5-mini"
         const val OPEN_AI_INPUT_TOKENS = 120L
         const val OPEN_AI_CACHED_TOKENS = 80L
         const val OPEN_AI_OUTPUT_TOKENS = 40L
