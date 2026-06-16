@@ -22,14 +22,13 @@ class UserInputParseSchemaTest {
     }
 
     @Test
-    fun `schema는 tag type별 후보 배열을 최상위 필수로 둔다`() {
+    fun `schema는 canonicalIntent와 tag type별 후보 배열을 최상위 필수로 둔다`() {
         val schemaBody = userInputParseSchema(tagGroups)["schema"] as Map<*, *>
         val required = schemaBody["required"] as List<*>
 
         assertTrue(
             required.containsAll(
                 listOf(
-                    "intentType",
                     "canonicalIntent",
                     "emotionTagCandidates",
                     "needTagCandidates",
@@ -39,6 +38,7 @@ class UserInputParseSchemaTest {
                 ),
             ),
         )
+        assertFalse(required.contains("intentType"))
         assertFalse(required.contains("tagCandidates"))
         assertFalse(required.contains("quoteId"))
     }

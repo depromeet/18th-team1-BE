@@ -1,7 +1,6 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.TagCandidatePriority
 import com.firstpenguin.app.domain.recommendation.model.TagCandidateSource
 import com.firstpenguin.app.global.enums.TagType
@@ -31,7 +30,6 @@ private fun userInputParseObjectSchema(tagGroups: Map<TagType, List<TagOption>>)
 
 private fun requiredUserInputParseFields(): List<String> =
     listOf(
-        "intentType",
         "canonicalIntent",
         "emotionTagCandidates",
         "needTagCandidates",
@@ -42,11 +40,6 @@ private fun requiredUserInputParseFields(): List<String> =
 
 private fun userInputParseProperties(tagGroups: Map<TagType, List<TagOption>>): Map<String, Any> =
     mapOf(
-        "intentType" to
-            enumSchema(
-                values = IntentType.entries.map { type -> type.name },
-                description = "사용자 입력의 추천 의도 유형",
-            ),
         "canonicalIntent" to
             mapOf(
                 "type" to "string",

@@ -30,10 +30,16 @@ private fun JsonNode.toUserInputAnalysis(
     tagCandidateMapper: UserInputTagCandidateMapper,
 ): UserInputAnalysis =
     UserInputAnalysis(
-        intentType = IntentType.valueOf(requiredText("intentType")),
+        intentType = optionalIntentType(),
         canonicalIntent = requiredText("canonicalIntent"),
         tagCandidates = tagCandidateMapper.map(tagCandidateNodes(), input, tagGroups),
     )
+
+private fun JsonNode.optionalIntentType(): IntentType =
+    stringOrEmpty("intentType")
+        .takeIf { value -> value.isNotBlank() }
+        ?.let(IntentType::valueOf)
+        ?: IntentType.EMOTION_NEED_BASED
 
 private fun JsonNode.tagCandidateNodes(): List<Pair<TagType, JsonNode>> =
     listOf(
