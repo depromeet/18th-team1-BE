@@ -38,7 +38,7 @@ class RecommendationResultComposerTest {
     }
 
     @Test
-    fun `role tag가 한쪽으로 몰리면 뒤쪽 role 후보를 앞당긴다`() {
+    fun `role tag 다양화는 상위 점수 후보를 유지한 뒤 뒤쪽 후보에 적용한다`() {
         val composer = composer()
         val candidates =
             (1L..8L)
@@ -54,8 +54,8 @@ class RecommendationResultComposerTest {
             )
         val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
 
-        assertTrue(quoteIds.indexOf(9L) < quoteIds.indexOf(4L))
-        assertEquals(1L, quoteIds.first())
+        assertEquals((1L..5L).toList(), quoteIds.take(5))
+        assertTrue(quoteIds.indexOf(9L) < quoteIds.indexOf(6L))
     }
 
     @Test

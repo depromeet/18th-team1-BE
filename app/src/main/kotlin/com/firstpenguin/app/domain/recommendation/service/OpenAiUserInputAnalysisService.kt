@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -15,18 +16,44 @@ class OpenAiUserInputAnalysisService(
     private val outputParser: UserInputParseOutputParser,
     private val openAiResponsesClient: OpenAiResponsesClient,
 ) : UserInputAnalysisService {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun analyze(input: RecommendationInput): UserInputAnalysis? {
         if (!input.hasText()) return null
 
-        return runCatching { analyzeOrThrow(input) }.getOrNull()
+        return runCatching {
+            log.measureRecommendationStep("userInputAnalysis.total", { "userId=${input.userId}" }) {
+                analyzeOrThrow(input)
+            }
+        }.getOrNull()
     }
 
     private fun analyzeOrThrow(input: RecommendationInput): UserInputAnalysis {
-        val tagGroups = tagRepository.getActiveTagsByType().onlyUserInputParseTagGroups()
-        val request = requestBuilder.build(input, tagGroups)
-        val outputText = openAiResponsesClient.createTextResponse(request)
+        val tagGroups = findMeasuredTagGroups(input.userId)
+        val request =
+            log.measureRecommendationStep("userInputAnalysis.buildRequest", { "userId=${input.userId}" }) {
+                requestBuilder.build(input, tagGroups)
+            }
+        val outputText =
+            log.measureRecommendationStep("userInputAnalysis.openAi", { "userId=${input.userId}" }) {
+                openAiResponsesClient.createTextResponse(request)
+            }
 
-        return outputParser.parse(outputText, input, tagGroups)
+        return log.measureRecommendationStep("userInputAnalysis.parse", { "userId=${input.userId}" }) {
+            outputParser.parse(outputText, input, tagGroups)
+        }
+    }
+
+    private fun findMeasuredTagGroups(userId: Long): Map<TagType, List<TagOption>> {
+        var typeCount = 0
+        lateinit var tagGroups: Map<TagType, List<TagOption>>
+
+        log.measureRecommendationStep("userInputAnalysis.tagOptions", { "userId=$userId types=$typeCount" }) {
+            tagGroups = tagRepository.getActiveTagsByType().onlyUserInputParseTagGroups()
+            typeCount = tagGroups.size
+        }
+
+        return tagGroups
     }
 
     private fun RecommendationInput.hasText(): Boolean = feelingText.hasValue() || diaryText.hasValue()

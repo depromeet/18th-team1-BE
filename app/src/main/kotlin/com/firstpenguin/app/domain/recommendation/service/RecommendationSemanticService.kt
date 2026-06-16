@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 interface RecommendationSemanticProvider {
@@ -29,12 +30,20 @@ class RecommendationSemanticService(
     private val quoteEmbeddingRepository: QuoteEmbeddingRepository,
     private val candidateProvider: RecommendationCandidateProvider,
 ) : RecommendationSemanticProvider {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun prepare(input: RecommendationInput): UserSemanticEmbedding? {
-        val embeddingInput = userEmbeddingInputBuilder.build(input) ?: return null
+        val embeddingInput =
+            log.measureRecommendationStep("semantic.buildEmbeddingInput", { "userId=${input.userId}" }) {
+                userEmbeddingInputBuilder.build(input)
+            } ?: return null
 
         return UserSemanticEmbedding(
             inputText = embeddingInput,
-            embedding = userQueryEmbeddingProcessor.embed(embeddingInput),
+            embedding =
+                log.measureRecommendationStep("semantic.openAiEmbedding", { "userId=${input.userId}" }) {
+                    userQueryEmbeddingProcessor.embed(embeddingInput)
+                },
         )
     }
 
@@ -43,11 +52,19 @@ class RecommendationSemanticService(
         quoteIds: Collection<Long>,
     ): Map<Long, Double> {
         if (userEmbedding == null) return emptyMap()
+        var scoreCount = 0
+        lateinit var scores: Map<Long, Double>
 
-        return quoteEmbeddingRepository.findCosineSimilarities(
-            quoteIds = quoteIds,
-            userEmbedding = userEmbedding.embedding,
-        )
+        log.measureRecommendationStep("semantic.findScores", { "quoteCount=${quoteIds.size} scoreCount=$scoreCount" }) {
+            scores =
+                quoteEmbeddingRepository.findCosineSimilarities(
+                    quoteIds = quoteIds,
+                    userEmbedding = userEmbedding.embedding,
+                )
+            scoreCount = scores.size
+        }
+
+        return scores
     }
 
     override fun findSimilarCandidates(
@@ -55,14 +72,27 @@ class RecommendationSemanticService(
         excludedQuoteIds: Collection<Long>,
     ): List<RecommendationCandidate> {
         if (userEmbedding == null) return emptyList()
-        val quoteIds =
-            quoteEmbeddingRepository.findMostSimilarQuoteIds(
-                userEmbedding = userEmbedding.embedding,
-                excludedQuoteIds = excludedQuoteIds,
-                limit = SEMANTIC_FALLBACK_LIMIT,
-            )
+        var quoteIdCount = 0
+        var candidateCount = 0
+        lateinit var quoteIds: List<Long>
+        lateinit var candidates: List<RecommendationCandidate>
 
-        return candidateProvider.findCandidatesByQuoteIds(quoteIds)
+        log.measureRecommendationStep("semantic.findSimilarQuoteIds", { "quoteCount=$quoteIdCount" }) {
+            quoteIds =
+                quoteEmbeddingRepository.findMostSimilarQuoteIds(
+                    userEmbedding = userEmbedding.embedding,
+                    excludedQuoteIds = excludedQuoteIds,
+                    limit = SEMANTIC_FALLBACK_LIMIT,
+                )
+            quoteIdCount = quoteIds.size
+        }
+
+        log.measureRecommendationStep("semantic.findSimilarCandidates", { "candidateCount=$candidateCount" }) {
+            candidates = candidateProvider.findCandidatesByQuoteIds(quoteIds)
+            candidateCount = candidates.size
+        }
+
+        return candidates
     }
 
     private companion object {
