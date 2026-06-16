@@ -8,6 +8,7 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,6 +18,8 @@ class RecommendationResultComposer(
     private val fallbackService: RecommendationFallbackService,
     private val semanticProvider: RecommendationSemanticProvider,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun compose(
         input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
@@ -24,37 +27,96 @@ class RecommendationResultComposer(
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): RecommendationResult? {
-        val userEmbedding = semanticProvider.prepare(input)
+        var resultQuoteCount = 0
+        var result: RecommendationResult? = null
+
+        log.measureRecommendationStep("composer.total", { "userId=${input.userId} quoteCount=$resultQuoteCount" }) {
+            result =
+                composeOrNull(
+                    input = input,
+                    effectiveTags = effectiveTags,
+                    candidates = candidates,
+                    moodTagIdByCode = moodTagIdByCode,
+                    tagRarityWeights = tagRarityWeights,
+                ) ?: return@measureRecommendationStep
+            resultQuoteCount = result?.quotes.orEmpty().size
+        }
+
+        return result
+    }
+
+    private fun composeOrNull(
+        input: RecommendationInput,
+        effectiveTags: List<EffectiveTag>,
+        candidates: List<RecommendationCandidate>,
+        moodTagIdByCode: Map<String, Long>,
+        tagRarityWeights: Map<Long, Double>,
+    ): RecommendationResult? {
+        val userEmbedding =
+            log.measureRecommendationStep("composer.semanticPrepare", { "userId=${input.userId}" }) {
+                semanticProvider.prepare(input)
+            }
         val primaryCandidates =
             sourceCandidates(
                 candidates = candidates,
                 source = RecommendationCandidateSource.PRIMARY,
             )
         val initialRankedQuotes =
-            rank(input, effectiveTags, primaryCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
+            log.measureRecommendationStep(
+                "composer.initialRank",
+                { "userId=${input.userId} candidateCount=${primaryCandidates.size}" },
+            ) {
+                rank(input, effectiveTags, primaryCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
+            }
         val supplementedCandidates =
-            fallbackService.supplementCandidates(
+            findSupplementedCandidates(
                 effectiveTags = effectiveTags,
-                existingCandidates = candidates,
-                rankedQuotes = initialRankedQuotes,
-                semanticCandidates = {
-                    semanticProvider.findSimilarCandidates(
-                        userEmbedding = userEmbedding,
-                        excludedQuoteIds = candidates.map { candidate -> candidate.quoteId },
-                    )
-                },
+                candidates = candidates,
+                initialRankedQuotes = initialRankedQuotes,
+                userEmbedding = userEmbedding,
+                userId = input.userId,
             )
         val rankedQuotes =
-            rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
-                .diversifyRoleTags()
-                .take(RECOMMENDATION_RESULT_COUNT)
-                .rerank()
+            log.measureRecommendationStep(
+                "composer.finalRank",
+                { "userId=${input.userId} candidateCount=${supplementedCandidates.size}" },
+            ) {
+                rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
+                    .diversifyRoleTags()
+                    .take(RECOMMENDATION_RESULT_COUNT)
+                    .rerank()
+            }
         if (rankedQuotes.isEmpty()) return null
 
         return RecommendationResult(
             mainQuote = rankedQuotes.first(),
             quotes = rankedQuotes,
         )
+    }
+
+    private fun findSupplementedCandidates(
+        effectiveTags: List<EffectiveTag>,
+        candidates: List<RecommendationCandidate>,
+        initialRankedQuotes: List<RankedRecommendationQuote>,
+        userEmbedding: UserSemanticEmbedding?,
+        userId: Long,
+    ): List<SourcedRecommendationCandidate> {
+        var candidateCount = 0
+
+        return log.measureRecommendationStep("composer.fallback", { "userId=$userId candidateCount=$candidateCount" }) {
+            fallbackService
+                .supplementCandidates(
+                    effectiveTags = effectiveTags,
+                    existingCandidates = candidates,
+                    rankedQuotes = initialRankedQuotes,
+                    semanticCandidates = {
+                        semanticProvider.findSimilarCandidates(
+                            userEmbedding = userEmbedding,
+                            excludedQuoteIds = candidates.map { candidate -> candidate.quoteId },
+                        )
+                    },
+                ).also { supplementedCandidates -> candidateCount = supplementedCandidates.size }
+        }
     }
 
     private fun rank(
@@ -72,20 +134,26 @@ class RecommendationResultComposer(
                 userEmbedding = userEmbedding,
                 quoteIds = recommendationCandidates.map { candidate -> candidate.quoteId },
             )
+        var rankedQuoteCount = 0
 
-        return recommendationRanker
-            .rank(recommendationCandidates) { candidate ->
-                metadataScorer
-                    .score(
-                        input = input,
-                        effectiveTags = effectiveTags,
-                        candidate = candidate,
-                        moodTagIdByCode = moodTagIdByCode,
-                        tagRarityWeights = tagRarityWeights,
-                    ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
-            }.map { quote ->
-                quote.copy(source = sourceByQuoteId.getValue(quote.quoteId))
-            }
+        return log.measureRecommendationStep(
+            "composer.rankScores",
+            { "userId=${input.userId} candidateCount=${recommendationCandidates.size} rankedCount=$rankedQuoteCount" },
+        ) {
+            recommendationRanker
+                .rank(recommendationCandidates) { candidate ->
+                    metadataScorer
+                        .score(
+                            input = input,
+                            effectiveTags = effectiveTags,
+                            candidate = candidate,
+                            moodTagIdByCode = moodTagIdByCode,
+                            tagRarityWeights = tagRarityWeights,
+                        ).copy(semanticScore = semanticScores[candidate.quoteId] ?: DEFAULT_SEMANTIC_SCORE)
+                }.map { quote ->
+                    quote.copy(source = sourceByQuoteId.getValue(quote.quoteId))
+                }.also { rankedQuotes -> rankedQuoteCount = rankedQuotes.size }
+        }
     }
 
     private fun sourceCandidates(
