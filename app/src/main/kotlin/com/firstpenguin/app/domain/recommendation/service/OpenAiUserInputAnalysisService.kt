@@ -47,7 +47,10 @@ class OpenAiUserInputAnalysisService(
                 requestBuilder.build(input, tagGroups)
             }
         val outputText =
-            log.measureRecommendationStep("userInputAnalysis.openAi", { "userId=${input.userId}" }) {
+            log.measureRecommendationStep(
+                "userInputAnalysis.openAi",
+                { "userId=${input.userId} model=${request.model}" },
+            ) {
                 openAiResponsesClient.createTextResponse(request)
             }
 

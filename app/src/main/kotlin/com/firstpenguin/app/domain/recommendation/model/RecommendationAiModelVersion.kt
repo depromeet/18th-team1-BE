@@ -4,7 +4,11 @@ enum class RecommendationAiModelVersion(
     val model: String,
     val version: Int,
 ) {
-    USER_INPUT_ANALYSIS_V1(
+    USER_INPUT_ANALYSIS_NANO_V1(
+        model = "gpt-5-nano",
+        version = 1,
+    ),
+    USER_INPUT_ANALYSIS_MINI_V1(
         model = "gpt-5-mini",
         version = 1,
     ),

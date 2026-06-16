@@ -51,6 +51,7 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(listOf(NEED_TAG_ID, CONTEXT_TAG_ID), result.tagCandidates.map { candidate -> candidate.tagId })
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
+        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, openAi.lastRequest.model)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
@@ -110,6 +111,25 @@ class OpenAiUserInputAnalysisServiceTest {
 
         requireNotNull(result)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
+        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, openAi.lastRequest.model)
+    }
+
+    @Test
+    fun `diaryText가 80자 이상이면 mini 모델을 사용한다`() {
+        val openAi = openAiResponsesClient(outputText = outputText)
+        val service = service(client = openAi.client)
+
+        val result =
+            service.analyze(
+                recommendationInput(
+                    feelingText = null,
+                    diaryText = LONG_DIARY_TEXT,
+                    needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
+                ),
+            )
+
+        requireNotNull(result)
+        assertEquals(USER_INPUT_ANALYSIS_MINI_MODEL, openAi.lastRequest.model)
     }
 
     @Test
@@ -126,6 +146,12 @@ class OpenAiUserInputAnalysisServiceTest {
         const val EMOTION_RANGE_ID = 1L
         const val NEED_TAG_ID = 10L
         const val CONTEXT_TAG_ID = 20L
+        const val USER_INPUT_ANALYSIS_NANO_MODEL = "gpt-5-nano"
+        const val USER_INPUT_ANALYSIS_MINI_MODEL = "gpt-5-mini"
+        const val LONG_DIARY_TEXT: String =
+            "비 오는 출근길에 마음이 불안해서 오래 생각이 많아졌다. " +
+                "회사에서 실수한 일이 계속 떠오르고 관계도 어색해져서 마음을 정리하고 싶다. " +
+                "집에 돌아와서도 그 장면이 반복해서 떠올라 쉽게 잠들 수 없었다."
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 14, 0, 0)
         val outputText: String =
             """

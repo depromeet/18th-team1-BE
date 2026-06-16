@@ -11,6 +11,7 @@ import tools.jackson.databind.json.JsonMapper
 
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
+private const val MINI_MODEL_DIARY_TEXT_LENGTH = 80
 
 private val USER_INPUT_PARSE_PROMPT_GUIDE =
     """
@@ -60,7 +61,7 @@ class UserInputParseRequestBuilder(
         tagGroups: Map<TagType, List<TagOption>>,
     ): OpenAiResponsesRequest =
         OpenAiResponsesRequest(
-            model = RecommendationAiModelVersion.USER_INPUT_ANALYSIS_V1.model,
+            model = input.modelVersion().model,
             reasoning = mapOf("effort" to OPENAI_REASONING_EFFORT),
             input = buildPrompt(input, tagGroups),
             text =
@@ -110,3 +111,13 @@ class UserInputParseRequestBuilder(
             "description" to description.orEmpty(),
         )
 }
+
+private fun RecommendationInput.modelVersion(): RecommendationAiModelVersion {
+    if (diaryText.normalizedLength() >= MINI_MODEL_DIARY_TEXT_LENGTH) {
+        return RecommendationAiModelVersion.USER_INPUT_ANALYSIS_MINI_V1
+    }
+
+    return RecommendationAiModelVersion.USER_INPUT_ANALYSIS_NANO_V1
+}
+
+private fun String?.normalizedLength(): Int = this?.trim()?.length ?: 0
