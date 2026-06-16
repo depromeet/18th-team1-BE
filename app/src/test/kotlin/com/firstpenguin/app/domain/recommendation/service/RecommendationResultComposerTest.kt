@@ -101,6 +101,24 @@ class RecommendationResultComposerTest {
         assertEquals(1.0, result?.mainQuote?.score?.semanticScore)
     }
 
+    @Test
+    fun `분석 대상 텍스트가 있으면 LLM 분석이 실패해도 분석 로그를 남긴다`() {
+        val composer = composer()
+
+        val result =
+            composer.compose(
+                input = recommendationInputWithoutAnalysis(diaryText = "행복해서!"),
+                effectiveTags = effectiveTags,
+                candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+            )
+
+        assertEquals("gpt-5-mini", result?.analysisLog?.llmModel)
+        assertEquals(1, result?.analysisLog?.llmModelVersion)
+        assertEquals(null, result?.analysisLog?.canonicalIntent)
+        assertEquals(null, result?.analysisLog?.embeddingInputText)
+    }
+
     private class FakeRecommendationCandidateProvider(
         private val randomCandidates: List<RecommendationCandidate> = emptyList(),
     ) : RecommendationCandidateProvider {
@@ -208,6 +226,17 @@ class RecommendationResultComposerTest {
                         canonicalIntent = canonicalIntent,
                         tagCandidates = emptyList(),
                     ),
+            )
+
+        fun recommendationInputWithoutAnalysis(diaryText: String): RecommendationInput =
+            RecommendationInput(
+                userId = USER_ID,
+                emotionRangeId = EMOTION_RANGE_ID,
+                emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
+                needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
+                feelingText = null,
+                diaryText = diaryText,
+                analysis = null,
             )
 
         fun candidate(

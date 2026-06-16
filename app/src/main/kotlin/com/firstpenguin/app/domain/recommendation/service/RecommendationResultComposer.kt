@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
+import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVersion
 import com.firstpenguin.app.domain.recommendation.model.RecommendationAnalysisLog
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
@@ -73,22 +74,6 @@ class RecommendationResultComposer(
             mainQuote = rankedQuotes.first(),
             quotes = rankedQuotes,
             analysisLog = input.analysisLog(userEmbedding),
-        )
-    }
-
-    private fun RecommendationInput.analysisLog(userEmbedding: UserSemanticEmbedding?): RecommendationAnalysisLog? {
-        val analysis = analysis ?: return null
-
-        return RecommendationAnalysisLog(
-            llmModel = analysis.llmModel,
-            llmModelVersion = analysis.llmModelVersion,
-            canonicalIntent = analysis.canonicalIntent,
-            embeddingInputText = userEmbedding?.inputText,
-            inputTokens = analysis.inputTokens,
-            cachedTokens = analysis.cachedTokens,
-            outputTokens = analysis.outputTokens,
-            llmElapsedMs = analysis.llmElapsedMs,
-            embeddingElapsedMs = userEmbedding?.embeddingElapsedMs,
         )
     }
 
@@ -187,3 +172,40 @@ class RecommendationResultComposer(
     private fun List<RankedRecommendationQuote>.rerank(): List<RankedRecommendationQuote> =
         mapIndexed { index, quote -> quote.copy(rank = index + FIRST_RANK) }
 }
+
+private fun RecommendationInput.analysisLog(userEmbedding: UserSemanticEmbedding?): RecommendationAnalysisLog? {
+    val analysis = analysis ?: return fallbackAnalysisLog()
+
+    return RecommendationAnalysisLog(
+        llmModel = analysis.llmModel,
+        llmModelVersion = analysis.llmModelVersion,
+        canonicalIntent = analysis.canonicalIntent,
+        embeddingInputText = userEmbedding?.inputText,
+        inputTokens = analysis.inputTokens,
+        cachedTokens = analysis.cachedTokens,
+        outputTokens = analysis.outputTokens,
+        llmElapsedMs = analysis.llmElapsedMs,
+        embeddingElapsedMs = userEmbedding?.embeddingElapsedMs,
+    )
+}
+
+private fun RecommendationInput.fallbackAnalysisLog(): RecommendationAnalysisLog? {
+    if (!hasAnalysisText()) return null
+    val modelVersion = RecommendationAiModelVersion.USER_INPUT_ANALYSIS_V1
+
+    return RecommendationAnalysisLog(
+        llmModel = modelVersion.model,
+        llmModelVersion = modelVersion.version,
+        canonicalIntent = null,
+        embeddingInputText = null,
+        inputTokens = null,
+        cachedTokens = null,
+        outputTokens = null,
+        llmElapsedMs = null,
+        embeddingElapsedMs = null,
+    )
+}
+
+private fun RecommendationInput.hasAnalysisText(): Boolean = feelingText.hasValue() || diaryText.hasValue()
+
+private fun String?.hasValue(): Boolean = !isNullOrBlank()

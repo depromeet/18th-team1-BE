@@ -11,7 +11,6 @@ import tools.jackson.databind.json.JsonMapper
 
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
-private const val USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS = 800
 private const val USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX = "user-input-analysis-v1"
 
 private val USER_INPUT_PARSE_PROMPT_GUIDE =
@@ -71,7 +70,6 @@ class UserInputParseRequestBuilder(
                     verbosity = OPENAI_TEXT_VERBOSITY,
                 ),
             promptCacheKey = USER_INPUT_ANALYSIS_MODEL.promptCacheKey,
-            maxOutputTokens = USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS,
         )
 
     private fun buildPrompt(
