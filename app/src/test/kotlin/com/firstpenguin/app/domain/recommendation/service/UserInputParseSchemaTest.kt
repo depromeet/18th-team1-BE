@@ -53,6 +53,33 @@ class UserInputParseSchemaTest {
         assertTrue(schema.contains("NEED_CODE"))
     }
 
+    @Test
+    fun `emotion 후보 priority는 primary를 허용하지 않는다`() {
+        val priorityEnum = priorityEnumOf("emotionTagCandidates")
+
+        assertFalse(priorityEnum.contains("PRIMARY"))
+        assertTrue(priorityEnum.contains("SECONDARY"))
+        assertTrue(priorityEnum.contains("BACKGROUND"))
+    }
+
+    @Test
+    fun `need 후보 priority는 primary를 허용한다`() {
+        val priorityEnum = priorityEnumOf("needTagCandidates")
+
+        assertTrue(priorityEnum.contains("PRIMARY"))
+    }
+
+    private fun priorityEnumOf(fieldName: String): List<*> {
+        val schemaBody = userInputParseSchema(tagGroups)["schema"] as Map<*, *>
+        val properties = schemaBody["properties"] as Map<*, *>
+        val candidateSchema = properties[fieldName] as Map<*, *>
+        val itemSchema = candidateSchema["items"] as Map<*, *>
+        val itemProperties = itemSchema["properties"] as Map<*, *>
+        val prioritySchema = itemProperties["priority"] as Map<*, *>
+
+        return prioritySchema["enum"] as List<*>
+    }
+
     private companion object {
         val tagGroups: Map<TagType, List<TagOption>> =
             TagType.entries.associateWith { type ->

@@ -28,9 +28,8 @@ private val USER_INPUT_PARSE_PROMPT_GUIDE =
 5. context/situation tag를 중심으로 추출하라.
 6. emotion/need tag는 명확한 근거가 있을 때만 추출하라.
 7. 개수를 채우기 위해 약한 태그를 선택하지 마라.
-8. hasSelectedNeedTag가 false이고 feelingText가 있으면 allowed NEED tag 중
-    feelingText와 가장 일치하는 NEED tag를 반드시 1개 반환하라.
-9. hasSelectedNeedTag가 true이면 need tag도 emotion tag와 동일하게 12번 규칙을 따른다.
+8. emotion tag는 사용자가 고른 감정 태그를 보조하는 후보이므로 PRIMARY priority를 사용하지 마라.
+9. need tag는 원하는 도움이나 기대가 명확히 드러날 때만 1개까지 추출하라.
 10. context tag는 실제 장소, 날씨, 시간, 활동, 장면이 직접 드러날 때만 선택하라.
 11. situation tag는 실제 삶의 문제, 사건, 관계, 주제가 직접 드러날 때만 선택하라.
 12. 은유적 표현만으로 context나 situation을 선택하지 마라.
@@ -90,7 +89,6 @@ class UserInputParseRequestBuilder(
 
     private fun RecommendationInput.toPayload(): Map<String, Any?> =
         mapOf(
-            "hasSelectedNeedTag" to (needTag != null),
             "feelingText" to feelingText.normalizedText(),
             "diaryText" to diaryText.normalizedText(),
         )

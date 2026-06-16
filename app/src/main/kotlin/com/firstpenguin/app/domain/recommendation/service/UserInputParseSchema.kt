@@ -50,13 +50,14 @@ private fun userInputParseProperties(tagGroups: Map<TagType, List<TagOption>>): 
         "emotionTagCandidates" to
             tagCandidatesSchema(
                 options = tagGroups.getValue(TagType.EMOTION),
-                description = "텍스트에 명확히 드러난 사용자 감정 후보.",
+                description = "텍스트에 명확히 드러난 사용자 감정 보조 후보. PRIMARY priority를 사용하지 않는다.",
                 maxItems = EMOTION_TAG_MAX_ITEMS,
+                priorities = listOf(TagCandidatePriority.SECONDARY, TagCandidatePriority.BACKGROUND),
             ),
         "needTagCandidates" to
             tagCandidatesSchema(
                 options = tagGroups.getValue(TagType.NEED),
-                description = "텍스트에 명확히 드러난 필요/기대 후보. hasSelectedNeedTag=false이면 feelingText와 가장 일치하는 후보 1개를 반환한다.",
+                description = "텍스트에 명확히 드러난 필요/기대 후보",
                 maxItems = NEED_TAG_MAX_ITEMS,
             ),
         "situationTagCandidates" to
@@ -83,23 +84,30 @@ private fun tagCandidatesSchema(
     options: List<TagOption>,
     description: String,
     maxItems: Int,
+    priorities: List<TagCandidatePriority> = TagCandidatePriority.entries,
 ): Map<String, Any> =
     mapOf(
         "type" to "array",
         "description" to description,
         "maxItems" to maxItems,
-        "items" to tagCandidateSchema(options),
+        "items" to tagCandidateSchema(options, priorities),
     )
 
-private fun tagCandidateSchema(options: List<TagOption>): Map<String, Any> =
+private fun tagCandidateSchema(
+    options: List<TagOption>,
+    priorities: List<TagCandidatePriority>,
+): Map<String, Any> =
     mapOf(
         "type" to "object",
         "additionalProperties" to false,
         "required" to listOf("tagCode", "source", "priority", "confidence"),
-        "properties" to tagCandidateProperties(options),
+        "properties" to tagCandidateProperties(options, priorities),
     )
 
-private fun tagCandidateProperties(options: List<TagOption>): Map<String, Any> =
+private fun tagCandidateProperties(
+    options: List<TagOption>,
+    priorities: List<TagCandidatePriority>,
+): Map<String, Any> =
     mapOf(
         "tagCode" to
             enumSchema(
@@ -113,7 +121,7 @@ private fun tagCandidateProperties(options: List<TagOption>): Map<String, Any> =
             ),
         "priority" to
             enumSchema(
-                values = TagCandidatePriority.entries.map { priority -> priority.name },
+                values = priorities.map { priority -> priority.name },
                 description = "같은 카테고리 안에서 추천 엔진에 전달할 우선순위",
             ),
         "confidence" to

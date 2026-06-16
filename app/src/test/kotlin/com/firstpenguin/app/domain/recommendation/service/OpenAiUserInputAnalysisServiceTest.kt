@@ -56,7 +56,7 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(OPEN_AI_CACHED_TOKENS, result.cachedTokens)
         assertEquals(OPEN_AI_OUTPUT_TOKENS, result.outputTokens)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
         assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
         assertTrue(
@@ -81,7 +81,7 @@ class OpenAiUserInputAnalysisServiceTest {
         )
 
         assertFalsePromptContainsSelectedTags(openAi.lastRequest.input)
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
     }
 
     @Test
@@ -111,7 +111,7 @@ class OpenAiUserInputAnalysisServiceTest {
 
         requireNotNull(result)
         assertTrue(openAi.lastRequest.input.contains("오늘 힘들다"))
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
     }
 
@@ -313,6 +313,7 @@ class OpenAiUserInputAnalysisServiceTest {
         fun assertFalsePromptContainsSelectedTags(input: String) {
             assertFalse(input.contains("selectedEmotionTagCodes"))
             assertFalse(input.contains("selectedNeedTagCode"))
+            assertFalse(input.contains("hasSelectedNeedTag"))
             assertFalse(input.contains("EMOTION_SELECTED"))
             assertFalse(input.contains("NEED_SELECTED"))
         }
