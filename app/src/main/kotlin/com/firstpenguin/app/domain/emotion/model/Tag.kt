@@ -10,4 +10,5 @@ data class Tag(
     val label: String,
     val type: TagType,
     val createdAt: LocalDateTime,
+    val displayGroup: String? = null,
 )
