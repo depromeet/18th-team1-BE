@@ -46,7 +46,7 @@ class DiscoveryRepository(
             .where(latestRecommendedQuoteCondition(rankedRecommendationEvents, cursor))
             .and(QuoteTable.DELETED_AT.isNull)
             .and(BookTable.DELETED_AT.isNull)
-            .and(genre?.let { selectedGenre -> BookTable.GENRE.eq(selectedGenre.value) } ?: DSL.noCondition())
+            .and(genre?.let { selectedGenre -> BookTable.CATEGORY.eq(selectedGenre.value) } ?: DSL.noCondition())
             .orderBy(at(rankedRecommendationEvents).desc(), QuoteTable.ID.desc())
             .limit(limit)
             .fetch(::toDiscoveryQuote)
@@ -79,7 +79,7 @@ class DiscoveryRepository(
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
-            genre = record.get(BookTable.GENRE),
+            genre = record.get(BookTable.CATEGORY),
             recommendedAt = record.get(RECOMMENDED_AT_FIELD),
             isScrapped = record.get(IS_SCRAPPED_FIELD),
         )
@@ -126,7 +126,7 @@ class DiscoveryRepository(
             BookTable.TITLE,
             BookTable.AUTHOR,
             BookTable.COVER_IMAGE_URL,
-            BookTable.GENRE,
+            BookTable.CATEGORY,
             at(rankedRecommendationEvents),
             IS_SCRAPPED_FIELD,
         )
