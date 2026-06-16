@@ -12,4 +12,11 @@ enum class RecommendationAiModelVersion(
         model = "gpt-5-mini",
         version = 1,
     ),
+    ;
+
+    companion object {
+        private val modelVersionByModel = entries.associateBy { version -> version.model }
+
+        fun fromModel(model: String): RecommendationAiModelVersion? = modelVersionByModel[model]
+    }
 }

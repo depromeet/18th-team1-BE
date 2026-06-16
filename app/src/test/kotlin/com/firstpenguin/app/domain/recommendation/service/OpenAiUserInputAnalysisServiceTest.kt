@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
 import com.firstpenguin.app.domain.openai.dto.OpenAiResponsesRequest
+import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiResponsesClient
 import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
@@ -49,9 +50,15 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(IntentType.CONTEXT_BASED, result.intentType)
         assertEquals("비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다", result.canonicalIntent)
         assertEquals(listOf(NEED_TAG_ID, CONTEXT_TAG_ID), result.tagCandidates.map { candidate -> candidate.tagId })
+        assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, result.llmModel)
+        assertEquals(1, result.llmModelVersion)
+        assertEquals(OPEN_AI_INPUT_TOKENS, result.inputTokens)
+        assertEquals(OPEN_AI_CACHED_TOKENS, result.cachedTokens)
+        assertEquals(OPEN_AI_OUTPUT_TOKENS, result.outputTokens)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
         assertEquals(USER_INPUT_ANALYSIS_NANO_MODEL, openAi.lastRequest.model)
+        assertEquals("user-input-analysis-v1-gpt-5-nano", openAi.lastRequest.promptCacheKey)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
@@ -75,6 +82,17 @@ class OpenAiUserInputAnalysisServiceTest {
 
         assertFalsePromptContainsSelectedTags(openAi.lastRequest.input)
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+    }
+
+    @Test
+    fun `allowedTags는 사용자 입력보다 앞에 배치한다`() {
+        val openAi = openAiResponsesClient(outputText = outputText)
+        val service = service(client = openAi.client)
+
+        service.analyze(recommendationInput(feelingText = "비 오는 출근길에 마음이 불안해"))
+
+        assertTrue(openAi.lastRequest.input.indexOf("[허용 태그 목록]") < openAi.lastRequest.input.indexOf("[분석 대상 사용자 입력]"))
+        assertTrue(openAi.lastRequest.input.indexOf("CONTEXT_RAIN") < openAi.lastRequest.input.indexOf("비 오는 출근길"))
     }
 
     @Test
@@ -148,6 +166,9 @@ class OpenAiUserInputAnalysisServiceTest {
         const val CONTEXT_TAG_ID = 20L
         const val USER_INPUT_ANALYSIS_NANO_MODEL = "gpt-5-nano"
         const val USER_INPUT_ANALYSIS_MINI_MODEL = "gpt-5-mini"
+        const val OPEN_AI_INPUT_TOKENS = 120L
+        const val OPEN_AI_CACHED_TOKENS = 80L
+        const val OPEN_AI_OUTPUT_TOKENS = 40L
         const val LONG_DIARY_TEXT: String =
             "비 오는 출근길에 마음이 불안해서 오래 생각이 많아졌다. " +
                 "회사에서 실수한 일이 계속 떠오르고 관계도 어색해져서 마음을 정리하고 싶다. " +
@@ -206,7 +227,12 @@ class OpenAiUserInputAnalysisServiceTest {
                     stub.lastRequest = invocation.getArgument(0)
 
                     exception?.let { throw it }
-                    outputText
+                    OpenAiTextResponse(
+                        outputText = outputText,
+                        inputTokens = OPEN_AI_INPUT_TOKENS,
+                        cachedTokens = OPEN_AI_CACHED_TOKENS,
+                        outputTokens = OPEN_AI_OUTPUT_TOKENS,
+                    )
                 }
             stub.client = client
 

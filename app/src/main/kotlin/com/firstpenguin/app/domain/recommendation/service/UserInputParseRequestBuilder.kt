@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
 private const val MINI_MODEL_DIARY_TEXT_LENGTH = 80
+private const val USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX = "user-input-analysis-v1"
 
 private val USER_INPUT_PARSE_PROMPT_GUIDE =
     """
@@ -69,6 +70,7 @@ class UserInputParseRequestBuilder(
                     format = userInputParseSchema(tagGroups),
                     verbosity = OPENAI_TEXT_VERBOSITY,
                 ),
+            promptCacheKey = input.modelVersion().promptCacheKey,
         )
 
     private fun buildPrompt(
@@ -77,24 +79,27 @@ class UserInputParseRequestBuilder(
     ): String =
         listOf(
             USER_INPUT_PARSE_PROMPT_GUIDE,
-            requestPayload(input, tagGroups),
+            allowedTagsPayload(tagGroups),
+            userInputPayload(input),
         ).joinToString("\n\n")
 
-    private fun requestPayload(
-        input: RecommendationInput,
-        tagGroups: Map<TagType, List<TagOption>>,
-    ): String =
+    private fun allowedTagsPayload(tagGroups: Map<TagType, List<TagOption>>): String =
         """
-        [분석 대상 사용자 입력]
-        ${jsonMapper.writeValueAsString(input.toPayload(tagGroups))}
+        [허용 태그 목록]
+        ${jsonMapper.writeValueAsString(tagGroups.toAllowedTagsPayload())}
         """.trimIndent()
 
-    private fun RecommendationInput.toPayload(tagGroups: Map<TagType, List<TagOption>>): Map<String, Any?> =
+    private fun userInputPayload(input: RecommendationInput): String =
+        """
+        [분석 대상 사용자 입력]
+        ${jsonMapper.writeValueAsString(input.toPayload())}
+        """.trimIndent()
+
+    private fun RecommendationInput.toPayload(): Map<String, Any?> =
         mapOf(
             "hasSelectedNeedTag" to (needTag != null),
             "feelingText" to feelingText.normalizedText(),
             "diaryText" to diaryText.normalizedText(),
-            "allowedTags" to tagGroups.toAllowedTagsPayload(),
         )
 
     private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
@@ -111,6 +116,9 @@ class UserInputParseRequestBuilder(
             "description" to description.orEmpty(),
         )
 }
+
+private val RecommendationAiModelVersion.promptCacheKey: String
+    get() = "$USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX-$model"
 
 private fun RecommendationInput.modelVersion(): RecommendationAiModelVersion {
     if (diaryText.normalizedLength() >= MINI_MODEL_DIARY_TEXT_LENGTH) {
