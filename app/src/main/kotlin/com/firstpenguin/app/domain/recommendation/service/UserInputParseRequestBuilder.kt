@@ -11,14 +11,13 @@ import tools.jackson.databind.json.JsonMapper
 
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
-private const val USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS = 800
 private const val USER_INPUT_ANALYSIS_PROMPT_CACHE_KEY_PREFIX = "user-input-analysis-v1"
 
 private val USER_INPUT_PARSE_PROMPT_GUIDE =
     """
 너는 감정 기반 문장 추천 서비스의 사용자 입력 분석기다.
 
-너의 역할은 사용자의 free text와 diary text를 분석하여 추천 엔진이 사용할 intentType, canonicalIntent,
+너의 역할은 사용자의 free text와 diary text를 분석하여 추천 엔진이 사용할 canonicalIntent,
 타입별 tag candidate를 반환하는 것이다.
 
 중요 규칙:
@@ -29,19 +28,12 @@ private val USER_INPUT_PARSE_PROMPT_GUIDE =
 5. context/situation tag를 중심으로 추출하라.
 6. emotion/need tag는 명확한 근거가 있을 때만 추출하라.
 7. 개수를 채우기 위해 약한 태그를 선택하지 마라.
-8. hasSelectedNeedTag가 false이고 feelingText가 있으면 allowed NEED tag 중
-    feelingText와 가장 일치하는 NEED tag를 반드시 1개 반환하라.
-9. hasSelectedNeedTag가 true이면 need tag도 emotion tag와 동일하게 12번 규칙을 따른다.
+8. emotion tag는 사용자가 고른 감정 태그를 보조하는 후보이므로 PRIMARY priority를 사용하지 마라.
+9. need tag는 원하는 도움이나 기대가 명확히 드러날 때만 1개까지 추출하라.
 10. context tag는 실제 장소, 날씨, 시간, 활동, 장면이 직접 드러날 때만 선택하라.
 11. situation tag는 실제 삶의 문제, 사건, 관계, 주제가 직접 드러날 때만 선택하라.
 12. 은유적 표현만으로 context나 situation을 선택하지 마라.
 13. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
-
-[intentType 기준]
-- EMOTION_NEED_BASED: 감정과 필요한 반응이 중심이다.
-- CONTEXT_BASED: 날씨, 시간, 장소, 활동 같은 맥락이 추천 의도에 직접적이다.
-- SITUATION_BASED: 실패, 관계, 일, 이별, 변화 같은 삶의 사건이 중심이다.
-- MIXED: 감정, 필요, 상황, 성찰이 섞여 있거나 관점 전환/마음정리가 중심이다.
 
 [canonicalIntent 작성 기준]
 - 한국어 한 문장으로 작성하라.
@@ -71,7 +63,6 @@ class UserInputParseRequestBuilder(
                     verbosity = OPENAI_TEXT_VERBOSITY,
                 ),
             promptCacheKey = USER_INPUT_ANALYSIS_MODEL.promptCacheKey,
-            maxOutputTokens = USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS,
         )
 
     private fun buildPrompt(
@@ -98,7 +89,6 @@ class UserInputParseRequestBuilder(
 
     private fun RecommendationInput.toPayload(): Map<String, Any?> =
         mapOf(
-            "hasSelectedNeedTag" to (needTag != null),
             "feelingText" to feelingText.normalizedText(),
             "diaryText" to diaryText.normalizedText(),
         )

@@ -6,6 +6,7 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import com.firstpenguin.app.domain.recommendation.policy.IntentFocusWeightPolicy
+import com.firstpenguin.app.domain.recommendation.policy.IntentTypePolicy
 import com.firstpenguin.app.domain.recommendation.policy.MoodTagPolicy
 import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Component
@@ -22,12 +23,12 @@ class MetadataScorer(
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double> = emptyMap(),
     ): RecommendationScoreBreakdown {
-        val intentType = input.analysis?.intentType ?: IntentType.EMOTION_NEED_BASED
+        val intentType = IntentTypePolicy.resolve(input, effectiveTags)
         val needScore = typeScore(TagType.NEED, effectiveTags, candidate, tagRarityWeights)
         val emotionScore = typeScore(TagType.EMOTION, effectiveTags, candidate, tagRarityWeights)
         val contextScore = typeScore(TagType.CONTEXT, effectiveTags, candidate)
         val situationScore = typeScore(TagType.SITUATION, effectiveTags, candidate)
-        val moodScore = moodScore(input, effectiveTags, candidate, moodTagIdByCode, tagRarityWeights)
+        val moodScore = moodScore(input, effectiveTags, candidate, moodTagIdByCode, tagRarityWeights, intentType)
         val metadataScore =
             metadataScore(
                 intentType = intentType,
@@ -68,10 +69,11 @@ class MetadataScorer(
         candidate: RecommendationCandidate,
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double>,
+        intentType: IntentType,
     ): Double {
         val targetMoodTagIds =
             moodTagPolicy
-                .resolveMoodTagCodes(input, effectiveTags)
+                .resolveMoodTagCodes(input, effectiveTags, intentType)
                 .mapNotNullTo(mutableSetOf()) { code -> moodTagIdByCode[code] }
 
         return typeScoreCalculator.calculate(

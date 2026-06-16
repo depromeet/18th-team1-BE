@@ -56,10 +56,9 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(OPEN_AI_CACHED_TOKENS, result.cachedTokens)
         assertEquals(OPEN_AI_OUTPUT_TOKENS, result.outputTokens)
         assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
         assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
-        assertEquals(USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS, openAi.lastRequest.maxOutputTokens)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
@@ -82,7 +81,7 @@ class OpenAiUserInputAnalysisServiceTest {
         )
 
         assertFalsePromptContainsSelectedTags(openAi.lastRequest.input)
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
     }
 
     @Test
@@ -112,7 +111,7 @@ class OpenAiUserInputAnalysisServiceTest {
 
         requireNotNull(result)
         assertTrue(openAi.lastRequest.input.contains("오늘 힘들다"))
-        assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
     }
 
@@ -168,7 +167,6 @@ class OpenAiUserInputAnalysisServiceTest {
         const val NEED_TAG_ID = 10L
         const val CONTEXT_TAG_ID = 20L
         const val USER_INPUT_ANALYSIS_MODEL = "gpt-5-mini"
-        const val USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS = 800
         const val OPEN_AI_INPUT_TOKENS = 120L
         const val OPEN_AI_CACHED_TOKENS = 80L
         const val OPEN_AI_OUTPUT_TOKENS = 40L
@@ -315,6 +313,7 @@ class OpenAiUserInputAnalysisServiceTest {
         fun assertFalsePromptContainsSelectedTags(input: String) {
             assertFalse(input.contains("selectedEmotionTagCodes"))
             assertFalse(input.contains("selectedNeedTagCode"))
+            assertFalse(input.contains("hasSelectedNeedTag"))
             assertFalse(input.contains("EMOTION_SELECTED"))
             assertFalse(input.contains("NEED_SELECTED"))
         }
