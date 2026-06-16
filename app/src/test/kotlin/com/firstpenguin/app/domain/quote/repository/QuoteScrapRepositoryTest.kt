@@ -69,6 +69,7 @@ class QuoteScrapRepositoryTest {
         assertTrue(normalizedSql.contains("\"quote_scraps\".\"user_id\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quotes\".\"deleted_at\" is null"), normalizedSql)
         assertTrue(normalizedSql.contains("\"books\".\"deleted_at\" is null"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"aladin_link\""), normalizedSql)
         assertTrue(normalizedSql.contains("order by \"quote_scraps\".\"created_at\" desc"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_scraps\".\"quote_id\" desc"), normalizedSql)
         assertTrue(normalizedSql.contains("fetch next ? rows only"), normalizedSql)
@@ -129,6 +130,7 @@ class QuoteScrapRepositoryTest {
                 QuoteTable.ID,
                 BookTable.ID,
                 BookTable.COVER_IMAGE_URL,
+                BookTable.ALADIN_LINK,
                 QuoteTable.CONTENT,
                 BookTable.TITLE,
                 BookTable.AUTHOR,

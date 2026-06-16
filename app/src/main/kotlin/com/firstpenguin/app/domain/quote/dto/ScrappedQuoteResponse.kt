@@ -12,6 +12,8 @@ data class ScrappedQuoteResponse(
     val bookId: Long,
     @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover.png")
     val bookCoverImageUrl: String,
+    @field:Schema(description = "책 구매 링크", example = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1")
+    val bookPurchaseLink: String,
     @field:Schema(description = "문장 내용", example = "새는 알에서 나오려고 투쟁한다.")
     val content: String,
     @field:Schema(description = "책 제목", example = "데미안")
@@ -27,6 +29,7 @@ data class ScrappedQuoteResponse(
                 quoteId = quote.quoteId,
                 bookId = quote.bookId,
                 bookCoverImageUrl = quote.bookCoverImageUrl,
+                bookPurchaseLink = quote.bookPurchaseLink,
                 content = quote.content,
                 title = quote.title,
                 author = quote.author,
