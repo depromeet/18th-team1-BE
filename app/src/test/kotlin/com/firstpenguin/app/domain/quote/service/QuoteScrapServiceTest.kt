@@ -89,6 +89,7 @@ class QuoteScrapServiceTest {
             quoteId = QUOTE_ID,
             bookId = BOOK_ID,
             bookCoverImageUrl = "https://cdn.example.com/book-cover.png",
+            bookPurchaseLink = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1",
             content = "새는 알에서 나오려고 투쟁한다.",
             title = "데미안",
             author = "헤르만 헤세",
