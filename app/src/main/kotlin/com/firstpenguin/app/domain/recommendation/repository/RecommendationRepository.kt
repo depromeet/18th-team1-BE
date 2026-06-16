@@ -1,7 +1,9 @@
 package com.firstpenguin.app.domain.recommendation.repository
 
+import com.firstpenguin.app.domain.emotion.repository.table.EmotionRangeTable
 import com.firstpenguin.app.domain.recommendation.model.Recommendation
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
+import com.firstpenguin.app.global.enums.EmotionRangeName
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
@@ -19,6 +21,8 @@ class RecommendationRepository(
         dsl
             .select(RECOMMENDATION_FIELDS)
             .from(RecommendationTable.RECOMMENDATIONS)
+            .join(EmotionRangeTable.EMOTION_RANGES)
+            .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate))
             .and(RecommendationTable.QUOTE_ID.isNull)
@@ -35,6 +39,8 @@ class RecommendationRepository(
         dsl
             .select(RECOMMENDATION_FIELDS)
             .from(RecommendationTable.RECOMMENDATIONS)
+            .join(EmotionRangeTable.EMOTION_RANGES)
+            .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.between(start, end))
             .orderBy(RecommendationTable.CREATED_AT.asc())
@@ -48,6 +54,8 @@ class RecommendationRepository(
         dsl
             .select(RECOMMENDATION_FIELDS)
             .from(RecommendationTable.RECOMMENDATIONS)
+            .join(EmotionRangeTable.EMOTION_RANGES)
+            .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.between(start, end))
             .and(RecommendationTable.QUOTE_ID.isNotNull)
@@ -58,6 +66,8 @@ class RecommendationRepository(
         dsl
             .select(RECOMMENDATION_FIELDS)
             .from(RecommendationTable.RECOMMENDATIONS)
+            .join(EmotionRangeTable.EMOTION_RANGES)
+            .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.ID.eq(id))
             .fetchOne()
             ?.let(::toRecommendation)
@@ -66,6 +76,8 @@ class RecommendationRepository(
         dsl
             .select(RECOMMENDATION_FIELDS)
             .from(RecommendationTable.RECOMMENDATIONS)
+            .join(EmotionRangeTable.EMOTION_RANGES)
+            .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.ID.eq(id))
             .forUpdate()
             .fetchOne()
@@ -99,6 +111,7 @@ class RecommendationRepository(
             feelingText = record.get(RecommendationTable.FEELING_TEXT),
             diaryText = record.get(RecommendationTable.DIARY_TEXT),
             emotionRangeId = record.get(RecommendationTable.EMOTION_RANGE_ID),
+            emotionRangeName = EmotionRangeName.from(record.get(EmotionRangeTable.NAME)),
             createdAt = record.get(RecommendationTable.CREATED_AT),
         )
 
@@ -112,6 +125,7 @@ class RecommendationRepository(
                 RecommendationTable.FEELING_TEXT,
                 RecommendationTable.DIARY_TEXT,
                 RecommendationTable.EMOTION_RANGE_ID,
+                EmotionRangeTable.NAME,
                 RecommendationTable.CREATED_AT,
             )
     }
