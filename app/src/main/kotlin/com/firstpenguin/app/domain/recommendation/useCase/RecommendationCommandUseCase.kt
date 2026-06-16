@@ -3,13 +3,15 @@ package com.firstpenguin.app.domain.recommendation.useCase
 import com.firstpenguin.app.domain.quote.service.QuoteService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationResponse
+import com.firstpenguin.app.domain.recommendation.model.RecommendationAnalysisLog
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
-import com.firstpenguin.app.domain.recommendation.service.RecommendationAnalysisLogService
 import com.firstpenguin.app.domain.recommendation.service.RecommendationResponseMapper
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import com.firstpenguin.app.domain.recommendation.service.RecommendationValidationService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 class RecommendationCommandUseCase(
@@ -17,7 +19,7 @@ class RecommendationCommandUseCase(
     private val recommendationService: RecommendationService,
     private val recommendationValidationService: RecommendationValidationService,
     private val recommendationResponseMapper: RecommendationResponseMapper,
-    private val recommendationAnalysisLogService: RecommendationAnalysisLogService,
+    private val recommendationAnalysisLogCommandUseCase: RecommendationAnalysisLogCommandUseCase,
 ) {
     @Transactional
     fun saveRecommendationResult(
@@ -51,12 +53,10 @@ class RecommendationCommandUseCase(
             recommendationId = recommendationId,
             rankedQuotes = result.quotes,
         )
-        result.analysisLog?.let { analysisLog ->
-            recommendationAnalysisLogService.saveRecommendationAnalysisLog(
-                recommendationId = recommendationId,
-                analysisLog = analysisLog,
-            )
-        }
+        saveRecommendationAnalysisLogAfterCommit(
+            recommendationId = recommendationId,
+            analysisLog = result.analysisLog,
+        )
 
         return recommendationResponseMapper.toRecommendationResponse(
             recommendationId = recommendationId,
@@ -74,6 +74,37 @@ class RecommendationCommandUseCase(
             diaryText = request.diaryText,
             emotionRangeId = request.emotionRangeId,
         )
+
+    private fun saveRecommendationAnalysisLogAfterCommit(
+        recommendationId: Long,
+        analysisLog: RecommendationAnalysisLog?,
+    ) {
+        if (analysisLog == null) return
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            saveRecommendationAnalysisLogSafely(recommendationId, analysisLog)
+            return
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+            object : TransactionSynchronization {
+                override fun afterCommit() {
+                    saveRecommendationAnalysisLogSafely(recommendationId, analysisLog)
+                }
+            },
+        )
+    }
+
+    private fun saveRecommendationAnalysisLogSafely(
+        recommendationId: Long,
+        analysisLog: RecommendationAnalysisLog,
+    ) {
+        runCatching {
+            recommendationAnalysisLogCommandUseCase.saveRecommendationAnalysisLog(
+                recommendationId = recommendationId,
+                analysisLog = analysisLog,
+            )
+        }
+    }
 
     private fun RecommendationRequest.selectedTagIds(): List<Long> = emotionTagIds + listOfNotNull(needTagId)
 }
