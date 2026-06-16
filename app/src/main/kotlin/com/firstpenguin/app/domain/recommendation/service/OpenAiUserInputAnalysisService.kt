@@ -9,6 +9,8 @@ import com.firstpenguin.app.global.enums.TagType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+private const val MIN_DIARY_TEXT_LENGTH_FOR_ANALYSIS = 20
+
 @Service
 class OpenAiUserInputAnalysisService(
     private val tagRepository: TagRepository,
@@ -18,15 +20,25 @@ class OpenAiUserInputAnalysisService(
 ) : UserInputAnalysisService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun analyze(input: RecommendationInput): UserInputAnalysis? {
-        if (!input.hasText()) return null
-
-        return runCatching {
-            log.measureRecommendationStep("userInputAnalysis.total", { "userId=${input.userId}" }) {
-                analyzeOrThrow(input)
+    override fun analyze(input: RecommendationInput): UserInputAnalysis? =
+        when {
+            input.shouldSkipAnalysis() -> {
+                log.measureRecommendationStep("userInputAnalysis.skip", { input.skipLogDetail() }) {}
+                null
             }
-        }.getOrNull()
-    }
+
+            !input.hasText() -> {
+                null
+            }
+
+            else -> {
+                runCatching {
+                    log.measureRecommendationStep("userInputAnalysis.total", { "userId=${input.userId}" }) {
+                        analyzeOrThrow(input)
+                    }
+                }.getOrNull()
+            }
+        }
 
     private fun analyzeOrThrow(input: RecommendationInput): UserInputAnalysis {
         val tagGroups = findMeasuredTagGroups(input.userId)
@@ -65,3 +77,12 @@ class OpenAiUserInputAnalysisService(
     private fun Map<TagType, List<TagOption>>.onlyUserInputParseTagGroups(): Map<TagType, List<TagOption>> =
         filterKeys { type -> type in USER_INPUT_PARSE_TAG_TYPES }
 }
+
+private fun RecommendationInput.shouldSkipAnalysis(): Boolean = needTag != null && diaryText.isBlankOrShort()
+
+private fun RecommendationInput.skipLogDetail(): String =
+    "userId=$userId reason=selectedNeedTagAndShortDiaryText diaryTextLength=${diaryText.normalizedLength()}"
+
+private fun String?.isBlankOrShort(): Boolean = normalizedLength() < MIN_DIARY_TEXT_LENGTH_FOR_ANALYSIS
+
+private fun String?.normalizedLength(): Int = this?.trim()?.length ?: 0

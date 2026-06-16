@@ -65,7 +65,8 @@ class OpenAiUserInputAnalysisServiceTest {
 
         service.analyze(
             recommendationInput(
-                feelingText = "비 오는 출근길에 마음이 불안해",
+                feelingText = null,
+                diaryText = "비 오는 출근길에 마음이 불안해서 오래 생각이 많아졌다",
                 emotionTags = listOf(tag(100L, TagType.EMOTION, "EMOTION_SELECTED")),
                 needTag = tag(101L, TagType.NEED, "NEED_SELECTED"),
             ),
@@ -73,6 +74,42 @@ class OpenAiUserInputAnalysisServiceTest {
 
         assertFalsePromptContainsSelectedTags(openAi.lastRequest.input)
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":true"))
+    }
+
+    @Test
+    fun `needTag가 있고 diaryText가 짧으면 LLM을 호출하지 않는다`() {
+        val openAi = openAiResponsesClient()
+        val service = service(client = openAi.client)
+
+        val result =
+            service.analyze(
+                recommendationInput(
+                    feelingText = null,
+                    diaryText = "오늘 힘들다",
+                    needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
+                ),
+            )
+
+        assertNull(result)
+        Mockito.verifyNoInteractions(openAi.client)
+    }
+
+    @Test
+    fun `needTag가 있어도 diaryText가 충분하면 LLM을 호출한다`() {
+        val openAi = openAiResponsesClient(outputText = outputText)
+        val service = service(client = openAi.client)
+
+        val result =
+            service.analyze(
+                recommendationInput(
+                    feelingText = null,
+                    diaryText = "비 오는 출근길에 마음이 불안해서 오래 생각이 많아졌다",
+                    needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
+                ),
+            )
+
+        requireNotNull(result)
+        assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
     }
 
     @Test
