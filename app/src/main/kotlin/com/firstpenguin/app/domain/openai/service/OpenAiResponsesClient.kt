@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.openai.service
 
 import com.firstpenguin.app.domain.openai.dto.OpenAiResponsesRequest
+import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
@@ -37,9 +38,9 @@ class OpenAiResponsesClient(
             .defaultHeader("Authorization", "Bearer $apiKey")
             .build()
 
-    fun createTextResponse(request: OpenAiResponsesRequest): String =
+    fun createTextResponse(request: OpenAiResponsesRequest): OpenAiTextResponse =
         runCatching {
-            requestResponses(request).outputText()
+            requestResponses(request).toTextResponse()
         }.getOrElse { exception ->
             throw exception.toResponsesException()
         }
@@ -65,6 +66,14 @@ private fun Map<String, Any?>.outputText(): String =
         ?: nestedOutputText()
         ?: throw CustomException(ErrorCode.OPENAI_RESPONSES_OUTPUT_TEXT_NOT_FOUND)
 
+private fun Map<String, Any?>.toTextResponse(): OpenAiTextResponse =
+    OpenAiTextResponse(
+        outputText = outputText(),
+        inputTokens = usageValue("input_tokens") ?: usageValue("prompt_tokens"),
+        cachedTokens = inputTokenDetailsValue("cached_tokens"),
+        outputTokens = usageValue("output_tokens") ?: usageValue("completion_tokens"),
+    )
+
 private fun Map<String, Any?>.directOutputText(): String? =
     this["output_text"]
         ?.toString()
@@ -87,6 +96,36 @@ private fun Map<*, *>.contentItems(): List<Map<*, *>> =
     (this["content"] as? List<*>)
         .orEmpty()
         .mapNotNull { item -> item as? Map<*, *> }
+
+private fun Map<String, Any?>.usageValue(name: String): Long? =
+    usage()
+        ?.get(name)
+        ?.toLongOrNull()
+
+private fun Map<String, Any?>.inputTokenDetailsValue(name: String): Long? =
+    (usage()?.get("input_tokens_details") as? Map<*, *>)
+        ?.get(name)
+        ?.toLongOrNull()
+        ?: (usage()?.get("prompt_tokens_details") as? Map<*, *>)
+            ?.get(name)
+            ?.toLongOrNull()
+
+private fun Map<String, Any?>.usage(): Map<*, *>? = this["usage"] as? Map<*, *>
+
+private fun Any?.toLongOrNull(): Long? =
+    when (this) {
+        is Number -> {
+            toLong()
+        }
+
+        is String -> {
+            toLongOrNull()
+        }
+
+        else -> {
+            null
+        }
+    }
 
 private fun Throwable.toResponsesException(): Throwable =
     when (this) {

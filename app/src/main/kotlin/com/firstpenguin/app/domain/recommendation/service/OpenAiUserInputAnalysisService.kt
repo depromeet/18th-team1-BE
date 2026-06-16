@@ -1,12 +1,13 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.repository.TagRepository
+import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiResponsesClient
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
+import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVersion
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -16,45 +17,34 @@ class OpenAiUserInputAnalysisService(
     private val outputParser: UserInputParseOutputParser,
     private val openAiResponsesClient: OpenAiResponsesClient,
 ) : UserInputAnalysisService {
-    private val log = LoggerFactory.getLogger(javaClass)
-
-    override fun analyze(input: RecommendationInput): UserInputAnalysis? {
-        if (!input.hasText()) return null
-
-        return runCatching {
-            log.measureRecommendationStep("userInputAnalysis.total", { "userId=${input.userId}" }) {
-                analyzeOrThrow(input)
+    override fun analyze(input: RecommendationInput): UserInputAnalysis? =
+        when {
+            !input.hasText() -> {
+                null
             }
-        }.getOrNull()
-    }
+
+            else -> {
+                runCatching { analyzeOrThrow(input) }.getOrNull()
+            }
+        }
 
     private fun analyzeOrThrow(input: RecommendationInput): UserInputAnalysis {
-        val tagGroups = findMeasuredTagGroups(input.userId)
-        val request =
-            log.measureRecommendationStep("userInputAnalysis.buildRequest", { "userId=${input.userId}" }) {
-                requestBuilder.build(input, tagGroups)
-            }
-        val outputText =
-            log.measureRecommendationStep("userInputAnalysis.openAi", { "userId=${input.userId}" }) {
+        val tagGroups = findTagGroups()
+        val request = requestBuilder.build(input, tagGroups)
+        val response =
+            measureRecommendationElapsed {
                 openAiResponsesClient.createTextResponse(request)
             }
 
-        return log.measureRecommendationStep("userInputAnalysis.parse", { "userId=${input.userId}" }) {
-            outputParser.parse(outputText, input, tagGroups)
-        }
+        return outputParser
+            .parse(response.value.outputText, input, tagGroups)
+            .withOpenAiUsage(request.model, response.value, response.elapsedMs)
     }
 
-    private fun findMeasuredTagGroups(userId: Long): Map<TagType, List<TagOption>> {
-        var typeCount = 0
-        lateinit var tagGroups: Map<TagType, List<TagOption>>
-
-        log.measureRecommendationStep("userInputAnalysis.tagOptions", { "userId=$userId types=$typeCount" }) {
-            tagGroups = tagRepository.getActiveTagsByType().onlyUserInputParseTagGroups()
-            typeCount = tagGroups.size
-        }
-
-        return tagGroups
-    }
+    private fun findTagGroups(): Map<TagType, List<TagOption>> =
+        tagRepository
+            .getActiveTagsByType()
+            .onlyUserInputParseTagGroups()
 
     private fun RecommendationInput.hasText(): Boolean = feelingText.hasValue() || diaryText.hasValue()
 
@@ -64,4 +54,18 @@ class OpenAiUserInputAnalysisService(
 
     private fun Map<TagType, List<TagOption>>.onlyUserInputParseTagGroups(): Map<TagType, List<TagOption>> =
         filterKeys { type -> type in USER_INPUT_PARSE_TAG_TYPES }
+
+    private fun UserInputAnalysis.withOpenAiUsage(
+        model: String,
+        response: OpenAiTextResponse,
+        llmElapsedMs: Long?,
+    ): UserInputAnalysis =
+        copy(
+            llmModel = model,
+            llmModelVersion = RecommendationAiModelVersion.fromModel(model)?.version,
+            inputTokens = response.inputTokens,
+            cachedTokens = response.cachedTokens,
+            outputTokens = response.outputTokens,
+            llmElapsedMs = llmElapsedMs,
+        )
 }
