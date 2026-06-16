@@ -54,7 +54,7 @@ class RecommendationResultComposerTest {
             )
         val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
 
-        assertEquals((1L..5L).toList(), quoteIds.take(5))
+        assertEquals((1L..3L).toList(), quoteIds.take(3))
         assertTrue(quoteIds.indexOf(9L) < quoteIds.indexOf(6L))
     }
 

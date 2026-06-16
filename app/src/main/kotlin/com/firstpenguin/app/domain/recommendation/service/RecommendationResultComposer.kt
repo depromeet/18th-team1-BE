@@ -11,6 +11,13 @@ import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCan
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import org.springframework.stereotype.Component
 
+private const val FIRST_RANK = 1
+private const val RECOMMENDATION_RESULT_COUNT = 10
+private const val SCORE_PRIORITY_QUOTE_COUNT = 3
+private const val MAX_SAME_ROLE_TAG_COUNT = 3
+private const val NO_ROLE_TAG_COUNT = 0
+private const val DEFAULT_SEMANTIC_SCORE = 0.0
+
 @Component
 class RecommendationResultComposer(
     private val metadataScorer: MetadataScorer,
@@ -179,13 +186,4 @@ class RecommendationResultComposer(
 
     private fun List<RankedRecommendationQuote>.rerank(): List<RankedRecommendationQuote> =
         mapIndexed { index, quote -> quote.copy(rank = index + FIRST_RANK) }
-
-    private companion object {
-        const val FIRST_RANK = 1
-        const val RECOMMENDATION_RESULT_COUNT = 10
-        const val SCORE_PRIORITY_QUOTE_COUNT = 5
-        const val MAX_SAME_ROLE_TAG_COUNT = 3
-        const val NO_ROLE_TAG_COUNT = 0
-        const val DEFAULT_SEMANTIC_SCORE = 0.0
-    }
 }

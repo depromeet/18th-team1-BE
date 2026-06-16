@@ -59,6 +59,7 @@ class OpenAiUserInputAnalysisServiceTest {
         assertTrue(openAi.lastRequest.input.contains("\"hasSelectedNeedTag\":false"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
         assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
+        assertEquals(USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS, openAi.lastRequest.maxOutputTokens)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
@@ -167,6 +168,7 @@ class OpenAiUserInputAnalysisServiceTest {
         const val NEED_TAG_ID = 10L
         const val CONTEXT_TAG_ID = 20L
         const val USER_INPUT_ANALYSIS_MODEL = "gpt-5-mini"
+        const val USER_INPUT_ANALYSIS_MAX_OUTPUT_TOKENS = 800
         const val OPEN_AI_INPUT_TOKENS = 120L
         const val OPEN_AI_CACHED_TOKENS = 80L
         const val OPEN_AI_OUTPUT_TOKENS = 40L

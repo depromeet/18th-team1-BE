@@ -25,29 +25,37 @@ class RecommendationFallbackService(
         val accumulator = CandidateAccumulator(existingCandidates)
         if (!forceFallback && accumulator.isEnough(minimumCandidateCount)) return accumulator.toList()
 
-        val fallbackSteps =
-            listOf(
-                fallbackStep(RecommendationCandidateSource.FALLBACK_NEED) {
-                    candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT)
-                },
-                fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
-                    candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT)
-                },
-                fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates),
-                fallbackStep(RecommendationCandidateSource.FALLBACK_RELAXED) {
-                    candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT)
-                },
-                fallbackStep(RecommendationCandidateSource.FALLBACK_RANDOM) {
-                    candidateProvider.findRandomCandidates(FALLBACK_FETCH_LIMIT)
-                },
-            )
+        val fallbackSteps = fallbackSteps(effectiveTags, semanticCandidates)
 
         fallbackSteps
-            .takeUntilEnough(accumulator, minimumCandidateCount, forceFallback)
-            .forEach { step -> accumulator.add(step.findCandidates(), step.source) }
+            .takeUntilEnough(
+                accumulator = accumulator,
+                minimumCandidateCount = minimumCandidateCount,
+                forceFallback = forceFallback,
+            ).forEach { step -> accumulator.add(step.findCandidates(), step.source) }
 
         return accumulator.toList()
     }
+
+    private fun fallbackSteps(
+        effectiveTags: List<EffectiveTag>,
+        semanticCandidates: () -> List<RecommendationCandidate>,
+    ): List<FallbackStep> =
+        listOf(
+            fallbackStep(RecommendationCandidateSource.FALLBACK_NEED) {
+                candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT)
+            },
+            fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
+                candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT)
+            },
+            fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates),
+            fallbackStep(RecommendationCandidateSource.FALLBACK_RELAXED) {
+                candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT)
+            },
+            fallbackStep(RecommendationCandidateSource.FALLBACK_RANDOM) {
+                candidateProvider.findRandomCandidates(FALLBACK_FETCH_LIMIT)
+            },
+        )
 
     private fun fallbackStep(
         source: RecommendationCandidateSource,
