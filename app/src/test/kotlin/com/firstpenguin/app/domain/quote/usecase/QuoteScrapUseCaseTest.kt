@@ -78,6 +78,7 @@ class QuoteScrapUseCaseTest {
         assertEquals(TOTAL_COUNT, response.totalCount)
         assertEquals(1, response.quotes.size)
         assertEquals(QUOTE_ID, response.quotes.first().quoteId)
+        assertEquals(BOOK_PURCHASE_LINK, response.quotes.first().bookPurchaseLink)
         assertEquals(false, response.hasNext)
         assertNull(response.nextCursor)
     }
@@ -140,6 +141,7 @@ class QuoteScrapUseCaseTest {
             quoteId = quoteId,
             bookId = BOOK_ID,
             bookCoverImageUrl = "https://cdn.example.com/book-cover.png",
+            bookPurchaseLink = BOOK_PURCHASE_LINK,
             content = "새는 알에서 나오려고 투쟁한다.",
             title = "데미안",
             author = "헤르만 헤세",
@@ -155,6 +157,7 @@ class QuoteScrapUseCaseTest {
         const val LIMIT = 10
         const val FETCH_LIMIT = 11
         const val TOTAL_COUNT = 3
+        const val BOOK_PURCHASE_LINK = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1"
         const val EXPECTED_NEXT_CURSOR = "MjAyNi0wNi0xM1QxNDozMDoxMHwxMA"
         val SCRAPPED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 13, 14, 30, 10)
     }
