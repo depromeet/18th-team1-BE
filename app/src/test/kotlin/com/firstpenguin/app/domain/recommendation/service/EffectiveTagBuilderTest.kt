@@ -1,7 +1,6 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.model.Tag
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.TagCandidate
 import com.firstpenguin.app.domain.recommendation.model.TagCandidatePriority
@@ -76,7 +75,6 @@ class EffectiveTagBuilderTest {
             diaryText = null,
             analysis =
                 UserInputAnalysis(
-                    intentType = IntentType.EMOTION_NEED_BASED,
                     canonicalIntent = null,
                     tagCandidates = tagCandidates,
                 ),

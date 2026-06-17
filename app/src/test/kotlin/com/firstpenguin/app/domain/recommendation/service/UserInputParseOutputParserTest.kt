@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.TagCandidatePriority
 import com.firstpenguin.app.domain.recommendation.model.TagCandidateSource
@@ -21,7 +20,7 @@ class UserInputParseOutputParserTest {
         )
 
     @Test
-    fun `LLM output JSON을 기존 TagCandidate 모델로 변환한다`() {
+    fun `tag output JSON을 기존 TagCandidate 모델로 변환한다`() {
         val result =
             outputParser.parse(
                 outputText(candidate("SITUATION_FAILURE_MISTAKE", TagType.SITUATION)),
@@ -30,8 +29,7 @@ class UserInputParseOutputParserTest {
             )
         val candidate = result.tagCandidates.first()
 
-        assertEquals(IntentType.EMOTION_NEED_BASED, result.intentType)
-        assertEquals("불안한 마음을 다독이며 다시 움직일 힘이 필요하다", result.canonicalIntent)
+        assertEquals(null, result.canonicalIntent)
         assertEquals(SITUATION_TAG_ID, candidate.tagId)
         assertEquals("SITUATION_FAILURE_MISTAKE", candidate.code)
         assertEquals(TagType.SITUATION, candidate.type)
@@ -141,8 +139,6 @@ class UserInputParseOutputParserTest {
         fun outputText(vararg candidates: Pair<TagType, String>): String =
             """
             {
-              "intentType": "EMOTION_NEED_BASED",
-              "canonicalIntent": "불안한 마음을 다독이며 다시 움직일 힘이 필요하다",
               "emotionTagCandidates": [${candidates.jsonArray(TagType.EMOTION)}],
               "needTagCandidates": [${candidates.jsonArray(TagType.NEED)}],
               "situationTagCandidates": [${candidates.jsonArray(TagType.SITUATION)}],
@@ -159,8 +155,7 @@ class UserInputParseOutputParserTest {
                 """
                 {
                   "tagCode": "$code",
-                  "source": "FEELING_TEXT",
-                  "priority": "PRIMARY"
+                  "source": "FEELING_TEXT"
                 }
                 """.trimIndent()
 

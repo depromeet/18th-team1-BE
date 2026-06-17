@@ -34,6 +34,7 @@ class RecommendationResultComposer(
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double> = emptyMap(),
+        userEmbedding: UserSemanticEmbedding? = semanticProvider.prepare(input),
     ): RecommendationResult? =
         composeOrNull(
             input = input,
@@ -41,6 +42,7 @@ class RecommendationResultComposer(
             candidates = candidates,
             moodTagIdByCode = moodTagIdByCode,
             tagRarityWeights = tagRarityWeights,
+            userEmbedding = userEmbedding,
         )
 
     private fun composeOrNull(
@@ -49,8 +51,8 @@ class RecommendationResultComposer(
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double>,
+        userEmbedding: UserSemanticEmbedding?,
     ): RecommendationResult? {
-        val userEmbedding = semanticProvider.prepare(input)
         val primaryCandidates =
             sourceCandidates(
                 candidates = candidates,

@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
@@ -259,7 +258,6 @@ class RecommendationResultComposerTest {
                 diaryText = null,
                 analysis =
                     UserInputAnalysis(
-                        intentType = IntentType.EMOTION_NEED_BASED,
                         canonicalIntent = canonicalIntent,
                         tagCandidates = emptyList(),
                     ),

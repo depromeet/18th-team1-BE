@@ -105,6 +105,6 @@ class RecommendationSemanticService(
 
     private companion object {
         const val SEMANTIC_FALLBACK_LIMIT = 300
-        const val EMBEDDING_TIMEOUT_MILLIS = 1_500L
+        const val EMBEDDING_TIMEOUT_MILLIS = 2_000L
     }
 }
