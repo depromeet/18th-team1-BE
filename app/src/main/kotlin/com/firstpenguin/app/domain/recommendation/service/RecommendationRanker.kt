@@ -35,7 +35,7 @@ class RecommendationRanker {
 
     private companion object {
         const val FIRST_RANK = 1
-        const val METADATA_WEIGHT = 0.55
-        const val SEMANTIC_WEIGHT = 0.45
+        const val METADATA_WEIGHT = 0.45
+        const val SEMANTIC_WEIGHT = 0.55
     }
 }
