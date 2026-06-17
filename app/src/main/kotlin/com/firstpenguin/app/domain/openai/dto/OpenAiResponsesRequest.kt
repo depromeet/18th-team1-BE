@@ -9,6 +9,8 @@ data class OpenAiResponsesRequest(
     val text: OpenAiResponsesTextRequest,
     @get:JsonProperty("prompt_cache_key")
     val promptCacheKey: String? = null,
+    @get:JsonProperty("prompt_cache_retention")
+    val promptCacheRetention: String? = null,
     @get:JsonProperty("max_output_tokens")
     val maxOutputTokens: Int? = null,
 )

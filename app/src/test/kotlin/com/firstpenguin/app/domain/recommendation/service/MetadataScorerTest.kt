@@ -111,11 +111,40 @@ class MetadataScorerTest {
         assertTrue(rarityWeightedScore.needScore < normalScore.needScore)
     }
 
-    private fun recommendationInput(intentType: IntentType): RecommendationInput =
+    @Test
+    fun `감정 tag가 선택됐는데 후보 감정 score가 없으면 metadataScore를 낮춘다`() {
+        val candidate = candidate(quoteId = 1L, tagIdsByType = mapOf(TagType.NEED to setOf(NEED_COMFORT_ID)))
+        val effectiveTags =
+            listOf(
+                effectiveTag(NEED_COMFORT_ID, "NEED_COMFORT", TagType.NEED, 1.0),
+                effectiveTag(EMOTION_ANXIOUS_ID, "EMOTION_ANXIOUS", TagType.EMOTION, 1.0),
+            )
+        val baselineScore =
+            scorer.score(
+                input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED, emotionTags = emptyList()),
+                effectiveTags = effectiveTags.filterNot { tag -> tag.type == TagType.EMOTION },
+                candidate = candidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+        val penalizedScore =
+            scorer.score(
+                input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED),
+                effectiveTags = effectiveTags,
+                candidate = candidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+
+        assertTrue(penalizedScore.metadataScore < baselineScore.metadataScore)
+    }
+
+    private fun recommendationInput(
+        intentType: IntentType,
+        emotionTags: List<Tag> = listOf(tag(EMOTION_ANXIOUS_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
+    ): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,
             emotionRangeId = EMOTION_RANGE_ID,
-            emotionTags = listOf(tag(EMOTION_ANXIOUS_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
+            emotionTags = emotionTags,
             needTag = tag(NEED_COMFORT_ID, TagType.NEED, "NEED_COMFORT"),
             feelingText = null,
             diaryText = null,
