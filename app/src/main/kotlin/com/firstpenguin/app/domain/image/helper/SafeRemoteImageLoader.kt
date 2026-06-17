@@ -61,7 +61,6 @@ internal object SafeRemoteImageLoader {
     private val ALLOWED_HOSTS =
         setOf(
             "image.aladin.co.kr",
-            "cdn.example.com",
             "storage.googleapis.com",
         )
 
