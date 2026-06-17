@@ -204,7 +204,11 @@ private fun BufferedImage.isLightNear(
 }
 
 private fun readTemplate(): BufferedImage =
-    ImageIO.read(SharedCalendarImageMonthTitleHelper::class.java.classLoader.getResourceAsStream(TEMPLATE_PATH))
+    SharedCalendarImageMonthTitleHelper::class
+        .java
+        .classLoader
+        .getResourceAsStream(TEMPLATE_PATH)
+        ?.use { stream -> ImageIO.read(stream) }
         ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
 
 private fun font(

@@ -204,12 +204,16 @@ private fun BufferedImage.toPngByteArray(): ByteArray =
     }
 
 private fun readTemplate(): BufferedImage =
-    ImageIO.read(SharedQuoteImageCoverHelper::class.java.classLoader.getResourceAsStream(TEMPLATE_PATH))
+    SharedQuoteImageCoverHelper::class
+        .java
+        .classLoader
+        .getResourceAsStream(TEMPLATE_PATH)
+        ?.use { stream -> ImageIO.read(stream) }
         ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
 
 private fun readImage(url: String): BufferedImage =
     SafeRemoteImageLoader.readOrNull(url)
-        ?: throw IllegalArgumentException("이미지를 읽을 수 없습니다: $url")
+        ?: throw SharedImageInvalidInputException("이미지를 읽을 수 없습니다: $url")
 
 private fun font(
     path: String,

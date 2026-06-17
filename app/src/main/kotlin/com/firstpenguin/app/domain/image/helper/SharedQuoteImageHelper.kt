@@ -50,12 +50,12 @@ object SharedQuoteImageHelper {
                     author = author,
                     coverImageUrl =
                         coverImageUrl?.takeIf { it.isNotBlank() }
-                            ?: throw IllegalArgumentException("type 3은 coverImageUrl이 필요합니다."),
+                            ?: throw SharedImageInvalidInputException("type 3은 coverImageUrl이 필요합니다."),
                 )
             }
 
             else -> {
-                throw IllegalArgumentException("지원하지 않는 공유 이미지 type입니다: $type")
+                throw SharedImageInvalidInputException("지원하지 않는 공유 이미지 type입니다: $type")
             }
         }
 

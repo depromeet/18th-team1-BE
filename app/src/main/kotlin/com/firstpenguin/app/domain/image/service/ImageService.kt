@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.image.service
 
 import com.firstpenguin.app.domain.image.helper.SharedCalendarImageHelper
+import com.firstpenguin.app.domain.image.helper.SharedImageInvalidInputException
 import com.firstpenguin.app.domain.image.helper.SharedQuoteImageHelper
 import com.firstpenguin.app.domain.image.model.ImageType
 import com.firstpenguin.app.domain.image.repository.ImageRepository
@@ -67,7 +68,7 @@ class ImageService(
                 coverImageUrl = coverImageUrl,
             )
         }.getOrElse { exception ->
-            if (exception is IllegalArgumentException) {
+            if (exception is SharedImageInvalidInputException) {
                 throw CustomException(ErrorCode.INVALID_INPUT)
             }
             throw exception
