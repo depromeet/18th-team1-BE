@@ -123,7 +123,7 @@ class DiscoveryRepository(
         QuoteTable.DELETED_AT
             .isNull
             .and(BookTable.DELETED_AT.isNull)
-            .and(genre?.let { selectedGenre -> BookTable.CATEGORY.eq(selectedGenre.value) } ?: DSL.noCondition())
+            .and(genre?.let { selectedGenre -> BookTable.GENRE.eq(selectedGenre.value) } ?: DSL.noCondition())
 
     private fun searchContentCondition(query: String): Condition =
         DSL.condition(
@@ -232,7 +232,7 @@ class DiscoveryRepository(
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
-            genre = record.get(BookTable.CATEGORY),
+            genre = record.get(BookTable.GENRE),
             needTag = toNeedTag(record),
             emotionValue = record.get(RECOMMENDED_EMOTION_VALUE_FIELD),
             recommendedAt = record.get(RECOMMENDED_AT_FIELD),
@@ -322,7 +322,7 @@ class DiscoveryRepository(
             BookTable.TITLE,
             BookTable.AUTHOR,
             BookTable.COVER_IMAGE_URL,
-            BookTable.CATEGORY,
+            BookTable.GENRE,
             needTagId(needTags),
             needTagLabel(needTags),
             recommendedEmotionValue(rankedRecommendationEvents),

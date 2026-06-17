@@ -84,19 +84,19 @@ class DiscoveryRepositoryTest {
     }
 
     @Test
-    fun `장르가 있으면 책 카테고리 조건을 추가한다`() {
+    fun `장르가 있으면 책 장르 조건을 추가한다`() {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = null,
-                    genre = DiscoveryGenre.KOREAN_NOVEL,
+                    genre = DiscoveryGenre.GENERAL_LITERATURE,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
     }
 
     @Test
@@ -144,7 +144,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).searchRecommendedQuotes(
                     searchCriteria(
                         sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                        genre = DiscoveryGenre.KOREAN_NOVEL,
+                        genre = DiscoveryGenre.GENERAL_LITERATURE,
                     ),
                 )
             }
@@ -152,7 +152,7 @@ class DiscoveryRepositoryTest {
 
         assertTrue(normalizedSql.contains("quote_scrap_counts"), normalizedSql)
         assertTrue(normalizedSql.contains("count(\"quote_scraps\".\"id\")"), normalizedSql)
-        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("order by \"scrap_count\" desc"), normalizedSql)
     }
 
@@ -233,7 +233,7 @@ class DiscoveryRepositoryTest {
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.CATEGORY,
+                BookTable.GENRE,
                 DSL.field("need_tag_id", Long::class.java),
                 DSL.field("need_tag_label", String::class.java),
                 DSL.field("emotion_value", Int::class.java),

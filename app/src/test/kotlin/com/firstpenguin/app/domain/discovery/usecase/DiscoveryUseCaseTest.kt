@@ -137,7 +137,7 @@ class DiscoveryUseCaseTest {
                 discoveryService.getRecommendedQuotes(
                     USER_ID,
                     null,
-                    DiscoveryGenre.KOREAN_NOVEL,
+                    DiscoveryGenre.GENERAL_LITERATURE,
                     DISCOVERY_QUOTE_FETCH_COUNT,
                 ),
             ).thenReturn(listOf(quote))
@@ -155,7 +155,7 @@ class DiscoveryUseCaseTest {
                 discoveryService.getRecommendedQuotes(
                     USER_ID,
                     DiscoveryCursor(RECOMMENDED_AT, QUOTE_ID),
-                    DiscoveryGenre.KOREAN_NOVEL,
+                    DiscoveryGenre.GENERAL_LITERATURE,
                     DISCOVERY_QUOTE_FETCH_COUNT,
                 ),
             ).thenReturn(listOf(quote))
@@ -224,7 +224,7 @@ class DiscoveryUseCaseTest {
                     searchCriteria(
                         sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
                         cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
-                        genre = DiscoveryGenre.KOREAN_NOVEL,
+                        genre = DiscoveryGenre.GENERAL_LITERATURE,
                     ),
                 ),
             ).thenReturn(listOf(quote))
@@ -346,7 +346,7 @@ class DiscoveryUseCaseTest {
         const val RECOMMENDED_USER_NICKNAME = "문장수집가"
         const val NEED_TAG_ID = 49L
         const val NEED_TAG_LABEL = "공감해주는 문장"
-        const val GENRE = "한국소설"
+        const val GENRE = "일반문학"
         const val EMOTION_VALUE = 7
         const val EMOTION_LABEL = "약간 기분 좋아요"
         const val SEARCH_QUERY = "새"
