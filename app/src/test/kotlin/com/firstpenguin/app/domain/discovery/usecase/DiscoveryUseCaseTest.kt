@@ -40,6 +40,8 @@ class DiscoveryUseCaseTest {
         assertEquals(1, response.quotes.size)
         assertEquals(RECOMMENDED_USER_ID, response.quotes.first().recommendedUserId)
         assertEquals(RECOMMENDED_AT, response.quotes.first().recommendedAt)
+        assertEquals(EMOTION_VALUE, response.quotes.first().emotionValue)
+        assertEquals(EMOTION_LABEL, response.quotes.first().emotionLabel)
         assertEquals(GENRE, response.quotes.first().genre)
         assertEquals(
             NEED_TAG_ID,
@@ -302,6 +304,7 @@ class DiscoveryUseCaseTest {
             bookCoverImageUrl = "https://cdn.example.com/book-cover-placeholder.png",
             genre = GENRE,
             needTag = DiscoveryNeedTag(NEED_TAG_ID, NEED_TAG_LABEL),
+            emotionValue = EMOTION_VALUE,
             recommendedAt = RECOMMENDED_AT,
             isScrapped = isScrapped,
             scrapCount = scrapCount,
@@ -331,6 +334,8 @@ class DiscoveryUseCaseTest {
         const val NEED_TAG_ID = 49L
         const val NEED_TAG_LABEL = "공감해주는 문장"
         const val GENRE = "한국소설"
+        const val EMOTION_VALUE = 7
+        const val EMOTION_LABEL = "약간 기분 좋아요"
         const val SEARCH_QUERY = "새"
         const val SCRAP_COUNT = 3
         val RECOMMENDED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 5, 12, 34, 56)
