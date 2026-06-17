@@ -6,7 +6,6 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiEmbeddingResponse
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
@@ -70,11 +69,11 @@ class OpenAiEmbeddingClient(
             .body<OpenAiEmbeddingResponse>()
             ?: throw CustomException(ErrorCode.QUOTE_EMBEDDING_RESPONSE_EMPTY)
 
-    private fun openAiRequestFactory(): SimpleClientHttpRequestFactory =
-        SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(OPENAI_CONNECT_TIMEOUT)
-            setReadTimeout(OPENAI_READ_TIMEOUT)
-        }
+    private fun openAiRequestFactory() =
+        openAiClientHttpRequestFactory(
+            connectTimeout = OPENAI_CONNECT_TIMEOUT,
+            readTimeout = OPENAI_READ_TIMEOUT,
+        )
 }
 
 private fun Throwable.toEmbeddingException(): Throwable =
