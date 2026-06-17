@@ -8,6 +8,7 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
+import com.firstpenguin.app.domain.user.repository.UserTable
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.SQLDialect
@@ -39,6 +40,9 @@ class DiscoveryRepositoryTest {
         assertFalse(normalizedSql.contains("daily_recommendation_quotes"), normalizedSql)
         assertFalse(normalizedSql.contains("daily_recommendation_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"users\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"users\".\"nickname\""), normalizedSql)
+        assertTrue(normalizedSql.contains("emotion_value"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_scraps"), normalizedSql)
         assertTrue(normalizedSql.contains("is_scrapped"), normalizedSql)
@@ -224,6 +228,7 @@ class DiscoveryRepositoryTest {
                 QuoteTable.ID,
                 BookTable.ID,
                 DSL.field("recommended_user_id", Long::class.java),
+                UserTable.NICKNAME,
                 QuoteTable.CONTENT,
                 BookTable.TITLE,
                 BookTable.AUTHOR,
@@ -231,6 +236,7 @@ class DiscoveryRepositoryTest {
                 BookTable.CATEGORY,
                 DSL.field("need_tag_id", Long::class.java),
                 DSL.field("need_tag_label", String::class.java),
+                DSL.field("emotion_value", Int::class.java),
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
                 DSL.field("scrap_count", Int::class.java),

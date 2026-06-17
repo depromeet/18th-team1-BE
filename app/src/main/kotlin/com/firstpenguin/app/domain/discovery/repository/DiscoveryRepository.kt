@@ -14,6 +14,7 @@ import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTagTable
+import com.firstpenguin.app.domain.user.repository.UserTable
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -83,6 +84,8 @@ class DiscoveryRepository(
     ) = dsl
         .select(discoveryQuoteFields(rankedRecommendationEvents, needTags, scrapCount))
         .from(rankedRecommendationEvents)
+        .join(UserTable.USERS)
+        .on(UserTable.ID.eq(recommendedUserId(rankedRecommendationEvents)))
         .join(QuoteTable.QUOTES)
         .on(QuoteTable.ID.eq(recommendedQuoteId(rankedRecommendationEvents)))
         .join(BookTable.BOOKS)
@@ -224,12 +227,14 @@ class DiscoveryRepository(
             quoteId = record.get(QuoteTable.ID),
             bookId = record.get(BookTable.ID),
             recommendedUserId = record.get(RECOMMENDED_USER_ID_FIELD),
+            recommendedUserNickname = record.get(UserTable.NICKNAME),
             content = record.get(QuoteTable.CONTENT),
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
             genre = record.get(BookTable.CATEGORY),
             needTag = toNeedTag(record),
+            emotionValue = record.get(RECOMMENDED_EMOTION_VALUE_FIELD),
             recommendedAt = record.get(RECOMMENDED_AT_FIELD),
             isScrapped = record.get(IS_SCRAPPED_FIELD),
             scrapCount = record.get(SCRAP_COUNT_FIELD),
@@ -249,6 +254,7 @@ class DiscoveryRepository(
                 RecommendationTable.ID.`as`(RECOMMENDATION_ID),
                 RecommendationTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
                 RecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
+                RecommendationTable.EMOTION_VALUE.`as`(RECOMMENDED_EMOTION_VALUE),
                 RecommendationTable.CREATED_AT.`as`(RECOMMENDED_AT),
             ).from(RecommendationTable.RECOMMENDATIONS)
             .unionAll(
@@ -257,6 +263,7 @@ class DiscoveryRepository(
                         RecommendationQuoteTable.RECOMMENDATION_ID.`as`(RECOMMENDATION_ID),
                         RecommendationQuoteTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
                         RecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
+                        RecommendationTable.EMOTION_VALUE.`as`(RECOMMENDED_EMOTION_VALUE),
                         RecommendationQuoteTable.CREATED_AT.`as`(RECOMMENDED_AT),
                     ).from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
                     .join(RecommendationTable.RECOMMENDATIONS)
@@ -269,6 +276,7 @@ class DiscoveryRepository(
                 recommendationId(recommendationEvents),
                 recommendedQuoteId(recommendationEvents),
                 recommendedUserId(recommendationEvents),
+                recommendedEmotionValue(recommendationEvents),
                 at(recommendationEvents),
                 DSL
                     .rowNumber()
@@ -309,6 +317,7 @@ class DiscoveryRepository(
             QuoteTable.ID,
             BookTable.ID,
             recommendedUserId(rankedRecommendationEvents),
+            UserTable.NICKNAME,
             QuoteTable.CONTENT,
             BookTable.TITLE,
             BookTable.AUTHOR,
@@ -316,6 +325,7 @@ class DiscoveryRepository(
             BookTable.CATEGORY,
             needTagId(needTags),
             needTagLabel(needTags),
+            recommendedEmotionValue(rankedRecommendationEvents),
             at(rankedRecommendationEvents),
             IS_SCRAPPED_FIELD,
             scrapCount,
@@ -326,6 +336,11 @@ class DiscoveryRepository(
     private fun recommendedQuoteId(table: Table<*>): Field<Long> = table.field(RECOMMENDED_QUOTE_ID, Long::class.java)!!
 
     private fun recommendedUserId(table: Table<*>): Field<Long> = table.field(RECOMMENDED_USER_ID, Long::class.java)!!
+
+    private fun recommendedEmotionValue(table: Table<*>): Field<Int> {
+        val fieldName = RECOMMENDED_EMOTION_VALUE
+        return table.field(fieldName, Int::class.java)!!
+    }
 
     private fun at(table: Table<*>): Field<LocalDateTime> = table.field(RECOMMENDED_AT, LocalDateTime::class.java)!!
 
@@ -355,6 +370,7 @@ class DiscoveryRepository(
         const val RECOMMENDATION_ID = "recommendation_id"
         const val RECOMMENDED_QUOTE_ID = "quote_id"
         const val RECOMMENDED_USER_ID = "recommended_user_id"
+        const val RECOMMENDED_EMOTION_VALUE = "emotion_value"
         const val RECOMMENDED_AT = "recommended_at"
         const val RECOMMENDATION_RANK = "recommendation_rank"
         const val NEED_TAG_RECOMMENDATION_ID = "need_tag_recommendation_id"
@@ -366,6 +382,7 @@ class DiscoveryRepository(
         const val LATEST_RECOMMENDATION_RANK = 1
 
         val RECOMMENDED_USER_ID_FIELD: Field<Long> = DSL.field(RECOMMENDED_USER_ID, Long::class.java)
+        val RECOMMENDED_EMOTION_VALUE_FIELD: Field<Int> = DSL.field(RECOMMENDED_EMOTION_VALUE, Int::class.java)
         val RECOMMENDED_AT_FIELD: Field<LocalDateTime> = DSL.field(RECOMMENDED_AT, LocalDateTime::class.java)
         val NEED_TAG_ID_FIELD: Field<Long> = DSL.field(NEED_TAG_ID, Long::class.java)
         val NEED_TAG_LABEL_FIELD: Field<String> = DSL.field(NEED_TAG_LABEL, String::class.java)
