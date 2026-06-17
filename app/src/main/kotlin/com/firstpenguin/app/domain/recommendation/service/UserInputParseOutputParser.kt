@@ -31,7 +31,7 @@ private fun JsonNode.toUserInputAnalysis(
 ): UserInputAnalysis =
     UserInputAnalysis(
         intentType = optionalIntentType(),
-        canonicalIntent = requiredText("canonicalIntent"),
+        canonicalIntent = null,
         tagCandidates = tagCandidateMapper.map(tagCandidateNodes(), input, tagGroups),
     )
 
@@ -51,11 +51,6 @@ private fun JsonNode.tagCandidateNodes(): List<Pair<TagType, JsonNode>> =
     ).flatMap { (type, fieldName) ->
         path(fieldName).toList().map { node -> type to node }
     }
-
-private fun JsonNode.requiredText(fieldName: String): String =
-    stringOrEmpty(fieldName)
-        .takeIf { value -> value.isNotBlank() }
-        ?: error("Missing required text field: $fieldName")
 
 private fun JsonNode.stringOrEmpty(fieldName: String): String =
     path(fieldName)

@@ -37,7 +37,10 @@ class UserInputTagCandidateMapper {
         runCatching {
             val tagCode = requiredText("tagCode")
             val source = TagCandidateSource.valueOf(requiredText("source"))
-            val priority = TagCandidatePriority.valueOf(requiredText("priority"))
+            val priority =
+                stringOrNull("priority")
+                    ?.let(TagCandidatePriority::valueOf)
+                    ?: TagCandidatePriority.PRIMARY
             val tagOption = tagOptionByCode[tagCode] ?: return@runCatching null
 
             if (!isResolvable(tagCode, tagType, source, selectedCodes, tagOption)) {
@@ -111,11 +114,14 @@ class UserInputTagCandidateMapper {
             .associateBy { option -> option.code }
 
     private fun JsonNode.requiredText(fieldName: String): String =
+        stringOrNull(fieldName)
+            ?.takeIf { value -> value.isNotBlank() }
+            ?: error("Missing required text field: $fieldName")
+
+    private fun JsonNode.stringOrNull(fieldName: String): String? =
         path(fieldName)
             .takeUnless { node -> node.isMissingNode || node.isNull }
             ?.asString()
-            ?.takeIf { value -> value.isNotBlank() }
-            ?: error("Missing required text field: $fieldName")
 
     private companion object {
         const val BACKGROUND_RANK = 1

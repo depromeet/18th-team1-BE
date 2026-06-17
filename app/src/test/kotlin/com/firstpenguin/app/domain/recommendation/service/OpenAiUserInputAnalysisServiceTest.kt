@@ -41,7 +41,7 @@ class OpenAiUserInputAnalysisServiceTest {
 
     @Test
     fun `free text가 있으면 LLM 응답을 UserInputAnalysis로 변환한다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         val result = service.analyze(recommendationInput(feelingText = "비 오는 출근길에 마음이 불안해"))
@@ -52,27 +52,32 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals(listOf(NEED_TAG_ID, CONTEXT_TAG_ID), result.tagCandidates.map { candidate -> candidate.tagId })
         assertEquals(USER_INPUT_ANALYSIS_MODEL, result.llmModel)
         assertEquals(1, result.llmModelVersion)
-        assertEquals(OPEN_AI_INPUT_TOKENS, result.inputTokens)
-        assertEquals(OPEN_AI_CACHED_TOKENS, result.cachedTokens)
-        assertEquals(OPEN_AI_OUTPUT_TOKENS, result.outputTokens)
-        assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
-        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
-        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
-        assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
-        assertEquals("24h", openAi.lastRequest.promptCacheRetention)
+        assertEquals(OPEN_AI_INPUT_TOKENS * 2, result.inputTokens)
+        assertEquals(OPEN_AI_CACHED_TOKENS * 2, result.cachedTokens)
+        assertEquals(OPEN_AI_OUTPUT_TOKENS * 2, result.outputTokens)
+        assertTrue(openAi.tagRequest.input.contains("비 오는 출근길"))
+        assertTrue(openAi.canonicalRequest.input.contains("비 오는 출근길"))
+        assertFalse(openAi.tagRequest.input.contains("hasSelectedNeedTag"))
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.tagRequest.model)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.canonicalRequest.model)
+        assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.tagRequest.promptCacheKey)
+        assertEquals("user-canonical-intent-v1-gpt-5-mini", openAi.canonicalRequest.promptCacheKey)
+        assertEquals("24h", openAi.tagRequest.promptCacheRetention)
+        assertEquals(160, openAi.canonicalRequest.maxOutputTokens)
         assertTrue(
-            openAi.lastRequest.text.format
+            openAi.tagRequest.text.format
                 .toString()
                 .contains("CONTEXT_RAIN"),
         )
-        assertTrue(openAi.lastRequest.input.contains("EMOTION_ANXIOUS"))
-        assertFalse(openAi.lastRequest.input.contains("EMOTION_OTHER_RANGE"))
-        assertFalse(openAi.lastRequest.input.contains("\"label\""))
+        assertTrue(openAi.tagRequest.input.contains("EMOTION_ANXIOUS"))
+        assertFalse(openAi.tagRequest.input.contains("EMOTION_OTHER_RANGE"))
+        assertFalse(openAi.tagRequest.input.contains("\"label\""))
+        assertFalse(openAi.canonicalRequest.input.contains("EMOTION_ANXIOUS"))
     }
 
     @Test
     fun `사용자가 선택한 태그는 LLM prompt payload에 포함하지 않는다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         service.analyze(
@@ -84,18 +89,20 @@ class OpenAiUserInputAnalysisServiceTest {
             ),
         )
 
-        assertFalsePromptContainsSelectedTags(openAi.lastRequest.input)
-        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
+        assertFalsePromptContainsSelectedTags(openAi.tagRequest.input)
+        assertFalse(openAi.tagRequest.input.contains("hasSelectedNeedTag"))
+        assertFalse(openAi.tagRequest.input.contains("NEED_COMFORT"))
+        assertFalse(openAi.tagRequest.text.format.toString().contains("needTagCandidates"))
     }
 
     @Test
     fun `allowedTags는 사용자 입력보다 앞에 배치한다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         service.analyze(recommendationInput(feelingText = "비 오는 출근길에 마음이 불안해"))
 
-        val prompt = openAi.lastRequest.input
+        val prompt = openAi.tagRequest.input
         val stableTagIndex = prompt.indexOf("[허용 태그 목록]")
         val userInputIndex = prompt.indexOf("[분석 대상 사용자 입력]")
 
@@ -110,7 +117,7 @@ class OpenAiUserInputAnalysisServiceTest {
 
     @Test
     fun `needTag가 있고 diaryText가 짧아도 LLM을 호출한다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         val result =
@@ -123,14 +130,15 @@ class OpenAiUserInputAnalysisServiceTest {
             )
 
         requireNotNull(result)
-        assertTrue(openAi.lastRequest.input.contains("오늘 힘들다"))
-        assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
-        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
+        assertTrue(openAi.tagRequest.input.contains("오늘 힘들다"))
+        assertFalse(openAi.tagRequest.input.contains("hasSelectedNeedTag"))
+        assertFalse(openAi.tagRequest.input.contains("NEED_COMFORT"))
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.tagRequest.model)
     }
 
     @Test
     fun `needTag가 있어도 diaryText가 충분하면 LLM을 호출한다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         val result =
@@ -143,13 +151,14 @@ class OpenAiUserInputAnalysisServiceTest {
             )
 
         requireNotNull(result)
-        assertTrue(openAi.lastRequest.input.contains("비 오는 출근길"))
-        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
+        assertTrue(openAi.tagRequest.input.contains("비 오는 출근길"))
+        assertFalse(openAi.tagRequest.text.format.toString().contains("needTagCandidates"))
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.tagRequest.model)
     }
 
     @Test
     fun `diaryText 길이와 관계없이 mini 모델을 사용한다`() {
-        val openAi = openAiResponsesClient(outputText = outputText)
+        val openAi = openAiResponsesClient()
         val service = service(client = openAi.client)
 
         val result =
@@ -162,7 +171,7 @@ class OpenAiUserInputAnalysisServiceTest {
             )
 
         requireNotNull(result)
-        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
+        assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.tagRequest.model)
     }
 
     @Test
@@ -189,25 +198,28 @@ class OpenAiUserInputAnalysisServiceTest {
                 "회사에서 실수한 일이 계속 떠오르고 관계도 어색해져서 마음을 정리하고 싶다. " +
                 "집에 돌아와서도 그 장면이 반복해서 떠올라 쉽게 잠들 수 없었다."
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 14, 0, 0)
-        val outputText: String =
+        val canonicalOutputText: String =
+            """
+            {
+              "canonicalIntent": "비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다"
+            }
+            """.trimIndent()
+        val tagOutputText: String =
             """
             {
               "intentType": "CONTEXT_BASED",
-              "canonicalIntent": "비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다",
               "emotionTagCandidates": [],
               "needTagCandidates": [
                 {
                   "tagCode": "NEED_COMFORT",
-                  "source": "FEELING_TEXT",
-                  "priority": "PRIMARY"
+                  "source": "FEELING_TEXT"
                 }
               ],
               "situationTagCandidates": [],
               "contextTagCandidates": [
                 {
                   "tagCode": "CONTEXT_RAIN",
-                  "source": "FEELING_TEXT",
-                  "priority": "PRIMARY"
+                  "source": "FEELING_TEXT"
                 }
               ],
               "roleTagCandidates": []
@@ -217,17 +229,21 @@ class OpenAiUserInputAnalysisServiceTest {
         fun service(client: OpenAiResponsesClient): OpenAiUserInputAnalysisService =
             OpenAiUserInputAnalysisService(
                 tagRepository = TagRepository(dslWithTags()),
-                requestBuilder = UserInputParseRequestBuilder(JsonMapper.builder().build()),
-                outputParser =
+                canonicalRequestBuilder = UserCanonicalIntentRequestBuilder(JsonMapper.builder().build()),
+                canonicalOutputParser = UserCanonicalIntentOutputParser(JsonMapper.builder().build()),
+                tagRequestBuilder = UserInputParseRequestBuilder(JsonMapper.builder().build()),
+                tagOutputParser =
                     UserInputParseOutputParser(
                         objectMapper = JsonMapper.builder().build(),
                         tagCandidateMapper = UserInputTagCandidateMapper(),
                     ),
                 openAiResponsesClient = client,
+                analysisExecutor = java.util.concurrent.Executor { command -> command.run() },
             )
 
         fun openAiResponsesClient(
-            outputText: String = "",
+            canonicalResponseText: String = canonicalOutputText,
+            tagResponseText: String = tagOutputText,
             exception: RuntimeException? = null,
         ): OpenAiResponsesClientStub {
             val stub = OpenAiResponsesClientStub()
@@ -238,10 +254,11 @@ class OpenAiUserInputAnalysisServiceTest {
                     }
 
                     stub.lastRequest = invocation.getArgument(0)
+                    stub.requests.add(stub.lastRequest)
 
                     exception?.let { throw it }
                     OpenAiTextResponse(
-                        outputText = outputText,
+                        outputText = stub.lastRequest.outputText(canonicalResponseText, tagResponseText),
                         inputTokens = OPEN_AI_INPUT_TOKENS,
                         cachedTokens = OPEN_AI_CACHED_TOKENS,
                         outputTokens = OPEN_AI_OUTPUT_TOKENS,
@@ -255,8 +272,30 @@ class OpenAiUserInputAnalysisServiceTest {
         class OpenAiResponsesClientStub(
             var lastRequest: OpenAiResponsesRequest = emptyOpenAiResponsesRequest(),
         ) {
+            val requests: MutableList<OpenAiResponsesRequest> = mutableListOf()
             lateinit var client: OpenAiResponsesClient
+
+            val canonicalRequest: OpenAiResponsesRequest
+                get() = requestBySchemaName("user_canonical_intent")
+
+            val tagRequest: OpenAiResponsesRequest
+                get() = requestBySchemaName("user_input_parse")
+
+            private fun requestBySchemaName(schemaName: String): OpenAiResponsesRequest =
+                requests.first { request -> request.schemaName() == schemaName }
         }
+
+        fun OpenAiResponsesRequest.outputText(
+            canonicalOutputText: String,
+            tagOutputText: String,
+        ): String =
+            when (schemaName()) {
+                "user_canonical_intent" -> canonicalOutputText
+                "user_input_parse" -> tagOutputText
+                else -> ""
+            }
+
+        fun OpenAiResponsesRequest.schemaName(): String? = text.format["name"]?.toString()
 
         fun emptyOpenAiResponsesRequest(): OpenAiResponsesRequest =
             OpenAiResponsesRequest(

@@ -8,6 +8,17 @@ import org.junit.jupiter.api.Test
 
 class UserInputParseSchemaTest {
     @Test
+    fun `canonical schema는 canonicalIntent만 필수로 둔다`() {
+        val schemaBody = userCanonicalIntentSchema()["schema"] as Map<*, *>
+        val required = schemaBody["required"] as List<*>
+        val properties = schemaBody["properties"] as Map<*, *>
+
+        assertTrue(required.contains("canonicalIntent"))
+        assertTrue(properties.containsKey("canonicalIntent"))
+        assertFalse(properties.containsKey("needTagCandidates"))
+    }
+
+    @Test
     fun `schema는 mood와 avoid를 반환 대상에 포함하지 않는다`() {
         val schema = userInputParseSchema(tagGroups).toString()
 
@@ -22,14 +33,13 @@ class UserInputParseSchemaTest {
     }
 
     @Test
-    fun `schema는 canonicalIntent와 tag type별 후보 배열을 최상위 필수로 둔다`() {
+    fun `schema는 tag type별 후보 배열을 최상위 필수로 둔다`() {
         val schemaBody = userInputParseSchema(tagGroups)["schema"] as Map<*, *>
         val required = schemaBody["required"] as List<*>
 
         assertTrue(
             required.containsAll(
                 listOf(
-                    "canonicalIntent",
                     "needTagCandidates",
                     "situationTagCandidates",
                     "contextTagCandidates",
@@ -39,6 +49,7 @@ class UserInputParseSchemaTest {
             ),
         )
         assertTrue(required.indexOf("roleTagCandidates") < required.indexOf("emotionTagCandidates"))
+        assertFalse(required.contains("canonicalIntent"))
         assertFalse(required.contains("intentType"))
         assertFalse(required.contains("tagCandidates"))
         assertFalse(required.contains("quoteId"))
@@ -56,37 +67,35 @@ class UserInputParseSchemaTest {
     }
 
     @Test
-    fun `emotion 후보 priority는 primary를 허용하지 않는다`() {
-        val priorityEnum = priorityEnumOf("emotionTagCandidates")
+    fun `tag candidate schema는 priority를 요구하지 않는다`() {
+        val itemSchema = itemSchemaOf("emotionTagCandidates")
+        val required = itemSchema["required"] as List<*>
+        val properties = itemSchema["properties"] as Map<*, *>
 
-        assertFalse(priorityEnum.contains("PRIMARY"))
-        assertTrue(priorityEnum.contains("SECONDARY"))
-        assertTrue(priorityEnum.contains("BACKGROUND"))
+        assertFalse(required.contains("priority"))
+        assertFalse(properties.containsKey("priority"))
     }
 
     @Test
-    fun `need 후보 priority는 primary를 허용한다`() {
-        val priorityEnum = priorityEnumOf("needTagCandidates")
+    fun `need tag group이 없으면 need 후보 필드를 요구하지 않는다`() {
+        val schemaBody = userInputParseSchema(tagGroups - TagType.NEED)["schema"] as Map<*, *>
+        val required = schemaBody["required"] as List<*>
+        val properties = schemaBody["properties"] as Map<*, *>
 
-        assertTrue(priorityEnum.contains("PRIMARY"))
+        assertFalse(required.contains("needTagCandidates"))
+        assertFalse(properties.containsKey("needTagCandidates"))
     }
 
     @Test
-    fun `tag candidate schema는 confidence를 요구하지 않는다`() {
+    fun `tag candidate schema는 confidence와 priority를 요구하지 않는다`() {
         val itemSchema = itemSchemaOf("needTagCandidates")
         val required = itemSchema["required"] as List<*>
         val properties = itemSchema["properties"] as Map<*, *>
 
         assertFalse(required.contains("confidence"))
+        assertFalse(required.contains("priority"))
         assertFalse(properties.containsKey("confidence"))
-    }
-
-    private fun priorityEnumOf(fieldName: String): List<*> {
-        val itemSchema = itemSchemaOf(fieldName)
-        val itemProperties = itemSchema["properties"] as Map<*, *>
-        val prioritySchema = itemProperties["priority"] as Map<*, *>
-
-        return prioritySchema["enum"] as List<*>
+        assertFalse(properties.containsKey("priority"))
     }
 
     private fun itemSchemaOf(fieldName: String): Map<*, *> {

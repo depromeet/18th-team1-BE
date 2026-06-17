@@ -4,9 +4,14 @@ import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
+import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
+import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 
 private const val RECOMMENDATION_RESULT_QUOTE_COUNT = 10
 
@@ -16,15 +21,19 @@ class RecommendationEngine(
     private val userInputAnalysisService: UserInputAnalysisService,
     private val effectiveTagBuilder: EffectiveTagBuilder,
     private val prefetcher: RecommendationEnginePrefetcher,
+    private val semanticProvider: RecommendationSemanticProvider,
     private val resultComposer: RecommendationResultComposer,
+    @Qualifier(RECOMMENDATION_ANALYSIS_EXECUTOR_NAME) private val analysisExecutor: Executor,
 ) {
     fun recommend(
         userId: Long,
         request: RecommendationRequest,
     ): RecommendationResult {
         val input = buildInput(userId, request)
+        val analysisTask = userInputAnalysisService.start(input)
+        val userEmbedding = startUserEmbedding(input, analysisTask)
         val prefetch = prefetcher.start(effectiveTagBuilder.build(input))
-        val analyzedInput = input.withAnalysis()
+        val analyzedInput = input.withAnalysis(analysisTask.await())
         val effectiveTags = effectiveTagBuilder.build(analyzedInput)
         val result =
             resultComposer.compose(
@@ -33,6 +42,7 @@ class RecommendationEngine(
                 candidates = prefetch.candidates(),
                 moodTagIdByCode = prefetch.moodTagIdByCode(),
                 tagRarityWeights = prefetch.tagRarityWeights(),
+                userEmbedding = userEmbedding.awaitResult(),
             ) ?: notEnoughQuotes()
 
         return result
@@ -60,10 +70,20 @@ class RecommendationEngine(
         )
     }
 
-    private fun RecommendationInput.withAnalysis(): RecommendationInput =
-        copy(
-            analysis = userInputAnalysisService.analyze(this),
-        )
+    private fun RecommendationInput.withAnalysis(analysis: UserInputAnalysis?): RecommendationInput =
+        copy(analysis = analysis)
+
+    private fun startUserEmbedding(
+        input: RecommendationInput,
+        analysisTask: UserInputAnalysisTask,
+    ): CompletableFuture<UserSemanticEmbedding?> =
+        analysisTask
+            .canonicalAnalysis()
+            .thenApplyAsync(
+                { analysis -> analysis?.let { semanticProvider.prepare(input.copy(analysis = it)) } },
+                analysisExecutor,
+            )
+            .exceptionally { null }
 }
 
 private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
