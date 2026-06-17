@@ -33,7 +33,7 @@ class RecommendationEngine(
         val analysisTask = userInputAnalysisService.start(input)
         val userEmbedding = startUserEmbedding(input, analysisTask)
         val prefetch = prefetcher.start(effectiveTagBuilder.build(input))
-        val analyzedInput = input.withAnalysis(analysisTask.await())
+        val analyzedInput = input.copy(analysis = analysisTask.await())
         val effectiveTags = effectiveTagBuilder.build(analyzedInput)
         val result =
             resultComposer.compose(
@@ -70,9 +70,6 @@ class RecommendationEngine(
         )
     }
 
-    private fun RecommendationInput.withAnalysis(analysis: UserInputAnalysis?): RecommendationInput =
-        copy(analysis = analysis)
-
     private fun startUserEmbedding(
         input: RecommendationInput,
         analysisTask: UserInputAnalysisTask,
@@ -82,8 +79,7 @@ class RecommendationEngine(
             .thenApplyAsync(
                 { analysis -> analysis?.let { semanticProvider.prepare(input.copy(analysis = it)) } },
                 analysisExecutor,
-            )
-            .exceptionally { null }
+            ).exceptionally { null }
 }
 
 private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }

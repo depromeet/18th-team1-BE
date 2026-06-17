@@ -153,9 +153,11 @@ class RecommendationEngineTest {
 
         fun emotionService(): EmotionService =
             Mockito.mock(EmotionService::class.java).apply {
-                Mockito.`when`(getEmotionRangeByValue(EMOTION_VALUE))
+                Mockito
+                    .`when`(getEmotionRangeByValue(EMOTION_VALUE))
                     .thenReturn(EmotionRange(EMOTION_RANGE_ID, EmotionRangeName.SAD, 1, 3))
-                Mockito.`when`(getEmotionTagsAndNeedTagByIds(listOf(EMOTION_TAG_ID)))
+                Mockito
+                    .`when`(getEmotionTagsAndNeedTagByIds(listOf(EMOTION_TAG_ID)))
                     .thenReturn(listOf(emotionTag()) to null)
             }
 

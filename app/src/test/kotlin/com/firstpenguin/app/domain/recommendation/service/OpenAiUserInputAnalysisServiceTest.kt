@@ -92,7 +92,11 @@ class OpenAiUserInputAnalysisServiceTest {
         assertFalsePromptContainsSelectedTags(openAi.tagRequest.input)
         assertFalse(openAi.tagRequest.input.contains("hasSelectedNeedTag"))
         assertFalse(openAi.tagRequest.input.contains("NEED_COMFORT"))
-        assertFalse(openAi.tagRequest.text.format.toString().contains("needTagCandidates"))
+        assertFalse(
+            openAi.tagRequest.text.format
+                .toString()
+                .contains("needTagCandidates"),
+        )
     }
 
     @Test
@@ -152,7 +156,11 @@ class OpenAiUserInputAnalysisServiceTest {
 
         requireNotNull(result)
         assertTrue(openAi.tagRequest.input.contains("비 오는 출근길"))
-        assertFalse(openAi.tagRequest.text.format.toString().contains("needTagCandidates"))
+        assertFalse(
+            openAi.tagRequest.text.format
+                .toString()
+                .contains("needTagCandidates"),
+        )
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.tagRequest.model)
     }
 
