@@ -25,7 +25,7 @@ data class DiscoveryQuoteResponse(
     val author: String,
     @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover-placeholder.png")
     val bookCoverImageUrl: String,
-    @field:Schema(description = "책 장르", example = "한국소설", nullable = true)
+    @field:Schema(description = "책 장르", example = "일반문학", nullable = true)
     val genre: String?,
     @field:Schema(description = "추천 당시 선택한 NEED 태그. 선택 태그가 없으면 null", nullable = true)
     val needTag: DiscoveryNeedTagResponse?,
