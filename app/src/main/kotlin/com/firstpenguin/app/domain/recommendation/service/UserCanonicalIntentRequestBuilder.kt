@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper
 private const val OPENAI_REASONING_EFFORT = "low"
 private const val OPENAI_TEXT_VERBOSITY = "low"
 private const val OPENAI_PROMPT_CACHE_RETENTION = "24h"
-private const val CANONICAL_INTENT_MAX_OUTPUT_TOKENS = 160
+private const val CANONICAL_INTENT_MAX_OUTPUT_TOKENS = 768
 private const val CANONICAL_INTENT_PROMPT_CACHE_KEY_PREFIX = "user-canonical-intent-v1"
 
 private val USER_CANONICAL_INTENT_PROMPT_GUIDE =
