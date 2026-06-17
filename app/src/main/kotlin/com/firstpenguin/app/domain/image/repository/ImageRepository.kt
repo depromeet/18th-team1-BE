@@ -23,20 +23,6 @@ class ImageRepository(
             dsl.selectOne().from(ImageTable.IMAGES).where(ImageTable.ID.eq(id)),
         )
 
-    fun findUrlsByOwnerTypeAndOwnerId(
-        ownerType: ImageOwner,
-        ownerId: Long,
-    ): List<String> =
-        dsl
-            .select(ImageTable.URL)
-            .from(ImageTable.IMAGES)
-            .join(ImageOwnerTable.IMAGE_OWNERS)
-            .on(ImageTable.ID.eq(ImageOwnerTable.IMAGE_ID))
-            .where(ImageOwnerTable.OWNER_TYPE.eq(ownerType.name))
-            .and(ImageOwnerTable.OWNER_ID.eq(ownerId))
-            .orderBy(ImageOwnerTable.SORT_ORDER.asc())
-            .fetch(ImageTable.URL)
-
     fun save(url: String): Long =
         dsl
             .insertInto(ImageTable.IMAGES, ImageTable.URL)

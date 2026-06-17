@@ -12,6 +12,10 @@ private const val RANDOM_PICK_MAX_ATTEMPTS = 100
 class QuoteService(
     private val quoteRepository: QuoteRepository,
 ) {
+    fun findQuoteById(id: Long): Quote =
+        quoteRepository.findQuoteById(id)
+            ?: throw CustomException(ErrorCode.QUOTE_NOT_FOUND)
+
     fun getRandomQuote(): Quote = getRandomQuoteExcludingIds(emptyList())
 
     fun getRandomQuoteExcludingIds(excludedQuoteIds: List<Long>): Quote =
@@ -41,10 +45,6 @@ class QuoteService(
 
         throw CustomException(ErrorCode.NOT_ENOUGH_QUOTES)
     }
-
-    fun findQuoteById(id: Long) =
-        quoteRepository.findQuoteById(id)
-            ?: throw CustomException(ErrorCode.QUOTE_NOT_FOUND)
 
     private fun findRandomQuoteExcludingIds(excludedQuoteIds: Set<Long>): Quote? {
         val maxQuoteId = quoteRepository.getMaxQuoteId()

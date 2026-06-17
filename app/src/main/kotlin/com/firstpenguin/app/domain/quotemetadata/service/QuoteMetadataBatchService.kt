@@ -12,8 +12,6 @@ import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
 import com.firstpenguin.app.domain.quotemetadata.repository.QuoteMetadataRepository
 import com.firstpenguin.app.global.enums.BatchItemStatus
 import com.firstpenguin.app.global.enums.TagType
-import com.firstpenguin.app.global.exception.CustomException
-import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
 
 @Service
@@ -47,6 +45,11 @@ class QuoteMetadataBatchService(
         status = status,
     )
 
+    fun updateSubmittedCount(
+        jobId: Long,
+        submittedCount: Int,
+    ) = quoteBatchJobRepository.updateQuoteBatchJobSubmittedCount(jobId, submittedCount)
+
     fun markQuoteMetadataBatchSubmitted(
         jobId: Long,
         batch: OpenAiBatchResponse,
@@ -77,14 +80,7 @@ class QuoteMetadataBatchService(
         )
     }
 
-    fun validateNoRunningJob() {
-        if (quoteBatchJobRepository.isRunningQuoteBatchJob(RUNNING_BLOCKED_JOB_TYPES)) {
-            throw CustomException(ErrorCode.QUOTE_BATCH_JOB_IS_RUNNING)
-        }
-    }
-
     private companion object {
         const val QUOTE_CUSTOM_ID_PREFIX = "quote"
-        private val RUNNING_BLOCKED_JOB_TYPES = QuoteBatchType.entries.toList()
     }
 }

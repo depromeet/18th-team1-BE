@@ -1,13 +1,13 @@
 package com.firstpenguin.app.domain.home.useCase
 
 import com.firstpenguin.app.domain.book.service.BookService
-import com.firstpenguin.app.domain.diary.service.DiaryService
 import com.firstpenguin.app.domain.home.dto.HomeSummaryResponse
-import com.firstpenguin.app.domain.home.dto.MonthlyDiaryResponse
+import com.firstpenguin.app.domain.home.dto.MonthlyRecommendationResponse
 import com.firstpenguin.app.domain.home.dto.TodayStatusResponse
 import com.firstpenguin.app.domain.quote.dto.QuoteResponse
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quote.service.QuoteService
+import com.firstpenguin.app.domain.recommendation.model.Recommendation
 import com.firstpenguin.app.domain.recommendation.service.RecommendationService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +19,6 @@ private const val RANDOM_QUOTE_COUNT = 10
 class HomeUseCase(
     private val quoteService: QuoteService,
     private val bookService: BookService,
-    private val diaryService: DiaryService,
     private val recommendationService: RecommendationService,
 ) {
     @Transactional(readOnly = true)
@@ -28,15 +27,20 @@ class HomeUseCase(
         val monthStart = today.withDayOfMonth(1)
         val monthEnd = today.withDayOfMonth(today.lengthOfMonth())
 
-        val monthlyDiaries = diaryService.findByPeriod(userId = userId, start = monthStart, end = monthEnd)
-        val responses = monthlyDiaries.map(MonthlyDiaryResponse::from)
-        val todayDiary = responses.firstOrNull { it.createdAt == today }
-        val totalDiaryCount = diaryService.countByUserId(userId)
+        val monthlyRecommendations =
+            recommendationService.findCompletedByUserIdAndRecommendationDateBetween(
+                userId = userId,
+                start = monthStart,
+                end = monthEnd,
+            )
+        val responses = monthlyRecommendations.map(::toMonthlyRecommendationResponse)
+        val todayRecommendations = responses.filter { response -> response.createdAt == today }
+        val totalRecommendationCount = recommendationService.countCompletedByUserId(userId)
 
         return HomeSummaryResponse(
-            todayDiary = todayDiary,
-            monthlyDiaries = responses,
-            totalDiaryCount = totalDiaryCount,
+            todayRecommendations = todayRecommendations,
+            monthlyRecommendations = responses,
+            totalRecommendationCount = totalRecommendationCount,
         )
     }
 
@@ -53,16 +57,31 @@ class HomeUseCase(
 
     @Transactional(readOnly = true)
     fun getTodayStatus(userId: Long): TodayStatusResponse {
-        val dailyRecommendation = recommendationService.findByUserIdAndRecommendationDate(userId)
-        val hasTodayDiary = diaryService.hasTodayDiary(userId)
+        val today = LocalDate.now()
+        val todayRecommendations =
+            recommendationService.findByUserIdAndRecommendationDateBetween(
+                userId = userId,
+                start = today,
+                end = today,
+            )
+        val ongoingRecommendation = todayRecommendations.lastOrNull { recommendation -> recommendation.quoteId == null }
+        val canCreateTodayRecommendation =
+            !recommendationService.hasReachedRecommendationLimit(todayRecommendations.size)
 
         return TodayStatusResponse(
-            hasTodayRecommendation = dailyRecommendation != null,
-            hasTodayDiary = hasTodayDiary,
-            dailyRecommendationId =
-                dailyRecommendation
-                    ?.takeIf { !hasTodayDiary }
-                    ?.id,
+            hasOngoingRecommendation = ongoingRecommendation != null,
+            ongoingRecommendationId = ongoingRecommendation?.id,
+            canCreateTodayRecommendation = canCreateTodayRecommendation,
+        )
+    }
+
+    private fun toMonthlyRecommendationResponse(recommendation: Recommendation): MonthlyRecommendationResponse {
+        val quoteId = checkNotNull(recommendation.quoteId)
+        val quote = quoteService.findQuoteById(quoteId)
+
+        return MonthlyRecommendationResponse.from(
+            recommendation = recommendation,
+            quote = quote,
         )
     }
 

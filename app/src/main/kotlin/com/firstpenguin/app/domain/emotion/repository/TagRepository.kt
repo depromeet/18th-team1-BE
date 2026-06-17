@@ -53,8 +53,23 @@ class TagRepository(
             ).fetch(::toTag)
     }
 
-    fun getNeedTagsByTagIdsIn(tagIds: List<Long>): List<Tag> {
-        if (tagIds.isEmpty()) return emptyList()
+    fun getNeedTagByTagId(tagId: Long?): Tag? {
+        if (tagId == null) return null
+
+        return dsl
+            .select(tagFields())
+            .from(TagTable.TAGS)
+            .where(
+                TagTable.ID
+                    .eq(tagId)
+                    .and(TagTable.TYPE.eq(TagType.NEED.name))
+                    .and(TagTable.EMOTION_RANGE_ID.isNull)
+                    .and(TagTable.IS_ACTIVE.isTrue),
+            ).fetchOne(::toTag)
+    }
+
+    fun getNeedTagByTagIdsIn(tagIds: List<Long>): Tag? {
+        if (tagIds.isEmpty()) return null
 
         return dsl
             .select(tagFields())
@@ -65,7 +80,8 @@ class TagRepository(
                     .and(TagTable.TYPE.eq(TagType.NEED.name))
                     .and(TagTable.EMOTION_RANGE_ID.isNull)
                     .and(TagTable.IS_ACTIVE.isTrue),
-            ).fetch(::toTag)
+            ).limit(1)
+            .fetchOne(::toTag)
     }
 
     fun getActiveTagsByType(): Map<TagType, List<TagOption>> =
@@ -86,6 +102,7 @@ class TagRepository(
         Tag(
             id = record[TagTable.ID]!!,
             emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
+            code = record[TagTable.CODE]!!,
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
             createdAt = record[TagTable.CREATED_AT]!!,
@@ -104,6 +121,7 @@ class TagRepository(
         listOf(
             TagTable.ID,
             TagTable.EMOTION_RANGE_ID,
+            TagTable.CODE,
             TagTable.LABEL,
             TagTable.TYPE,
             TagTable.CREATED_AT,

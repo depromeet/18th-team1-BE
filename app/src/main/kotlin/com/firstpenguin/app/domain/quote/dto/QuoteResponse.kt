@@ -10,6 +10,7 @@ data class QuoteResponse(
     val title: String,
     val author: String,
     val image: String,
+    val link: String,
 ) {
     companion object {
         fun from(
@@ -23,6 +24,7 @@ data class QuoteResponse(
                 title = book.title,
                 author = book.author,
                 image = book.coverImageUrl,
+                link = book.aladinLink,
             )
     }
 }

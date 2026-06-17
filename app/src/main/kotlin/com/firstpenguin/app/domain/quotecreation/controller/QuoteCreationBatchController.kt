@@ -28,7 +28,23 @@ class QuoteCreationBatchController(
         @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
     ): ResponseEntity<QuoteCreationBatchStatusResponse> =
         ResponseEntity.ok(
-            quoteCreationBatchUseCase.getStatus(adminSecret = adminSecret),
+            quoteCreationBatchUseCase.getTotalStatus(adminSecret = adminSecret),
+        )
+
+    @Operation(
+        summary = "추천 문장 생성 배치 단건 처리 현황 조회 API",
+        description = "지정한 추천 문장 추출/후보 검수 배치의 OpenAI 상태를 동기화한 뒤 처리 현황을 보여준다.",
+    )
+    @GetMapping("/{jobId}/status")
+    fun getQuoteBatchStatusByJobId(
+        @PathVariable jobId: Long,
+        @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
+    ): ResponseEntity<QuoteCreationBatchStatusResponse> =
+        ResponseEntity.ok(
+            quoteCreationBatchUseCase.getStatus(
+                adminSecret = adminSecret,
+                jobId = jobId,
+            ),
         )
 
     @Operation(

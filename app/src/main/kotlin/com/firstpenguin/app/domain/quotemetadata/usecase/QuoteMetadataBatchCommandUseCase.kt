@@ -22,8 +22,6 @@ class QuoteMetadataBatchCommandUseCase(
 ) {
     @Transactional
     fun prepareBatch(limit: Int): PreparedQuoteMetadataBatch {
-        quoteMetadataBatchService.validateNoRunningJob()
-
         val pendingQuotes = quoteMetadataBatchService.getPendingQuotes(limit = limit)
         if (pendingQuotes.isEmpty()) {
             throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
@@ -31,20 +29,32 @@ class QuoteMetadataBatchCommandUseCase(
 
         val jobId =
             quoteMetadataBatchService.createPreparingQuoteMetadataBatchJob(
-                submittedCount = pendingQuotes.size,
+                submittedCount = INITIAL_SUBMITTED_COUNT,
             )
 
-        quoteMetadataBatchService.createQuoteMetadataBatchItem(
-            jobId = jobId,
-            quoteIds = pendingQuotes.map { quote -> quote.id },
-            status = BatchItemStatus.PREPARING,
-        )
+        val claimedQuoteIds = createBatchItems(jobId, pendingQuotes)
+        val claimedQuotes = pendingQuotes.filter { quote -> quote.id in claimedQuoteIds }
+        if (claimedQuotes.isEmpty()) {
+            throw CustomException(ErrorCode.QUOTE_METADATA_BATCH_TARGET_NOT_FOUND)
+        }
 
+        quoteMetadataBatchService.updateSubmittedCount(jobId, claimedQuotes.size)
         return PreparedQuoteMetadataBatch(
             jobId = jobId,
-            quotes = pendingQuotes,
+            quotes = claimedQuotes,
         )
     }
+
+    private fun createBatchItems(
+        jobId: Long,
+        pendingQuotes: List<Quote>,
+    ): Set<Long> =
+        quoteMetadataBatchService
+            .createQuoteMetadataBatchItem(
+                jobId = jobId,
+                quoteIds = pendingQuotes.map { quote -> quote.id },
+                status = BatchItemStatus.PREPARING,
+            ).toSet()
 
     @Transactional
     fun markBatchSubmitted(
@@ -97,3 +107,5 @@ data class PreparedQuoteMetadataBatch(
     val jobId: Long,
     val quotes: List<Quote>,
 )
+
+private const val INITIAL_SUBMITTED_COUNT = 0

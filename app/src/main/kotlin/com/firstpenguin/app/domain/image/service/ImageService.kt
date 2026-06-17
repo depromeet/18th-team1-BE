@@ -24,11 +24,6 @@ class ImageService(
         if (!imageRepository.existsById(id)) throw CustomException(ErrorCode.IMAGE_NOT_FOUND)
     }
 
-    fun findUrlsByOwnerIdAndOwnerType(
-        ownerType: ImageOwner,
-        ownerId: Long,
-    ): List<String> = imageRepository.findUrlsByOwnerTypeAndOwnerId(ownerType, ownerId)
-
     fun issue(
         type: ImageType,
         contentType: String,
