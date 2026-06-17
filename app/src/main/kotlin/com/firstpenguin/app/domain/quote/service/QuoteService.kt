@@ -16,6 +16,9 @@ class QuoteService(
         quoteRepository.findQuoteById(id)
             ?: throw CustomException(ErrorCode.QUOTE_NOT_FOUND)
 
+    fun findBookCoverImageUrlsByQuoteIds(quoteIds: List<Long>): Map<Long, String> =
+        quoteRepository.findBookCoverImageUrlsByQuoteIds(quoteIds)
+
     fun getRandomQuote(): Quote = getRandomQuoteExcludingIds(emptyList())
 
     fun getRandomQuoteExcludingIds(excludedQuoteIds: List<Long>): Quote =
