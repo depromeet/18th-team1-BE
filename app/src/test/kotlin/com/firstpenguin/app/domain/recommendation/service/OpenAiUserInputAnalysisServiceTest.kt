@@ -59,6 +59,7 @@ class OpenAiUserInputAnalysisServiceTest {
         assertFalse(openAi.lastRequest.input.contains("hasSelectedNeedTag"))
         assertEquals(USER_INPUT_ANALYSIS_MODEL, openAi.lastRequest.model)
         assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.lastRequest.promptCacheKey)
+        assertEquals("24h", openAi.lastRequest.promptCacheRetention)
         assertTrue(
             openAi.lastRequest.text.format
                 .toString()
