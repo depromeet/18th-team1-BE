@@ -37,7 +37,7 @@ class MetadataScorer(
                 contextScore = contextScore,
                 situationScore = situationScore,
                 moodScore = moodScore,
-            )
+            ) * missingEmotionPenalty(effectiveTags, emotionScore)
 
         return RecommendationScoreBreakdown(
             needScore = needScore,
@@ -104,11 +104,24 @@ class MetadataScorer(
         return scores.entries.sumOf { (type, score) -> score * (weights[type] ?: NO_WEIGHT) }
     }
 
+    private fun missingEmotionPenalty(
+        effectiveTags: List<EffectiveTag>,
+        emotionScore: Double,
+    ): Double =
+        when {
+            emotionScore > NO_SCORE -> NO_PENALTY
+            effectiveTags.none { tag -> tag.type == TagType.EMOTION } -> NO_PENALTY
+            else -> MISSING_EMOTION_PENALTY
+        }
+
     private fun RecommendationCandidate.tagIds(tagType: TagType): Set<Long> = tagIdsByType[tagType].orEmpty()
 
     private companion object {
         const val DEFAULT_SEMANTIC_SCORE = 0.0
         const val DEFAULT_FINAL_SCORE = 0.0
         const val NO_WEIGHT = 0.0
+        const val NO_SCORE = 0.0
+        const val NO_PENALTY = 1.0
+        const val MISSING_EMOTION_PENALTY = 0.5
     }
 }
