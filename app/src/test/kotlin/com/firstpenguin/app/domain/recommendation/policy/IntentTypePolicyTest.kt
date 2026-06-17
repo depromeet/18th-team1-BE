@@ -61,6 +61,7 @@ class IntentTypePolicyTest {
     private fun recommendationInput(): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,
+            emotionValue = EMOTION_VALUE,
             emotionRangeId = EMOTION_RANGE_ID,
             emotionTags = listOf(tag(TagType.EMOTION)),
             needTag = tag(TagType.NEED),
@@ -89,6 +90,7 @@ class IntentTypePolicyTest {
     private companion object {
         const val USER_ID = 1L
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 16, 0, 0)
     }
 }

@@ -77,7 +77,7 @@ class RecommendationCommandUseCase(
             userId = userId,
             feelingText = request.feelingText.normalizedText(),
             diaryText = request.diaryText,
-            emotionRangeId = request.emotionRangeId,
+            emotionValue = request.emotionValue,
         )
 
     private fun saveRecommendationAnalysisLogAfterCommit(

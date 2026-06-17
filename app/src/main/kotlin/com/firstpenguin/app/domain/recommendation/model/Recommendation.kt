@@ -11,6 +11,7 @@ data class Recommendation(
     val recommendationDate: LocalDate,
     val feelingText: String?,
     val diaryText: String?,
+    val emotionValue: Int,
     val emotionRangeId: Long,
     val emotionRangeName: EmotionRangeName,
     val createdAt: LocalDateTime,

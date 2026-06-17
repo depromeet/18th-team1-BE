@@ -38,12 +38,12 @@ class RecommendationController(
     )
     @PostMapping("/quotes")
     fun recommendationQuote(
-        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+//        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @Valid @RequestBody request: RecommendationRequest,
     ): ResponseEntity<RecommendationResponse> =
         ResponseEntity.ok(
             recommendationUseCase.recommendQuote(
-                userId = authenticatedUser.id,
+                userId = 9001L,
                 request = request,
             ),
         )
