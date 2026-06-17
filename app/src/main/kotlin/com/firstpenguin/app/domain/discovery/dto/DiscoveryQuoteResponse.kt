@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.discovery.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.firstpenguin.app.domain.discovery.model.DiscoveryNeedTag
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
@@ -23,6 +24,8 @@ data class DiscoveryQuoteResponse(
     val bookCoverImageUrl: String,
     @field:Schema(description = "책 장르", example = "한국소설", nullable = true)
     val genre: String?,
+    @field:Schema(description = "추천 당시 선택한 NEED 태그. 선택 태그가 없으면 null", nullable = true)
+    val needTag: DiscoveryNeedTagResponse?,
     @field:Schema(description = "문장이 추천 이력에 등록된 시각", example = "2026-06-05T12:34:56")
     val recommendedAt: LocalDateTime,
     @get:JsonProperty("isScrapped")
@@ -40,8 +43,25 @@ data class DiscoveryQuoteResponse(
                 author = quote.author,
                 bookCoverImageUrl = quote.bookCoverImageUrl,
                 genre = quote.genre,
+                needTag = quote.needTag?.let(DiscoveryNeedTagResponse::from),
                 recommendedAt = quote.recommendedAt,
                 isScrapped = quote.isScrapped,
+            )
+    }
+}
+
+@Schema(description = "추천 당시 선택한 NEED 태그 응답")
+data class DiscoveryNeedTagResponse(
+    @field:Schema(description = "NEED 태그 ID", example = "49")
+    val id: Long,
+    @field:Schema(description = "NEED 태그 라벨", example = "공감해주는 문장")
+    val label: String,
+) {
+    companion object {
+        fun from(needTag: DiscoveryNeedTag): DiscoveryNeedTagResponse =
+            DiscoveryNeedTagResponse(
+                id = needTag.id,
+                label = needTag.label,
             )
     }
 }
