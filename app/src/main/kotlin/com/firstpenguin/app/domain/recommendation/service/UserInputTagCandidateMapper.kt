@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.TagCandidate
 import com.firstpenguin.app.domain.recommendation.model.TagCandidatePriority
 import com.firstpenguin.app.domain.recommendation.model.TagCandidateSource
+import com.firstpenguin.app.domain.recommendation.policy.TagCandidatePriorityPolicy
 import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
@@ -37,17 +38,13 @@ class UserInputTagCandidateMapper {
         runCatching {
             val tagCode = requiredText("tagCode")
             val source = TagCandidateSource.valueOf(requiredText("source"))
-            val priority =
-                stringOrNull("priority")
-                    ?.let(TagCandidatePriority::valueOf)
-                    ?: TagCandidatePriority.PRIMARY
             val tagOption = tagOptionByCode[tagCode] ?: return@runCatching null
 
             if (!isResolvable(tagCode, tagType, source, selectedCodes, tagOption)) {
                 return@runCatching null
             }
 
-            tagOption.toTagCandidate(input, source, priority)
+            tagOption.toTagCandidate(source, TagCandidatePriorityPolicy.resolve(input, tagType, source))
         }.getOrNull()
 
     private fun isResolvable(
@@ -63,7 +60,6 @@ class UserInputTagCandidateMapper {
             tagOption.type == tagType
 
     private fun TagOption.toTagCandidate(
-        input: RecommendationInput,
         source: TagCandidateSource,
         priority: TagCandidatePriority,
     ): TagCandidate =
@@ -73,34 +69,8 @@ class UserInputTagCandidateMapper {
             label = label,
             type = type,
             source = source,
-            priority = priority.normalized(input, type, source),
+            priority = priority,
         )
-
-    private fun TagCandidatePriority.normalized(
-        input: RecommendationInput,
-        tagType: TagType,
-        source: TagCandidateSource,
-    ): TagCandidatePriority {
-        val maxPriority =
-            when {
-                source == TagCandidateSource.DIARY_TEXT -> TagCandidatePriority.SECONDARY
-                tagType == TagType.EMOTION -> TagCandidatePriority.SECONDARY
-                tagType == TagType.NEED && input.needTag != null -> TagCandidatePriority.SECONDARY
-                else -> TagCandidatePriority.PRIMARY
-            }
-
-        return atMost(maxPriority)
-    }
-
-    private fun TagCandidatePriority.atMost(maxPriority: TagCandidatePriority): TagCandidatePriority =
-        if (rank() > maxPriority.rank()) maxPriority else this
-
-    private fun TagCandidatePriority.rank(): Int =
-        when (this) {
-            TagCandidatePriority.BACKGROUND -> BACKGROUND_RANK
-            TagCandidatePriority.SECONDARY -> SECONDARY_RANK
-            TagCandidatePriority.PRIMARY -> PRIMARY_RANK
-        }
 
     private fun RecommendationInput.selectedTagCodes(): Set<String> =
         emotionTags
@@ -122,10 +92,4 @@ class UserInputTagCandidateMapper {
         path(fieldName)
             .takeUnless { node -> node.isMissingNode || node.isNull }
             ?.asString()
-
-    private companion object {
-        const val BACKGROUND_RANK = 1
-        const val SECONDARY_RANK = 2
-        const val PRIMARY_RANK = 3
-    }
 }

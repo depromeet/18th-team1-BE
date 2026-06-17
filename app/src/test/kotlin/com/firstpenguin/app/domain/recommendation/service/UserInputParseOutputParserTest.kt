@@ -34,7 +34,7 @@ class UserInputParseOutputParserTest {
         assertEquals("SITUATION_FAILURE_MISTAKE", candidate.code)
         assertEquals(TagType.SITUATION, candidate.type)
         assertEquals(TagCandidateSource.FEELING_TEXT, candidate.source)
-        assertEquals(TagCandidatePriority.PRIMARY, candidate.priority)
+        assertEquals(TagCandidatePriority.SECONDARY, candidate.priority)
     }
 
     @Test
@@ -74,7 +74,7 @@ class UserInputParseOutputParserTest {
     }
 
     @Test
-    fun `LLM emotion 후보는 약한 보조 신호로 낮춘다`() {
+    fun `LLM emotion 후보는 제외한다`() {
         val result =
             outputParser.parse(
                 outputText(candidate("EMOTION_ANXIOUS", TagType.EMOTION)),
@@ -82,7 +82,62 @@ class UserInputParseOutputParserTest {
                 tagGroups,
             )
 
+        assertEquals(emptyList<Any>(), result.tagCandidates)
+    }
+
+    @Test
+    fun `feelingText가 있으면 diaryText 기반 supporting 후보는 background로 낮춘다`() {
+        val result =
+            outputParser.parse(
+                outputText(candidate("CONTEXT_RAIN", TagType.CONTEXT, TagCandidateSource.DIARY_TEXT)),
+                input,
+                tagGroups,
+            )
+
+        assertEquals(TagCandidatePriority.BACKGROUND, result.tagCandidates.first().priority)
+    }
+
+    @Test
+    fun `priority 필드가 들어와도 서버에서 추론한 priority를 사용한다`() {
+        val result =
+            outputParser.parse(
+                outputText(
+                    candidateWithPriority(
+                        code = "CONTEXT_RAIN",
+                        type = TagType.CONTEXT,
+                        source = TagCandidateSource.DIARY_TEXT,
+                        priority = TagCandidatePriority.PRIMARY,
+                    ),
+                ),
+                input,
+                tagGroups,
+            )
+
+        assertEquals(TagCandidatePriority.BACKGROUND, result.tagCandidates.first().priority)
+    }
+
+    @Test
+    fun `diaryText만 있으면 diaryText 기반 supporting 후보는 secondary로 사용한다`() {
+        val result =
+            outputParser.parse(
+                outputText(candidate("CONTEXT_RAIN", TagType.CONTEXT, TagCandidateSource.DIARY_TEXT)),
+                input.copy(feelingText = null, diaryText = "비가 와서 마음이 복잡했다"),
+                tagGroups,
+            )
+
         assertEquals(TagCandidatePriority.SECONDARY, result.tagCandidates.first().priority)
+    }
+
+    @Test
+    fun `diaryText만 있으면 diaryText 기반 need 후보는 primary로 사용한다`() {
+        val result =
+            outputParser.parse(
+                outputText(candidate("NEED_COMFORT", TagType.NEED, TagCandidateSource.DIARY_TEXT)),
+                input.copy(feelingText = null, diaryText = "위로받고 싶다"),
+                tagGroups,
+            )
+
+        assertEquals(TagCandidatePriority.PRIMARY, result.tagCandidates.first().priority)
     }
 
     @Test
@@ -150,12 +205,28 @@ class UserInputParseOutputParserTest {
         fun candidate(
             code: String,
             type: TagType,
+            source: TagCandidateSource = TagCandidateSource.FEELING_TEXT,
         ): Pair<TagType, String> =
             type to
                 """
                 {
                   "tagCode": "$code",
-                  "source": "FEELING_TEXT"
+                  "source": "${source.name}"
+                }
+                """.trimIndent()
+
+        fun candidateWithPriority(
+            code: String,
+            type: TagType,
+            source: TagCandidateSource,
+            priority: TagCandidatePriority,
+        ): Pair<TagType, String> =
+            type to
+                """
+                {
+                  "tagCode": "$code",
+                  "source": "${source.name}",
+                  "priority": "${priority.name}"
                 }
                 """.trimIndent()
 

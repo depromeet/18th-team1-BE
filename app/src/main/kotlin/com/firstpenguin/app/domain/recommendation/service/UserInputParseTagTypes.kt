@@ -7,6 +7,4 @@ internal val USER_INPUT_PARSE_TAG_TYPES =
         TagType.NEED,
         TagType.SITUATION,
         TagType.CONTEXT,
-        TagType.ROLE,
-        TagType.EMOTION,
     )
