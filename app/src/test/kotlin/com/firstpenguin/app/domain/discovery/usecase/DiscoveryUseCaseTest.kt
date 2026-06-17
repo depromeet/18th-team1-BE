@@ -106,7 +106,7 @@ class DiscoveryUseCaseTest {
                 discoveryService.getRecommendedQuotes(
                     USER_ID,
                     null,
-                    DiscoveryGenre.KOREAN_NOVEL,
+                    DiscoveryGenre.GENERAL_LITERATURE,
                     DISCOVERY_QUOTE_FETCH_COUNT,
                 ),
             ).thenReturn(listOf(quote))
@@ -124,7 +124,7 @@ class DiscoveryUseCaseTest {
                 discoveryService.getRecommendedQuotes(
                     USER_ID,
                     DiscoveryCursor(RECOMMENDED_AT, QUOTE_ID),
-                    DiscoveryGenre.KOREAN_NOVEL,
+                    DiscoveryGenre.GENERAL_LITERATURE,
                     DISCOVERY_QUOTE_FETCH_COUNT,
                 ),
             ).thenReturn(listOf(quote))
@@ -178,7 +178,7 @@ class DiscoveryUseCaseTest {
         const val QUOTE_ID = 10L
         const val BOOK_ID = 100L
         const val RECOMMENDED_USER_ID = 200L
-        const val GENRE = "한국소설"
+        const val GENRE = "일반문학"
         val RECOMMENDED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 5, 12, 34, 56)
         const val EXPECTED_NEXT_CURSOR = "MjAyNi0wNi0wNVQxMjozNDo1NnwxMA"
     }

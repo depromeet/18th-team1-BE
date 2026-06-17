@@ -70,19 +70,19 @@ class DiscoveryRepositoryTest {
     }
 
     @Test
-    fun `장르가 있으면 책 카테고리 조건을 추가한다`() {
+    fun `장르가 있으면 책 장르 조건을 추가한다`() {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = null,
-                    genre = DiscoveryGenre.KOREAN_NOVEL,
+                    genre = DiscoveryGenre.GENERAL_LITERATURE,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
@@ -114,7 +114,7 @@ class DiscoveryRepositoryTest {
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.CATEGORY,
+                BookTable.GENRE,
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
             )
