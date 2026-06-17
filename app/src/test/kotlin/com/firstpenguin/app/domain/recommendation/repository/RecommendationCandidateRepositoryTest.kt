@@ -23,14 +23,14 @@ import kotlin.test.assertTrue
 class RecommendationCandidateRepositoryTest {
     @Test
     fun `메타데이터 태그 기반 후보를 조회한다`() {
-        val capturedSql =
-            captureSql { dsl ->
+        val capturedQuery =
+            captureQuery { dsl ->
                 RecommendationCandidateRepository(dsl).findCandidates(
                     effectiveTags = listOf(EFFECTIVE_EMOTION_TAG, EFFECTIVE_NEED_TAG),
                     limit = LIMIT,
                 )
             }
-        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+        val normalizedSql = capturedQuery.sql.replace(Regex("\\s+"), " ")
 
         assertTrue(normalizedSql.contains("as \"candidate_quote_ids\""), normalizedSql)
         assertTrue(normalizedSql.contains("join \"quote_metadata\""), normalizedSql)
@@ -42,6 +42,24 @@ class RecommendationCandidateRepositoryTest {
         assertTrue(normalizedSql.contains("\"tags\".\"type\" in"), normalizedSql)
         assertTrue(normalizedSql.contains("\"tags\".\"is_active\" = true"), normalizedSql)
         assertTrue(normalizedSql.contains("fetch next ? rows only"), normalizedSql)
+        assertTrue(capturedQuery.bindings.contains(EMOTION_TAG_ID))
+        assertFalse(capturedQuery.bindings.contains(NEED_TAG_ID))
+        assertTrue(capturedQuery.bindings.contains(TagType.EMOTION.name))
+        assertFalse(capturedQuery.bindings.contains(TagType.NEED.name))
+    }
+
+    @Test
+    fun `emotion tag가 없으면 need tag로 fallback 후보를 조회한다`() {
+        val capturedQuery =
+            captureQuery { dsl ->
+                RecommendationCandidateRepository(dsl).findCandidates(
+                    effectiveTags = listOf(EFFECTIVE_NEED_TAG),
+                    limit = LIMIT,
+                )
+            }
+
+        assertTrue(capturedQuery.bindings.contains(NEED_TAG_ID))
+        assertTrue(capturedQuery.bindings.contains(TagType.NEED.name))
     }
 
     @Test
@@ -131,19 +149,23 @@ class RecommendationCandidateRepositoryTest {
         assertEquals(listOf(2L, 1L), candidates.map { candidate -> candidate.quoteId })
     }
 
-    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
+    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String = captureQuery(repositoryCall).sql
+
+    private fun captureQuery(repositoryCall: (DSLContext) -> Unit): CapturedQuery {
         var capturedSql = ""
+        var capturedBindings = emptyList<Any?>()
         lateinit var dsl: DSLContext
         val connection =
             MockConnection(
                 MockDataProvider { context ->
                     capturedSql = context.sql()
+                    capturedBindings = context.bindings().toList()
                     arrayOf(MockResult(0, dsl.newResult(*CANDIDATE_FIELDS)))
                 },
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
         repositoryCall(dsl)
-        return capturedSql
+        return CapturedQuery(sql = capturedSql, bindings = capturedBindings)
     }
 
     private fun findCandidatesWithResult(result: (DSLContext) -> Result<Record>) =
@@ -254,4 +276,9 @@ class RecommendationCandidateRepositoryTest {
                 TagTable.TYPE,
             )
     }
+
+    private data class CapturedQuery(
+        val sql: String,
+        val bindings: List<Any?>,
+    )
 }
