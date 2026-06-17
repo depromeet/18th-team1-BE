@@ -1,12 +1,9 @@
 package com.firstpenguin.app.domain.recommendation.service
 
-import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
-import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
-import com.firstpenguin.app.domain.recommendation.repository.RecommendationTagRarityRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -16,29 +13,26 @@ private const val RECOMMENDATION_RESULT_QUOTE_COUNT = 10
 @Service
 class RecommendationEngine(
     private val emotionService: EmotionService,
-    private val tagRepository: TagRepository,
     private val userInputAnalysisService: UserInputAnalysisService,
     private val effectiveTagBuilder: EffectiveTagBuilder,
-    private val candidateProvider: RecommendationCandidateProvider,
-    private val tagRarityRepository: RecommendationTagRarityRepository,
+    private val prefetcher: RecommendationEnginePrefetcher,
     private val resultComposer: RecommendationResultComposer,
 ) {
     fun recommend(
         userId: Long,
         request: RecommendationRequest,
     ): RecommendationResult {
-        val input = buildInput(userId, request).withAnalysis()
-        val effectiveTags = effectiveTagBuilder.build(input)
-        val candidates = candidateProvider.findCandidates(effectiveTags)
-        val moodTagIdByCode = tagRepository.getActiveMoodTagIdByCode()
-        val tagRarityWeights = tagRarityRepository.findMetadataTagRarityWeights()
+        val input = buildInput(userId, request)
+        val prefetch = prefetcher.start(effectiveTagBuilder.build(input))
+        val analyzedInput = input.withAnalysis()
+        val effectiveTags = effectiveTagBuilder.build(analyzedInput)
         val result =
             resultComposer.compose(
-                input = input,
+                input = analyzedInput,
                 effectiveTags = effectiveTags,
-                candidates = candidates,
-                moodTagIdByCode = moodTagIdByCode,
-                tagRarityWeights = tagRarityWeights,
+                candidates = prefetch.candidates(),
+                moodTagIdByCode = prefetch.moodTagIdByCode(),
+                tagRarityWeights = prefetch.tagRarityWeights(),
             ) ?: notEnoughQuotes()
 
         return result
