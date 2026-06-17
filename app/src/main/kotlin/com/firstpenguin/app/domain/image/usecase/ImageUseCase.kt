@@ -60,7 +60,7 @@ class ImageUseCase(
                     .mapNotNull(Recommendation::quoteId)
                     .distinct(),
             )
-        val books = recommendations.toCalendarBooks(coverImageUrlsByQuoteId)
+        val books = toCalendarBooks(recommendations, coverImageUrlsByQuoteId)
 
         return when (type) {
             SHARE_VIEW_4_TYPE -> imageService.generateShareView4(firstOfMonth, books)
@@ -69,8 +69,12 @@ class ImageUseCase(
         }
     }
 
-    private fun List<Recommendation>.toCalendarBooks(coverImageUrlsByQuoteId: Map<Long, String>): Map<Int, List<String>> =
-        groupBy { recommendation -> recommendation.recommendationDate.dayOfMonth }
+    private fun toCalendarBooks(
+        recommendations: List<Recommendation>,
+        coverImageUrlsByQuoteId: Map<Long, String>,
+    ): Map<Int, List<String>> =
+        recommendations
+            .groupBy { recommendation -> recommendation.recommendationDate.dayOfMonth }
             .mapValues { (_, recommendations) ->
                 recommendations.mapNotNull { recommendation ->
                     recommendation.quoteId?.let(coverImageUrlsByQuoteId::get)
