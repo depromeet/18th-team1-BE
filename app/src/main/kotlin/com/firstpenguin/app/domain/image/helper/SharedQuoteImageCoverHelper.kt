@@ -9,7 +9,6 @@ import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.net.URI
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -209,8 +208,8 @@ private fun readTemplate(): BufferedImage =
         ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
 
 private fun readImage(url: String): BufferedImage =
-    ImageIO.read(URI(url).toURL())
-        ?: throw IllegalStateException("이미지를 읽을 수 없습니다: $url")
+    SafeRemoteImageLoader.readOrNull(url)
+        ?: throw IllegalArgumentException("이미지를 읽을 수 없습니다: $url")
 
 private fun font(
     path: String,

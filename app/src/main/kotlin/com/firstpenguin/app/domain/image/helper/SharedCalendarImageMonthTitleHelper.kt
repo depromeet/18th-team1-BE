@@ -11,7 +11,6 @@ import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.net.URI
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -25,7 +24,7 @@ internal object SharedCalendarImageMonthTitleHelper {
         val template = readTemplate()
         val image = BufferedImage(template.width, template.height, BufferedImage.TYPE_INT_ARGB)
         val graphics = image.createGraphics()
-        val loadedBooks = books.mapValues { (_, urls) -> urls.map(::readImage) }
+        val loadedBooks = books.mapValues { (_, urls) -> urls.mapNotNull(SafeRemoteImageLoader::readOrNull) }
 
         try {
             graphics.configureRendering()
@@ -207,10 +206,6 @@ private fun BufferedImage.isLightNear(
 private fun readTemplate(): BufferedImage =
     ImageIO.read(SharedCalendarImageMonthTitleHelper::class.java.classLoader.getResourceAsStream(TEMPLATE_PATH))
         ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
-
-private fun readImage(url: String): BufferedImage =
-    ImageIO.read(URI(url).toURL())
-        ?: throw IllegalStateException("이미지를 읽을 수 없습니다: $url")
 
 private fun font(
     path: String,

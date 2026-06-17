@@ -8,7 +8,6 @@ import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 @Component
@@ -38,7 +37,6 @@ class ImageUseCase(
             coverImageUrl = coverImageUrl,
         )
 
-    @Transactional(readOnly = true)
     fun generateCalendarShareImage(
         userId: Long,
         type: Int,
@@ -47,8 +45,10 @@ class ImageUseCase(
     ): ByteArray {
         val firstOfMonth = LocalDate.of(year, month, 1)
         val lastOfMonth = firstOfMonth.withDayOfMonth(firstOfMonth.lengthOfMonth())
-        val diaries = diaryService.findByPeriod(userId, firstOfMonth, lastOfMonth)
-        val books = diaries.toCalendarBooks()
+        val books =
+            diaryService
+                .findByPeriod(userId, firstOfMonth, lastOfMonth)
+                .toCalendarBooks()
         return when (type) {
             SHARE_VIEW_4_TYPE -> imageService.generateShareView4(firstOfMonth, books)
             SHARE_VIEW_5_TYPE -> imageService.generateShareView5(firstOfMonth, books)
