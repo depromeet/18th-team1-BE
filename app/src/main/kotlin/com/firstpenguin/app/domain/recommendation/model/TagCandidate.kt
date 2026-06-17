@@ -9,5 +9,4 @@ data class TagCandidate(
     val type: TagType,
     val source: TagCandidateSource,
     val priority: TagCandidatePriority,
-    val confidence: Double,
 )

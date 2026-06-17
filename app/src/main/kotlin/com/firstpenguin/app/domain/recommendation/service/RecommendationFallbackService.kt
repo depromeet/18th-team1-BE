@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
+import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
 import com.firstpenguin.app.global.enums.TagType
@@ -14,6 +15,7 @@ class RecommendationFallbackService(
     private val candidateProvider: RecommendationCandidateProvider,
 ) {
     fun supplementCandidates(
+        input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
         existingCandidates: List<RecommendationCandidate>,
         rankedQuotes: List<RankedRecommendationQuote> = emptyList(),
@@ -25,7 +27,7 @@ class RecommendationFallbackService(
         val accumulator = CandidateAccumulator(existingCandidates)
         if (!forceFallback && accumulator.isEnough(minimumCandidateCount)) return accumulator.toList()
 
-        val fallbackSteps = fallbackSteps(effectiveTags, semanticCandidates)
+        val fallbackSteps = fallbackSteps(input, effectiveTags, semanticCandidates)
 
         fallbackSteps
             .takeUntilEnough(
@@ -38,17 +40,18 @@ class RecommendationFallbackService(
     }
 
     private fun fallbackSteps(
+        input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
         semanticCandidates: () -> List<RecommendationCandidate>,
     ): List<FallbackStep> =
         listOf(
+            fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
+                candidateProvider.findCandidatesByEmotionRangeId(input.emotionRangeId, FALLBACK_FETCH_LIMIT)
+            },
+            fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates),
             fallbackStep(RecommendationCandidateSource.FALLBACK_NEED) {
                 candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT)
             },
-            fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
-                candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT)
-            },
-            fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates),
             fallbackStep(RecommendationCandidateSource.FALLBACK_RELAXED) {
                 candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT)
             },

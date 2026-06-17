@@ -40,7 +40,7 @@ private val USER_INPUT_PARSE_PROMPT_GUIDE =
 - 한국어 한 문장으로 작성하라.
 - 사용자의 현재 마음과 원하는 도움을 요약하라.
 - quote, 문장, 추천 결과를 설명하지 마라.
-- tagCode나 label을 단순 나열하지 마라.
+- tagCode를 단순 나열하지 마라.
 - 35~90자 사이를 권장한다.
 - 좋은 형태: 실패한 뒤 불안하고 위축된 마음을 다독이며 다시 관점을 정리하고 싶다
 - 나쁜 형태: 이 사용자에게 위로와 관점 전환 태그가 적합하다
@@ -104,7 +104,6 @@ class UserInputParseRequestBuilder(
 
     private fun TagOption.toPayload(): Map<String, String> =
         mapOf(
-            "label" to label,
             "tagCode" to code,
             "description" to description.orEmpty(),
         )

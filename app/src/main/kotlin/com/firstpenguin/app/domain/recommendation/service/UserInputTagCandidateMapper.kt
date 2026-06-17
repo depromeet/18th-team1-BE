@@ -38,26 +38,23 @@ class UserInputTagCandidateMapper {
             val tagCode = requiredText("tagCode")
             val source = TagCandidateSource.valueOf(requiredText("source"))
             val priority = TagCandidatePriority.valueOf(requiredText("priority"))
-            val confidence = path("confidence").asDouble().coerceIn(0.0, 1.0)
             val tagOption = tagOptionByCode[tagCode] ?: return@runCatching null
 
-            if (!isResolvable(tagCode, tagType, source, confidence, selectedCodes, tagOption)) {
+            if (!isResolvable(tagCode, tagType, source, selectedCodes, tagOption)) {
                 return@runCatching null
             }
 
-            tagOption.toTagCandidate(input, source, priority, confidence)
+            tagOption.toTagCandidate(input, source, priority)
         }.getOrNull()
 
     private fun isResolvable(
         tagCode: String,
         tagType: TagType,
         source: TagCandidateSource,
-        confidence: Double,
         selectedCodes: Set<String>,
         tagOption: TagOption,
     ): Boolean =
-        confidence >= MIN_CONFIDENCE &&
-            tagType in USER_INPUT_PARSE_TAG_TYPES &&
+        tagType in USER_INPUT_PARSE_TAG_TYPES &&
             source != TagCandidateSource.USER_SELECTED &&
             tagCode !in selectedCodes &&
             tagOption.type == tagType
@@ -66,7 +63,6 @@ class UserInputTagCandidateMapper {
         input: RecommendationInput,
         source: TagCandidateSource,
         priority: TagCandidatePriority,
-        confidence: Double,
     ): TagCandidate =
         TagCandidate(
             tagId = id,
@@ -75,7 +71,6 @@ class UserInputTagCandidateMapper {
             type = type,
             source = source,
             priority = priority.normalized(input, type, source),
-            confidence = confidence,
         )
 
     private fun TagCandidatePriority.normalized(
@@ -123,7 +118,6 @@ class UserInputTagCandidateMapper {
             ?: error("Missing required text field: $fieldName")
 
     private companion object {
-        const val MIN_CONFIDENCE = 0.3
         const val BACKGROUND_RANK = 1
         const val SECONDARY_RANK = 2
         const val PRIMARY_RANK = 3

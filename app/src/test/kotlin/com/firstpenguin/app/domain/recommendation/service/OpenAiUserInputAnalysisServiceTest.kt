@@ -65,6 +65,9 @@ class OpenAiUserInputAnalysisServiceTest {
                 .toString()
                 .contains("CONTEXT_RAIN"),
         )
+        assertTrue(openAi.lastRequest.input.contains("EMOTION_ANXIOUS"))
+        assertFalse(openAi.lastRequest.input.contains("EMOTION_OTHER_RANGE"))
+        assertFalse(openAi.lastRequest.input.contains("\"label\""))
     }
 
     @Test
@@ -92,8 +95,17 @@ class OpenAiUserInputAnalysisServiceTest {
 
         service.analyze(recommendationInput(feelingText = "비 오는 출근길에 마음이 불안해"))
 
-        assertTrue(openAi.lastRequest.input.indexOf("[허용 태그 목록]") < openAi.lastRequest.input.indexOf("[분석 대상 사용자 입력]"))
-        assertTrue(openAi.lastRequest.input.indexOf("CONTEXT_RAIN") < openAi.lastRequest.input.indexOf("비 오는 출근길"))
+        val prompt = openAi.lastRequest.input
+        val stableTagIndex = prompt.indexOf("[허용 태그 목록]")
+        val userInputIndex = prompt.indexOf("[분석 대상 사용자 입력]")
+
+        assertTrue(stableTagIndex < userInputIndex)
+        assertFalse(prompt.contains("[허용 감정 태그 목록]"))
+        assertTrue(prompt.indexOf("NEED_COMFORT") < prompt.indexOf("EMOTION_ANXIOUS"))
+        assertTrue(prompt.indexOf("ROLE_EMPATHY") < prompt.indexOf("EMOTION_ANXIOUS"))
+        assertTrue(prompt.indexOf("CONTEXT_RAIN") < prompt.indexOf("비 오는 출근길"))
+        assertTrue(prompt.indexOf("CONTEXT_RAIN") < prompt.indexOf("EMOTION_ANXIOUS"))
+        assertTrue(prompt.indexOf("EMOTION_ANXIOUS") < prompt.indexOf("비 오는 출근길"))
     }
 
     @Test
@@ -187,8 +199,7 @@ class OpenAiUserInputAnalysisServiceTest {
                 {
                   "tagCode": "NEED_COMFORT",
                   "source": "FEELING_TEXT",
-                  "priority": "PRIMARY",
-                  "confidence": 0.88
+                  "priority": "PRIMARY"
                 }
               ],
               "situationTagCandidates": [],
@@ -196,8 +207,7 @@ class OpenAiUserInputAnalysisServiceTest {
                 {
                   "tagCode": "CONTEXT_RAIN",
                   "source": "FEELING_TEXT",
-                  "priority": "PRIMARY",
-                  "confidence": 0.92
+                  "priority": "PRIMARY"
                 }
               ],
               "roleTagCandidates": []
@@ -276,6 +286,7 @@ class OpenAiUserInputAnalysisServiceTest {
         fun tagResult(dsl: DSLContext): Result<Record> =
             dsl.newResult(*TAG_FIELDS).apply {
                 add(tagRecord(dsl, 1L, TagType.EMOTION, "EMOTION_ANXIOUS"))
+                add(tagRecord(dsl, 2L, TagType.EMOTION, "EMOTION_OTHER_RANGE", emotionRangeId = OTHER_EMOTION_RANGE_ID))
                 add(tagRecord(dsl, NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"))
                 add(tagRecord(dsl, 11L, TagType.SITUATION, "SITUATION_FAILURE_MISTAKE"))
                 add(tagRecord(dsl, CONTEXT_TAG_ID, TagType.CONTEXT, "CONTEXT_RAIN"))
@@ -287,10 +298,12 @@ class OpenAiUserInputAnalysisServiceTest {
             id: Long,
             type: TagType,
             code: String,
+            emotionRangeId: Long? = if (type == TagType.EMOTION) EMOTION_RANGE_ID else null,
         ): Record =
             dsl.newRecord(*TAG_FIELDS).apply {
                 set(TagTable.ID, id)
                 set(TagTable.TYPE, type.name)
+                set(TagTable.EMOTION_RANGE_ID, emotionRangeId)
                 set(TagTable.CODE, code)
                 set(TagTable.LABEL, code)
                 set(TagTable.DESCRIPTION, code)
@@ -335,11 +348,13 @@ class OpenAiUserInputAnalysisServiceTest {
                 createdAt = CREATED_AT,
             )
 
-        const val TAG_ROW_COUNT = 5
+        const val TAG_ROW_COUNT = 6
+        const val OTHER_EMOTION_RANGE_ID = 2L
         val TAG_FIELDS: Array<Field<*>> =
             arrayOf(
                 TagTable.ID,
                 TagTable.TYPE,
+                TagTable.EMOTION_RANGE_ID,
                 TagTable.CODE,
                 TagTable.LABEL,
                 TagTable.DESCRIPTION,

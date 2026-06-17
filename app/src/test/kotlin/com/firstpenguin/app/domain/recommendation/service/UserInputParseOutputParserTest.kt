@@ -88,12 +88,11 @@ class UserInputParseOutputParserTest {
     }
 
     @Test
-    fun `지원하지 않는 tagType이나 낮은 confidence 후보는 제외한다`() {
+    fun `지원하지 않는 tagType 후보는 제외한다`() {
         val result =
             outputParser.parse(
                 outputText(
                     candidate("MOOD_CALM", TagType.MOOD),
-                    candidate("CONTEXT_RAIN", TagType.CONTEXT, confidence = 0.1),
                 ),
                 input,
                 tagGroups,
@@ -155,15 +154,13 @@ class UserInputParseOutputParserTest {
         fun candidate(
             code: String,
             type: TagType,
-            confidence: Double = 0.9,
         ): Pair<TagType, String> =
             type to
                 """
                 {
                   "tagCode": "$code",
                   "source": "FEELING_TEXT",
-                  "priority": "PRIMARY",
-                  "confidence": $confidence
+                  "priority": "PRIMARY"
                 }
                 """.trimIndent()
 

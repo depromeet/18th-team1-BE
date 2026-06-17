@@ -9,7 +9,6 @@ import com.firstpenguin.app.domain.recommendation.model.TagCandidateSource
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 
@@ -17,32 +16,31 @@ class EffectiveTagBuilderTest {
     private val effectiveTagBuilder = EffectiveTagBuilder()
 
     @Test
-    fun `선택 태그는 1점으로 반영하고 낮은 LLM 후보는 제거한다`() {
+    fun `선택 태그는 1점으로 반영하고 LLM 후보는 source와 priority로 반영한다`() {
         val input =
             recommendationInput(
                 emotionTags = listOf(tag(1L, TagType.EMOTION, "EMOTION_SELF_BLAME")),
                 needTag = tag(2L, TagType.NEED, "NEED_COMFORT"),
                 tagCandidates =
                     listOf(
-                        tagCandidate(3L, TagType.SITUATION, "SITUATION_FAILURE_MISTAKE", confidence = 0.95),
+                        tagCandidate(3L, TagType.SITUATION, "SITUATION_FAILURE_MISTAKE"),
                         tagCandidate(
                             tagId = 4L,
                             type = TagType.CONTEXT,
                             code = "CONTEXT_RAIN",
                             source = TagCandidateSource.DIARY_TEXT,
                             priority = TagCandidatePriority.BACKGROUND,
-                            confidence = 0.5,
                         ),
                     ),
             )
 
         val result = effectiveTagBuilder.build(input).associateBy { tag -> tag.tagId }
 
-        assertEquals(3, result.size)
+        assertEquals(4, result.size)
         assertEquals(1.0, result.getValue(1L).importance, DELTA)
         assertEquals(1.0, result.getValue(2L).importance, DELTA)
-        assertEquals(0.8075, result.getValue(3L).importance, DELTA)
-        assertFalse(result.containsKey(4L))
+        assertEquals(0.85, result.getValue(3L).importance, DELTA)
+        assertEquals(0.165, result.getValue(4L).importance, DELTA)
     }
 
     @Test
@@ -52,7 +50,7 @@ class EffectiveTagBuilderTest {
                 emotionTags = listOf(tag(1L, TagType.EMOTION, "EMOTION_SELF_BLAME")),
                 tagCandidates =
                     listOf(
-                        tagCandidate(1L, TagType.EMOTION, "EMOTION_SELF_BLAME", confidence = 0.8),
+                        tagCandidate(1L, TagType.EMOTION, "EMOTION_SELF_BLAME"),
                     ),
             )
 
@@ -90,7 +88,6 @@ class EffectiveTagBuilderTest {
         code: String,
         source: TagCandidateSource = TagCandidateSource.FEELING_TEXT,
         priority: TagCandidatePriority = TagCandidatePriority.PRIMARY,
-        confidence: Double,
     ): TagCandidate =
         TagCandidate(
             tagId = tagId,
@@ -99,7 +96,6 @@ class EffectiveTagBuilderTest {
             type = type,
             source = source,
             priority = priority,
-            confidence = confidence,
         )
 
     private fun tag(
