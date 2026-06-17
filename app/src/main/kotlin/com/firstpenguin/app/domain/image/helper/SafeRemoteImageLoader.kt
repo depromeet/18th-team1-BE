@@ -37,12 +37,9 @@ internal object SafeRemoteImageLoader {
             }
         }.getOrNull()
 
-    private fun URI.isAllowedImageUri(): Boolean {
-        if (!scheme.equals(ALLOWED_SCHEME, ignoreCase = true)) return false
-
-        val normalizedHost = host?.lowercase(Locale.ROOT) ?: return false
-        return normalizedHost in ALLOWED_HOSTS
-    }
+    private fun URI.isAllowedImageUri(): Boolean =
+        scheme.equals(ALLOWED_SCHEME, ignoreCase = true) &&
+            host?.lowercase(Locale.ROOT) in ALLOWED_HOSTS
 
     private fun java.io.InputStream.readLimitedBytes(): ByteArray? {
         val output = ByteArrayOutputStream()
