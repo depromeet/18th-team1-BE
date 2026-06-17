@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
-import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
@@ -115,11 +114,11 @@ class OpenAiBatchClient(
             .body<String>()
             ?: ""
 
-    private fun openAiRequestFactory(): SimpleClientHttpRequestFactory =
-        SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(OPENAI_CONNECT_TIMEOUT)
-            setReadTimeout(OPENAI_READ_TIMEOUT)
-        }
+    private fun openAiRequestFactory() =
+        openAiClientHttpRequestFactory(
+            connectTimeout = OPENAI_CONNECT_TIMEOUT,
+            readTimeout = OPENAI_READ_TIMEOUT,
+        )
 }
 
 private fun Map<String, Any?>.batchErrorMessage(): String? =

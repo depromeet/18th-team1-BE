@@ -5,7 +5,6 @@ import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
@@ -54,11 +53,11 @@ class OpenAiResponsesClient(
             .body<Map<String, Any?>>()
             ?: throw CustomException(ErrorCode.OPENAI_RESPONSES_OUTPUT_TEXT_NOT_FOUND)
 
-    private fun openAiRequestFactory(): SimpleClientHttpRequestFactory =
-        SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(OPENAI_CONNECT_TIMEOUT)
-            setReadTimeout(OPENAI_READ_TIMEOUT)
-        }
+    private fun openAiRequestFactory() =
+        openAiClientHttpRequestFactory(
+            connectTimeout = OPENAI_CONNECT_TIMEOUT,
+            readTimeout = OPENAI_READ_TIMEOUT,
+        )
 }
 
 private fun Map<String, Any?>.outputText(): String =

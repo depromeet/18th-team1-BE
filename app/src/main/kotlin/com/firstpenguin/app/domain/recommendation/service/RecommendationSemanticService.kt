@@ -6,7 +6,12 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCandidateProvider
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+
+private typealias OptionalEmbedding = MeasuredRecommendationValue<List<Double>?>
 
 interface RecommendationSemanticProvider {
     fun prepare(input: RecommendationInput): UserSemanticEmbedding?
@@ -28,19 +33,47 @@ class RecommendationSemanticService(
     private val userQueryEmbeddingProcessor: UserQueryEmbeddingProcessor,
     private val quoteEmbeddingRepository: QuoteEmbeddingRepository,
     private val candidateProvider: RecommendationCandidateProvider,
+    @Qualifier(RECOMMENDATION_EMBEDDING_EXECUTOR_NAME) private val embeddingExecutor: ExecutorService,
 ) : RecommendationSemanticProvider {
-    override fun prepare(input: RecommendationInput): UserSemanticEmbedding? {
-        val embeddingInput = userEmbeddingInputBuilder.build(input) ?: return null
+    override fun prepare(input: RecommendationInput): UserSemanticEmbedding? =
+        userEmbeddingInputBuilder
+            .build(input)
+            ?.toUserSemanticEmbedding()
+
+    private fun String.toUserSemanticEmbedding(): UserSemanticEmbedding? {
         val embedding =
-            measureRecommendationElapsed {
-                userQueryEmbeddingProcessor.embed(embeddingInput)
+            runCatching {
+                measureRecommendationElapsed {
+                    embedWithTimeout(this)
+                }
+            }.getOrNull() ?: return null
+
+        return embedding.toUserSemanticEmbedding(this)
+    }
+
+    private fun OptionalEmbedding.toUserSemanticEmbedding(inputText: String): UserSemanticEmbedding? {
+        val embeddingValue = value ?: return null
+        return UserSemanticEmbedding(
+            inputText = inputText,
+            embedding = embeddingValue,
+            embeddingElapsedMs = elapsedMs,
+        )
+    }
+
+    private fun embedWithTimeout(input: String): List<Double>? {
+        val future =
+            embeddingExecutor.submit<List<Double>> {
+                userQueryEmbeddingProcessor.embed(input)
             }
 
-        return UserSemanticEmbedding(
-            inputText = embeddingInput,
-            embedding = embedding.value,
-            embeddingElapsedMs = embedding.elapsedMs,
-        )
+        return runCatching {
+            future.get(EMBEDDING_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+        }.onFailure { exception ->
+            future.cancel(true)
+            if (exception is InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }.getOrNull()
     }
 
     override fun findScores(
@@ -72,5 +105,6 @@ class RecommendationSemanticService(
 
     private companion object {
         const val SEMANTIC_FALLBACK_LIMIT = 300
+        const val EMBEDDING_TIMEOUT_MILLIS = 1_000L
     }
 }
