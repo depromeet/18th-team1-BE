@@ -24,6 +24,24 @@ class RecommendationRankerTest {
     }
 
     @Test
+    fun `semantic score를 사용하지 않으면 metadata score를 finalScore로 사용한다`() {
+        val candidate = candidate(QUOTE_ID)
+
+        val result =
+            ranker.rank(
+                candidates = listOf(candidate),
+                useSemanticScore = false,
+            ) {
+                score(
+                    metadataScore = METADATA_SCORE,
+                    semanticScore = 0.0,
+                )
+            }
+
+        assertEquals(METADATA_SCORE, result.first().score.finalScore, DELTA)
+    }
+
+    @Test
     fun `finalScore 기준으로 정렬하고 rank를 다시 부여한다`() {
         val lowScoreCandidate = candidate(quoteId = 1L)
         val highScoreCandidate = candidate(quoteId = 2L)
