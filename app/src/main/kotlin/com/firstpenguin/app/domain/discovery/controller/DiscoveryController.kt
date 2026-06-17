@@ -98,20 +98,20 @@ class DiscoveryController(
         @RequestParam(required = false) cursor: String?,
         @Parameter(
             description = "책 장르 필터. 생략하거나 `전체`이면 전체 장르를 조회한다.",
-            example = "한국소설",
+            example = "일반문학",
             schema =
                 Schema(
                     allowableValues = [
                         "전체",
-                        "한국소설",
-                        "일본소설",
-                        "영미소설",
+                        "일반문학",
+                        "SF",
+                        "추리･미스터리",
+                        "공포･스릴러",
                         "판타지",
-                        "고전문학",
-                        "인문",
-                        "철학",
-                        "에세이•시",
-                        "영화•드라마 원작",
+                        "로맨스",
+                        "역사",
+                        "무협",
+                        "시･에세이",
                     ],
                 ),
         )
