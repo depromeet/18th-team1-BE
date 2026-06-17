@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.discovery.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.firstpenguin.app.domain.discovery.model.DiscoveryNeedTag
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
+import com.firstpenguin.app.domain.emotion.model.EmotionLevel
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
@@ -26,6 +27,17 @@ data class DiscoveryQuoteResponse(
     val genre: String?,
     @field:Schema(description = "추천 당시 선택한 NEED 태그. 선택 태그가 없으면 null", nullable = true)
     val needTag: DiscoveryNeedTagResponse?,
+    @field:Schema(
+        description =
+            "추천 당시 입력한 감정 단계. " +
+                "1=아주 별로에요, 2=별로에요, 3=약간 별로에요, 4=그저그래요, 5=나쁘지 않아요, " +
+                "6=꽤 괜찮아요, 7=약간 기분 좋아요, 8=기분 좋아요, 9=아주 기분 좋아요!",
+        example = "7",
+        allowableValues = ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    )
+    val emotionValue: Int,
+    @field:Schema(description = "추천 당시 입력한 감정 단계 표시 문구", example = "약간 기분 좋아요")
+    val emotionLabel: String,
     @field:Schema(description = "문장이 추천 이력에 등록된 시각", example = "2026-06-05T12:34:56")
     val recommendedAt: LocalDateTime,
     @get:JsonProperty("isScrapped")
@@ -44,6 +56,8 @@ data class DiscoveryQuoteResponse(
                 bookCoverImageUrl = quote.bookCoverImageUrl,
                 genre = quote.genre,
                 needTag = quote.needTag?.let(DiscoveryNeedTagResponse::from),
+                emotionValue = quote.emotionValue,
+                emotionLabel = EmotionLevel.from(quote.emotionValue).label,
                 recommendedAt = quote.recommendedAt,
                 isScrapped = quote.isScrapped,
             )
