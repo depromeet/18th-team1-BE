@@ -110,18 +110,17 @@ class SecurityConfig(
 
         val PERMIT_ALL_PATTERNS =
             arrayOf(
-                "/**",
-//                "/admin/**",
-//                "/auth/refresh",
-//                "/auth/logout",
-//                "/auth/dev-token",
-//                "/oauth2/**",
-//                "/login/oauth2/**",
-//                "/swagger-ui/**",
-//                "/swagger-ui.html",
-//                "/v3/api-docs/**",
-//                "/error",
-//                "/actuator/health",
+                "/admin/**",
+                "/auth/refresh",
+                "/auth/logout",
+                "/auth/dev-token",
+                "/oauth2/**",
+                "/login/oauth2/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/v3/api-docs/**",
+                "/error",
+                "/actuator/health",
             )
     }
 }
