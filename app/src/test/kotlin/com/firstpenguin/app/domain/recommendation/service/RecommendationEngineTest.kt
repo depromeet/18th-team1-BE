@@ -6,7 +6,6 @@ import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.TagCandidate
@@ -20,43 +19,93 @@ import com.firstpenguin.app.domain.recommendation.repository.RecommendationTagRa
 import com.firstpenguin.app.global.enums.EmotionRangeName
 import com.firstpenguin.app.global.enums.TagType
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class RecommendationEngineTest {
     @Test
-    fun `canonical 분석이 끝나면 후보 조회를 기다리지 않고 embedding을 시작한다`() {
+    fun `canonical 분석이 끝나면 tag 분석 완료 전 embedding을 시작한다`() {
         val calls = mutableListOf<String>()
+        val analysisService = ControlledUserInputAnalysisService(calls)
         val semanticProvider = RecordingSemanticProvider(calls)
         val candidateProvider = RecordingCandidateProvider(calls)
-        val engine = engine(calls, semanticProvider, candidateProvider)
-
-        val result =
-            engine.recommend(
-                userId = USER_ID,
-                request = recommendationRequest(),
+        val engine = engine(analysisService, semanticProvider, candidateProvider)
+        val executor = Executors.newSingleThreadExecutor()
+        val resultFuture =
+            CompletableFuture.supplyAsync(
+                { engine.recommend(userId = USER_ID, request = recommendationRequest()) },
+                executor,
             )
 
-        assertEquals(RECOMMENDATION_RESULT_COUNT, result.quotes.size)
-        assertEquals(listOf("analysis-start", "semantic-prepare", "candidate-prefetch"), calls.take(3))
-        assertEquals(1, semanticProvider.prepareCallCount)
+        try {
+            analysisService.awaitStarted()
+            analysisService.completeCanonical()
+
+            semanticProvider.awaitPrepared()
+            assertEquals(1, semanticProvider.prepareCallCount)
+            assertTrue(!analysisService.isAnalysisDone())
+            assertTrue("candidate-prefetch" !in calls)
+
+            analysisService.completeAnalysis()
+            val result = resultFuture.get(1, TimeUnit.SECONDS)
+
+            assertEquals(RECOMMENDATION_RESULT_COUNT, result.quotes.size)
+            assertEquals(listOf("analysis-start", "semantic-prepare", "candidate-prefetch"), calls.take(3))
+            assertTrue(TagType.CONTEXT in candidateProvider.prefetchedTagTypes)
+        } finally {
+            analysisService.completeCanonical()
+            analysisService.completeAnalysis()
+            resultFuture.cancel(true)
+            executor.shutdownNow()
+        }
     }
 
-    private class ImmediateUserInputAnalysisService(
+    private class ControlledUserInputAnalysisService(
         private val calls: MutableList<String>,
     ) : UserInputAnalysisService {
+        private val started = CountDownLatch(1)
+        private val canonicalAnalysisFuture = CompletableFuture<UserInputAnalysis?>()
+        private val analysisFuture = CompletableFuture<UserInputAnalysis?>()
+
         override fun start(input: RecommendationInput): UserInputAnalysisTask {
             calls.add("analysis-start")
-            val canonicalAnalysis =
-                UserInputAnalysis(
-                    intentType = IntentType.EMOTION_NEED_BASED,
-                    canonicalIntent = CANONICAL_INTENT,
-                    tagCandidates = emptyList(),
-                )
-            val tagAnalysis =
-                canonicalAnalysis.copy(
+            started.countDown()
+
+            return UserInputAnalysisTask(
+                canonicalAnalysis = canonicalAnalysisFuture,
+                analysis = analysisFuture,
+            )
+        }
+
+        fun awaitStarted() {
+            assertTrue(started.await(1, TimeUnit.SECONDS))
+        }
+
+        fun completeCanonical() {
+            canonicalAnalysisFuture.complete(canonicalAnalysis())
+        }
+
+        fun completeAnalysis() {
+            analysisFuture.complete(tagAnalysis())
+        }
+
+        fun isAnalysisDone(): Boolean = analysisFuture.isDone
+
+        private fun canonicalAnalysis(): UserInputAnalysis =
+            UserInputAnalysis(
+                canonicalIntent = CANONICAL_INTENT,
+                tagCandidates = emptyList(),
+            )
+
+        private fun tagAnalysis(): UserInputAnalysis =
+            canonicalAnalysis()
+                .copy(
                     tagCandidates =
                         listOf(
                             TagCandidate(
@@ -69,24 +118,24 @@ class RecommendationEngineTest {
                             ),
                         ),
                 )
-
-            return UserInputAnalysisTask(
-                canonicalAnalysis = CompletableFuture.completedFuture(canonicalAnalysis),
-                analysis = CompletableFuture.completedFuture(tagAnalysis),
-            )
-        }
     }
 
     private class RecordingSemanticProvider(
         private val calls: MutableList<String>,
     ) : RecommendationSemanticProvider {
+        private val prepared = CountDownLatch(1)
         var prepareCallCount: Int = 0
 
         override fun prepare(input: RecommendationInput): UserSemanticEmbedding? {
             prepareCallCount += 1
             calls.add("semantic-prepare")
+            prepared.countDown()
 
             return UserSemanticEmbedding(CANONICAL_INTENT, listOf(0.1))
+        }
+
+        fun awaitPrepared() {
+            assertTrue(prepared.await(1, TimeUnit.SECONDS))
         }
 
         override fun findScores(
@@ -103,11 +152,14 @@ class RecommendationEngineTest {
     private class RecordingCandidateProvider(
         private val calls: MutableList<String>,
     ) : RecommendationCandidateProvider {
+        val prefetchedTagTypes: MutableSet<TagType> = mutableSetOf()
+
         override fun findCandidates(
             effectiveTags: Collection<EffectiveTag>,
             limit: Int,
         ): List<RecommendationCandidate> {
             calls.add("candidate-prefetch")
+            prefetchedTagTypes.addAll(effectiveTags.map { tag -> tag.type })
 
             return candidates()
         }
@@ -137,13 +189,13 @@ class RecommendationEngineTest {
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 17, 0, 0)
 
         fun engine(
-            calls: MutableList<String>,
+            analysisService: UserInputAnalysisService,
             semanticProvider: RecommendationSemanticProvider,
             candidateProvider: RecommendationCandidateProvider,
         ): RecommendationEngine =
             RecommendationEngine(
                 emotionService = emotionService(),
-                userInputAnalysisService = ImmediateUserInputAnalysisService(calls),
+                userInputAnalysisService = analysisService,
                 effectiveTagBuilder = EffectiveTagBuilder(),
                 prefetcher = prefetcher(candidateProvider),
                 semanticProvider = semanticProvider,

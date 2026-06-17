@@ -4,7 +4,6 @@ import com.firstpenguin.app.domain.emotion.repository.TagRepository
 import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiResponsesClient
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVersion
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
@@ -48,7 +47,6 @@ class OpenAiUserInputAnalysisService(
             }
 
         return UserInputAnalysis(
-            intentType = DEFAULT_INTENT_TYPE,
             canonicalIntent = canonicalOutputParser.parse(response.value.outputText),
             tagCandidates = emptyList(),
         ).withOpenAiUsage(request.model, response.value, response.elapsedMs)
@@ -123,7 +121,6 @@ private fun combineAnalysis(
     if (canonicalAnalysis == null && tagAnalysis == null) return null
 
     return UserInputAnalysis(
-        intentType = tagAnalysis?.intentType ?: DEFAULT_INTENT_TYPE,
         canonicalIntent = canonicalAnalysis?.canonicalIntent,
         tagCandidates = tagAnalysis?.tagCandidates.orEmpty(),
         llmModel = canonicalAnalysis?.llmModel ?: tagAnalysis?.llmModel,
@@ -154,5 +151,3 @@ private fun max(
 }
 
 private fun Long?.orZero(): Long = this ?: 0L
-
-private val DEFAULT_INTENT_TYPE = IntentType.EMOTION_NEED_BASED

@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
@@ -18,7 +17,7 @@ class MetadataScorerTest {
 
     @Test
     fun `metadataScore를 계산하고 finalScore는 계산하지 않는다`() {
-        val input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED)
+        val input = recommendationInput()
         val effectiveTags =
             listOf(
                 effectiveTag(NEED_COMFORT_ID, "NEED_COMFORT", TagType.NEED, 1.0),
@@ -68,7 +67,7 @@ class MetadataScorerTest {
 
     @Test
     fun `moodScore는 mood 정책 결과와 후보 mood tag 매칭으로 계산한다`() {
-        val input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED)
+        val input = recommendationInput()
         val candidate =
             candidate(
                 quoteId = 1L,
@@ -88,7 +87,7 @@ class MetadataScorerTest {
 
     @Test
     fun `rarity weight가 있으면 흔한 metadata tag 점수를 낮춘다`() {
-        val input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED)
+        val input = recommendationInput()
         val effectiveTags = listOf(effectiveTag(NEED_COMFORT_ID, "NEED_COMFORT", TagType.NEED, 1.0))
         val candidate = candidate(quoteId = 1L, tagIdsByType = mapOf(TagType.NEED to setOf(NEED_COMFORT_ID)))
 
@@ -121,14 +120,14 @@ class MetadataScorerTest {
             )
         val baselineScore =
             scorer.score(
-                input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED, emotionTags = emptyList()),
+                input = recommendationInput(emotionTags = emptyList()),
                 effectiveTags = effectiveTags.filterNot { tag -> tag.type == TagType.EMOTION },
                 candidate = candidate,
                 moodTagIdByCode = moodTagIdByCode,
             )
         val penalizedScore =
             scorer.score(
-                input = recommendationInput(intentType = IntentType.EMOTION_NEED_BASED),
+                input = recommendationInput(),
                 effectiveTags = effectiveTags,
                 candidate = candidate,
                 moodTagIdByCode = moodTagIdByCode,
@@ -138,7 +137,6 @@ class MetadataScorerTest {
     }
 
     private fun recommendationInput(
-        intentType: IntentType,
         emotionTags: List<Tag> = listOf(tag(EMOTION_ANXIOUS_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
     ): RecommendationInput =
         RecommendationInput(
@@ -149,7 +147,7 @@ class MetadataScorerTest {
             needTag = tag(NEED_COMFORT_ID, TagType.NEED, "NEED_COMFORT"),
             feelingText = null,
             diaryText = null,
-            analysis = UserInputAnalysis(intentType = intentType, canonicalIntent = null, tagCandidates = emptyList()),
+            analysis = UserInputAnalysis(canonicalIntent = null, tagCandidates = emptyList()),
         )
 
     private fun effectiveTag(

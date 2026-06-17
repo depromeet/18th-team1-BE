@@ -6,7 +6,6 @@ import com.firstpenguin.app.domain.emotion.repository.table.TagTable
 import com.firstpenguin.app.domain.openai.dto.OpenAiResponsesRequest
 import com.firstpenguin.app.domain.openai.dto.OpenAiTextResponse
 import com.firstpenguin.app.domain.openai.service.OpenAiResponsesClient
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.DSLContext
@@ -47,7 +46,6 @@ class OpenAiUserInputAnalysisServiceTest {
         val result = service.analyze(recommendationInput(feelingText = "비 오는 출근길에 마음이 불안해"))
 
         requireNotNull(result)
-        assertEquals(IntentType.CONTEXT_BASED, result.intentType)
         assertEquals("비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다", result.canonicalIntent)
         assertEquals(listOf(NEED_TAG_ID, CONTEXT_TAG_ID), result.tagCandidates.map { candidate -> candidate.tagId })
         assertEquals(USER_INPUT_ANALYSIS_MODEL, result.llmModel)
@@ -215,7 +213,6 @@ class OpenAiUserInputAnalysisServiceTest {
         val tagOutputText: String =
             """
             {
-              "intentType": "CONTEXT_BASED",
               "emotionTagCandidates": [],
               "needTagCandidates": [
                 {

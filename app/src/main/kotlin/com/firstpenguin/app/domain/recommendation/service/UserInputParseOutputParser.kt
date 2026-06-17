@@ -1,7 +1,6 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
@@ -30,16 +29,9 @@ private fun JsonNode.toUserInputAnalysis(
     tagCandidateMapper: UserInputTagCandidateMapper,
 ): UserInputAnalysis =
     UserInputAnalysis(
-        intentType = optionalIntentType(),
         canonicalIntent = null,
         tagCandidates = tagCandidateMapper.map(tagCandidateNodes(), input, tagGroups),
     )
-
-private fun JsonNode.optionalIntentType(): IntentType =
-    stringOrEmpty("intentType")
-        .takeIf { value -> value.isNotBlank() }
-        ?.let(IntentType::valueOf)
-        ?: IntentType.EMOTION_NEED_BASED
 
 private fun JsonNode.tagCandidateNodes(): List<Pair<TagType, JsonNode>> =
     listOf(
@@ -51,9 +43,3 @@ private fun JsonNode.tagCandidateNodes(): List<Pair<TagType, JsonNode>> =
     ).flatMap { (type, fieldName) ->
         path(fieldName).toList().map { node -> type to node }
     }
-
-private fun JsonNode.stringOrEmpty(fieldName: String): String =
-    path(fieldName)
-        .takeUnless { node -> node.isMissingNode || node.isNull }
-        ?.asString()
-        .orEmpty()

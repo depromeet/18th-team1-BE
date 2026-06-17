@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.model.Tag
 import com.firstpenguin.app.domain.quotemetadata.dto.TagOption
-import com.firstpenguin.app.domain.recommendation.model.IntentType
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.TagCandidatePriority
 import com.firstpenguin.app.domain.recommendation.model.TagCandidateSource
@@ -30,7 +29,6 @@ class UserInputParseOutputParserTest {
             )
         val candidate = result.tagCandidates.first()
 
-        assertEquals(IntentType.EMOTION_NEED_BASED, result.intentType)
         assertEquals(null, result.canonicalIntent)
         assertEquals(SITUATION_TAG_ID, candidate.tagId)
         assertEquals("SITUATION_FAILURE_MISTAKE", candidate.code)
@@ -141,7 +139,6 @@ class UserInputParseOutputParserTest {
         fun outputText(vararg candidates: Pair<TagType, String>): String =
             """
             {
-              "intentType": "EMOTION_NEED_BASED",
               "emotionTagCandidates": [${candidates.jsonArray(TagType.EMOTION)}],
               "needTagCandidates": [${candidates.jsonArray(TagType.NEED)}],
               "situationTagCandidates": [${candidates.jsonArray(TagType.SITUATION)}],
