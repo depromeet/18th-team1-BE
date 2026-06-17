@@ -41,12 +41,13 @@ class RecommendationCandidateRepository(
         effectiveTags: Collection<EffectiveTag>,
         limit: Int,
     ): List<RecommendationCandidate> {
-        val hardFilterTagIds = effectiveTags.hardFilterTagIds()
+        val hardFilterTags = effectiveTags.hardFilterTags()
+        val hardFilterTagIds = hardFilterTags.map { tag -> tag.tagId }
         if (hardFilterTagIds.isEmpty()) return emptyList()
 
         return dsl
             .select(CANDIDATE_ROW_FIELDS)
-            .from(candidateQuoteIdsTable(hardFilterTagIds, limit))
+            .from(candidateQuoteIdsTable(hardFilterTags, limit))
             .join(QuoteTable.QUOTES)
             .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
             .join(BookTable.BOOKS)
@@ -143,10 +144,13 @@ class RecommendationCandidateRepository(
     }
 
     private fun candidateQuoteIdsTable(
-        hardFilterTagIds: List<Long>,
+        hardFilterTags: List<EffectiveTag>,
         limit: Int,
-    ): Table<*> =
-        dsl
+    ): Table<*> {
+        val hardFilterTagIds = hardFilterTags.map { tag -> tag.tagId }
+        val hardFilterTypeNames = hardFilterTags.map { tag -> tag.type.name }.distinct()
+
+        return dsl
             .select(QuoteTable.ID.`as`(CANDIDATE_QUOTE_ID_NAME))
             .from(QuoteTable.QUOTES)
             .join(BookTable.BOOKS)
@@ -154,12 +158,16 @@ class RecommendationCandidateRepository(
             .join(QuoteMetadataTable.QUOTE_METADATA)
             .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
             .where(activeQuoteAndBookCondition())
-            .and(hardFilterMatchExists(hardFilterTagIds))
+            .and(hardFilterMatchExists(hardFilterTagIds, hardFilterTypeNames))
             .orderBy(QuoteTable.ID.asc())
             .limit(limit)
             .asTable(CANDIDATE_QUOTE_IDS_TABLE)
+    }
 
-    private fun hardFilterMatchExists(hardFilterTagIds: List<Long>): Condition =
+    private fun hardFilterMatchExists(
+        hardFilterTagIds: List<Long>,
+        hardFilterTypeNames: List<String>,
+    ): Condition =
         DSL.exists(
             DSL
                 .selectOne()
@@ -168,7 +176,7 @@ class RecommendationCandidateRepository(
                 .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
                 .where(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
                 .and(TagTable.ID.`in`(hardFilterTagIds))
-                .and(TagTable.TYPE.`in`(HARD_FILTER_TAG_TYPE_NAMES))
+                .and(TagTable.TYPE.`in`(hardFilterTypeNames))
                 .and(activeTagCondition()),
         )
 
@@ -179,18 +187,22 @@ class RecommendationCandidateRepository(
 
     private fun activeTagCondition(): Condition = TagTable.IS_ACTIVE.isTrue
 
-    private fun Collection<EffectiveTag>.hardFilterTagIds(): List<Long> =
-        filter { tag -> tag.type in HARD_FILTER_TAG_TYPES }
-            .map { tag -> tag.tagId }
-            .distinct()
+    private fun Collection<EffectiveTag>.hardFilterTags(): List<EffectiveTag> {
+        val emotionTags = only(TagType.EMOTION)
+        if (emotionTags.isNotEmpty()) return emotionTags
+
+        return only(TagType.NEED)
+    }
+
+    private fun Collection<EffectiveTag>.only(tagType: TagType): List<EffectiveTag> =
+        filter { tag -> tag.type == tagType }
+            .distinctBy { tag -> tag.tagId }
 
     private companion object {
         const val CANDIDATE_QUOTE_IDS_TABLE = "candidate_quote_ids"
         const val CANDIDATE_QUOTE_ID_NAME = "quote_id"
         val CANDIDATE_QUOTE_ID: Field<Long> =
             DSL.field(DSL.name(CANDIDATE_QUOTE_IDS_TABLE, CANDIDATE_QUOTE_ID_NAME), Long::class.java)
-        val HARD_FILTER_TAG_TYPES = setOf(TagType.EMOTION, TagType.NEED)
-        val HARD_FILTER_TAG_TYPE_NAMES = HARD_FILTER_TAG_TYPES.map { type -> type.name }
         val CANDIDATE_ROW_FIELDS: List<Field<*>> =
             listOf(
                 QuoteTable.ID,

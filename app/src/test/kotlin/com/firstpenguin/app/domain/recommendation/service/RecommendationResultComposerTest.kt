@@ -102,6 +102,30 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `감정 점수가 없는 후보는 감정 매칭 후보보다 뒤로 미룬다`() {
+        val candidates =
+            listOf(candidate(MISSING_EMOTION_QUOTE_ID, roleTagId = 1L, tagIdsByType = emptyMap())) +
+                (2L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("행복한 마음을 나누고 싶다", listOf(0.1)),
+                semanticScores = mapOf(MISSING_EMOTION_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+
+        val result =
+            composer.compose(
+                input = recommendationInput(),
+                effectiveTags = effectiveTags,
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+            )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
+
+        assertEquals(MISSING_EMOTION_QUOTE_ID, quoteIds.last())
+    }
+
+    @Test
     fun `분석 대상 텍스트가 있으면 LLM 분석이 실패해도 분석 로그를 남긴다`() {
         val composer = composer()
 
@@ -185,6 +209,8 @@ class RecommendationResultComposerTest {
         const val EMOTION_TAG_ID = 201L
         const val ROLE_TAG_ID = 301L
         const val OTHER_ROLE_TAG_ID = 302L
+        const val MISSING_EMOTION_QUOTE_ID = 1L
+        const val HIGH_SEMANTIC_SCORE = 1.0
 
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 13, 0, 0)
         val effectiveTags =
@@ -242,6 +268,11 @@ class RecommendationResultComposerTest {
         fun candidate(
             quoteId: Long,
             roleTagId: Long?,
+            tagIdsByType: Map<TagType, Set<Long>> =
+                mapOf(
+                    TagType.NEED to setOf(NEED_TAG_ID),
+                    TagType.EMOTION to setOf(EMOTION_TAG_ID),
+                ),
         ): RecommendationCandidate =
             RecommendationCandidate(
                 quoteId = quoteId,
@@ -250,11 +281,7 @@ class RecommendationResultComposerTest {
                 title = "title",
                 author = "author",
                 roleTagId = roleTagId,
-                tagIdsByType =
-                    mapOf(
-                        TagType.NEED to setOf(NEED_TAG_ID),
-                        TagType.EMOTION to setOf(EMOTION_TAG_ID),
-                    ),
+                tagIdsByType = tagIdsByType,
             )
 
         fun tag(

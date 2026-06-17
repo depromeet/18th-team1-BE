@@ -19,6 +19,8 @@ private const val MAX_SAME_ROLE_TAG_COUNT = 3
 private const val NO_ROLE_TAG_COUNT = 0
 private const val DEFAULT_SEMANTIC_SCORE = 0.0
 
+private typealias RankedQuotes = List<RankedRecommendationQuote>
+
 @Component
 class RecommendationResultComposer(
     private val metadataScorer: MetadataScorer,
@@ -66,6 +68,7 @@ class RecommendationResultComposer(
         val rankedQuotes =
             rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
                 .diversifyRoleTags()
+                .preferEmotionMatches()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
         if (rankedQuotes.isEmpty()) return null
@@ -208,4 +211,13 @@ private fun RecommendationInput.fallbackAnalysisLog(): RecommendationAnalysisLog
 
 private fun RecommendationInput.hasAnalysisText(): Boolean = feelingText.hasValue() || diaryText.hasValue()
 
+private fun RankedQuotes.preferEmotionMatches(): RankedQuotes =
+    filterNot { quote -> quote.isMissingEmotionMatch() }
+        .plus(filter { quote -> quote.isMissingEmotionMatch() })
+        .distinctBy { quote -> quote.quoteId }
+
+private fun RankedRecommendationQuote.isMissingEmotionMatch(): Boolean = score.emotionScore <= NO_EMOTION_SCORE
+
 private fun String?.hasValue(): Boolean = !isNullOrBlank()
+
+private const val NO_EMOTION_SCORE = 0.0
