@@ -125,6 +125,42 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `need fallback 후보는 감정 후보 뒤로 미룬다`() {
+        val provider =
+            FakeRecommendationCandidateProvider(
+                needCandidates =
+                    listOf(
+                        candidate(
+                            quoteId = HIGH_NEED_FALLBACK_QUOTE_ID,
+                            roleTagId = HIGH_NEED_FALLBACK_QUOTE_ID,
+                        ),
+                    ),
+            )
+        val composer = composer(provider)
+        val primaryCandidates =
+            (1L..9L).map { quoteId ->
+                candidate(
+                    quoteId = quoteId,
+                    roleTagId = quoteId,
+                    tagIdsByType = mapOf(TagType.EMOTION to setOf(EMOTION_TAG_ID)),
+                )
+            }
+
+        val result =
+            composer.compose(
+                input = recommendationInput(),
+                effectiveTags = effectiveTags,
+                candidates = primaryCandidates,
+                moodTagIdByCode = emptyMap(),
+            )
+        val quotes = requireNotNull(result).quotes
+
+        assertEquals((1L..9L).toList(), quotes.take(9).map { quote -> quote.quoteId })
+        assertEquals(HIGH_NEED_FALLBACK_QUOTE_ID, quotes.last().quoteId)
+        assertEquals(RecommendationCandidateSource.FALLBACK_NEED, quotes.last().source)
+    }
+
+    @Test
     fun `분석 대상 텍스트가 있으면 LLM 분석이 실패해도 분석 로그를 남긴다`() {
         val composer = composer()
 
@@ -142,7 +178,25 @@ class RecommendationResultComposerTest {
         assertEquals(null, result?.analysisLog?.embeddingInputText)
     }
 
+    @Test
+    fun `LLM 분석이 실패해도 embedding이 성공하면 embedding input을 분석 로그에 남긴다`() {
+        val composer = composer()
+
+        val result =
+            composer.compose(
+                input = recommendationInputWithoutAnalysis(diaryText = "행복해서!"),
+                effectiveTags = effectiveTags,
+                candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+                userEmbedding = UserSemanticEmbedding(FALLBACK_EMBEDDING_INPUT, listOf(0.1), EMBEDDING_ELAPSED_MS),
+            )
+
+        assertEquals(FALLBACK_EMBEDDING_INPUT, result?.analysisLog?.embeddingInputText)
+        assertEquals(EMBEDDING_ELAPSED_MS, result?.analysisLog?.embeddingElapsedMs)
+    }
+
     private class FakeRecommendationCandidateProvider(
+        private val needCandidates: List<RecommendationCandidate> = emptyList(),
         private val randomCandidates: List<RecommendationCandidate> = emptyList(),
     ) : RecommendationCandidateProvider {
         val calls = mutableListOf<String>()
@@ -151,9 +205,14 @@ class RecommendationResultComposerTest {
             effectiveTags: Collection<EffectiveTag>,
             limit: Int,
         ): List<RecommendationCandidate> {
-            calls.add(effectiveTags.firstOrNull()?.type?.name ?: "EMPTY")
+            val tagType = effectiveTags.firstOrNull()?.type
+            calls.add(tagType?.name ?: "EMPTY")
 
-            return emptyList()
+            return if (tagType == TagType.NEED) {
+                needCandidates
+            } else {
+                emptyList()
+            }
         }
 
         override fun findCandidatesByEmotionRangeId(
@@ -219,7 +278,10 @@ class RecommendationResultComposerTest {
         const val ROLE_TAG_ID = 301L
         const val OTHER_ROLE_TAG_ID = 302L
         const val MISSING_EMOTION_QUOTE_ID = 1L
+        const val HIGH_NEED_FALLBACK_QUOTE_ID = 100L
         const val HIGH_SEMANTIC_SCORE = 1.0
+        const val EMBEDDING_ELAPSED_MS = 123L
+        const val FALLBACK_EMBEDDING_INPUT = "diaryText: 행복해서!"
 
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 13, 0, 0)
         val effectiveTags =

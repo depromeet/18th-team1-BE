@@ -107,9 +107,48 @@ class RecommendationEngineTest {
         }
     }
 
+    @Test
+    fun `canonical 분석이 실패해도 embedding 준비를 시작한다`() {
+        val calls = Collections.synchronizedList(mutableListOf<String>())
+        val analysisService =
+            ControlledUserInputAnalysisService(
+                calls = calls,
+                tagCandidates = listOf(contextCandidate()),
+                canonicalAnalysis = null,
+            )
+        val semanticProvider = RecordingSemanticProvider(calls)
+        val candidateProvider = RecordingCandidateProvider(calls)
+        val engine = engine(analysisService, semanticProvider, candidateProvider)
+        val executor = Executors.newSingleThreadExecutor()
+        val resultFuture =
+            CompletableFuture.supplyAsync(
+                { engine.recommend(userId = USER_ID, request = recommendationRequest()) },
+                executor,
+            )
+
+        try {
+            analysisService.awaitStarted()
+            analysisService.completeCanonical()
+            semanticProvider.awaitPrepared()
+
+            assertEquals(1, semanticProvider.prepareCallCount)
+
+            analysisService.completeAnalysis()
+            val result = resultFuture.get(1, TimeUnit.SECONDS)
+
+            assertEquals(RECOMMENDATION_RESULT_COUNT, result.quotes.size)
+        } finally {
+            analysisService.completeCanonical()
+            analysisService.completeAnalysis()
+            resultFuture.cancel(true)
+            executor.shutdownNow()
+        }
+    }
+
     private class ControlledUserInputAnalysisService(
         private val calls: MutableList<String>,
         private val tagCandidates: List<TagCandidate>,
+        private val canonicalAnalysis: UserInputAnalysis? = defaultCanonicalAnalysis(),
     ) : UserInputAnalysisService {
         private val started = CountDownLatch(1)
         private val canonicalAnalysisFuture = CompletableFuture<UserInputAnalysis?>()
@@ -130,7 +169,7 @@ class RecommendationEngineTest {
         }
 
         fun completeCanonical() {
-            canonicalAnalysisFuture.complete(canonicalAnalysis())
+            canonicalAnalysisFuture.complete(canonicalAnalysis)
         }
 
         fun completeAnalysis() {
@@ -139,15 +178,11 @@ class RecommendationEngineTest {
 
         fun isAnalysisDone(): Boolean = analysisFuture.isDone
 
-        private fun canonicalAnalysis(): UserInputAnalysis =
-            UserInputAnalysis(
-                canonicalIntent = CANONICAL_INTENT,
-                tagCandidates = emptyList(),
-            )
-
         private fun tagAnalysis(): UserInputAnalysis =
-            canonicalAnalysis()
-                .copy(tagCandidates = tagCandidates)
+            UserInputAnalysis(
+                canonicalIntent = canonicalAnalysis?.canonicalIntent,
+                tagCandidates = tagCandidates,
+            )
     }
 
     private class RecordingSemanticProvider(
@@ -323,6 +358,12 @@ class RecommendationEngineTest {
                 type = TagType.CONTEXT,
                 source = TagCandidateSource.FEELING_TEXT,
                 priority = TagCandidatePriority.PRIMARY,
+            )
+
+        fun defaultCanonicalAnalysis(): UserInputAnalysis =
+            UserInputAnalysis(
+                canonicalIntent = CANONICAL_INTENT,
+                tagCandidates = emptyList(),
             )
 
         fun candidates(): List<RecommendationCandidate> =

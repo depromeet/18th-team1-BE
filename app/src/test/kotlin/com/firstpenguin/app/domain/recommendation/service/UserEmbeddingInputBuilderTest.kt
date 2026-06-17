@@ -23,15 +23,35 @@ class UserEmbeddingInputBuilderTest {
     }
 
     @Test
-    fun `canonicalIntent가 없으면 tag label 템플릿을 만들지 않는다`() {
-        val result = builder.build(recommendationInput(canonicalIntent = null))
+    fun `canonicalIntent가 없으면 사용자 입력 텍스트를 embedding input으로 사용한다`() {
+        val result =
+            builder.build(
+                recommendationInput(
+                    canonicalIntent = null,
+                    feelingText = "  비 오는 출근길이 불안해  ",
+                    diaryText = "회사에 늦을까 걱정했다",
+                ),
+            )
 
-        assertNull(result)
+        assertEquals("feelingText: 비 오는 출근길이 불안해\ndiaryText: 회사에 늦을까 걱정했다", result)
     }
 
     @Test
-    fun `canonicalIntent가 blank면 embedding input을 만들지 않는다`() {
-        val result = builder.build(recommendationInput(canonicalIntent = " "))
+    fun `canonicalIntent가 blank면 사용자 입력 텍스트를 embedding input으로 사용한다`() {
+        val result =
+            builder.build(
+                recommendationInput(
+                    canonicalIntent = " ",
+                    feelingText = "불안해",
+                ),
+            )
+
+        assertEquals("feelingText: 불안해", result)
+    }
+
+    @Test
+    fun `canonicalIntent와 사용자 입력 텍스트가 모두 없으면 embedding input을 만들지 않는다`() {
+        val result = builder.build(recommendationInput(canonicalIntent = null))
 
         assertNull(result)
     }
@@ -44,15 +64,19 @@ class UserEmbeddingInputBuilderTest {
         const val NEED_TAG_ID = 20L
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 14, 0, 0)
 
-        fun recommendationInput(canonicalIntent: String?): RecommendationInput =
+        fun recommendationInput(
+            canonicalIntent: String?,
+            feelingText: String? = null,
+            diaryText: String? = null,
+        ): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
                 emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "불안")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "위로"),
-                feelingText = null,
-                diaryText = null,
+                feelingText = feelingText,
+                diaryText = diaryText,
                 analysis =
                     UserInputAnalysis(
                         canonicalIntent = canonicalIntent,

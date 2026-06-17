@@ -98,7 +98,7 @@ class RecommendationEngine(
         analysisTask
             .canonicalAnalysis()
             .thenApplyAsync(
-                { analysis -> analysis?.let { semanticProvider.prepare(input.copy(analysis = it)) } },
+                { analysis -> semanticProvider.prepare(input.copy(analysis = analysis)) },
                 analysisExecutor,
             ).exceptionally { null }
 }
