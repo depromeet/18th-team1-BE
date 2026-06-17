@@ -3,8 +3,7 @@ package com.firstpenguin.app.domain.discovery.service
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
-import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
-import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.repository.DiscoveryRepository
 import org.springframework.stereotype.Service
 
@@ -25,20 +24,6 @@ class DiscoveryService(
             limit = limit,
         )
 
-    fun searchRecommendedQuotes(
-        userId: Long,
-        query: String,
-        sort: DiscoveryQuoteSearchSort,
-        cursor: DiscoveryQuoteSearchCursor?,
-        genre: DiscoveryGenre?,
-        limit: Int,
-    ): List<DiscoveryQuote> =
-        discoveryRepository.searchRecommendedQuotes(
-            userId = userId,
-            query = query,
-            sort = sort,
-            cursor = cursor,
-            genre = genre,
-            limit = limit,
-        )
+    fun searchRecommendedQuotes(criteria: DiscoveryQuoteSearchCriteria): List<DiscoveryQuote> =
+        discoveryRepository.searchRecommendedQuotes(criteria)
 }

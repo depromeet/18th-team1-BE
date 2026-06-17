@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuotesResponse
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.discovery.service.DiscoveryService
@@ -67,12 +68,14 @@ class DiscoveryUseCase(
         genre: String?,
     ): List<DiscoveryQuote> =
         discoveryService.searchRecommendedQuotes(
-            userId = userId,
-            query = normalizeQuery(query),
-            sort = sort,
-            cursor = DiscoveryQuoteSearchCursor.parse(cursor, sort),
-            genre = DiscoveryGenre.parse(genre),
-            limit = DISCOVERY_QUOTE_COUNT + NEXT_PAGE_CHECK_COUNT,
+            DiscoveryQuoteSearchCriteria(
+                userId = userId,
+                query = normalizeQuery(query),
+                sort = sort,
+                cursor = DiscoveryQuoteSearchCursor.parse(cursor, sort),
+                genre = DiscoveryGenre.parse(genre),
+                limit = DISCOVERY_QUOTE_COUNT + NEXT_PAGE_CHECK_COUNT,
+            ),
         )
 
     private fun normalizeQuery(query: String?): String =

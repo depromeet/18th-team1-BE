@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryNeedTag
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
@@ -50,15 +51,8 @@ class DiscoveryRepository(
             .fetch(::toDiscoveryQuote)
     }
 
-    fun searchRecommendedQuotes(
-        userId: Long,
-        query: String,
-        sort: DiscoveryQuoteSearchSort,
-        cursor: DiscoveryQuoteSearchCursor?,
-        genre: DiscoveryGenre?,
-        limit: Int,
-    ): List<DiscoveryQuote> {
-        if (limit <= 0) return emptyList()
+    fun searchRecommendedQuotes(criteria: DiscoveryQuoteSearchCriteria): List<DiscoveryQuote> {
+        if (criteria.limit <= 0) return emptyList()
 
         val recommendationEvents = recommendationEvents()
         val rankedRecommendationEvents = rankedRecommendationEvents(recommendationEvents)
@@ -66,13 +60,18 @@ class DiscoveryRepository(
         val quoteScrapCounts = quoteScrapCounts()
         val scrapCount = scrapCount(quoteScrapCounts)
 
-        return baseDiscoverySearchQuery(userId, rankedRecommendationEvents, needTags, quoteScrapCounts, scrapCount)
-            .where(latestRecommendationRankCondition(rankedRecommendationEvents))
-            .and(activeQuoteCondition(genre))
-            .and(QuoteTable.CONTENT.containsIgnoreCase(query))
-            .and(searchCursorCondition(sort, rankedRecommendationEvents, scrapCount, cursor))
-            .orderBy(searchOrderBy(sort, rankedRecommendationEvents, scrapCount))
-            .limit(limit)
+        return baseDiscoverySearchQuery(
+            criteria.userId,
+            rankedRecommendationEvents,
+            needTags,
+            quoteScrapCounts,
+            scrapCount,
+        ).where(latestRecommendationRankCondition(rankedRecommendationEvents))
+            .and(activeQuoteCondition(criteria.genre))
+            .and(searchContentCondition(criteria.query))
+            .and(searchCursorCondition(criteria.sort, rankedRecommendationEvents, scrapCount, criteria.cursor))
+            .orderBy(searchOrderBy(criteria.sort, rankedRecommendationEvents, scrapCount))
+            .limit(criteria.limit)
             .fetch(::toDiscoveryQuote)
     }
 
@@ -122,6 +121,13 @@ class DiscoveryRepository(
             .isNull
             .and(BookTable.DELETED_AT.isNull)
             .and(genre?.let { selectedGenre -> BookTable.CATEGORY.eq(selectedGenre.value) } ?: DSL.noCondition())
+
+    private fun searchContentCondition(query: String): Condition =
+        DSL.condition(
+            "{0} ilike {1}",
+            QuoteTable.CONTENT,
+            DSL.value("%$query%"),
+        )
 
     private fun cursorCondition(
         rankedRecommendationEvents: Table<*>,

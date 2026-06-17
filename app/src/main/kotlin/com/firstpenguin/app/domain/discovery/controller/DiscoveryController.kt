@@ -82,7 +82,7 @@ class DiscoveryController(
         @Parameter(hidden = true)
         @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @Parameter(description = "검색어. 문장 내용에서만 검색한다.", example = "투쟁")
-        @RequestParam query: String?,
+        @RequestParam(required = false) query: String?,
         @Parameter(
             description = "검색 정렬. 생략하면 최신순이다.",
             example = "latest",

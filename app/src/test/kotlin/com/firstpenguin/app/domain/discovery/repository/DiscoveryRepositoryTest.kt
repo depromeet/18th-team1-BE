@@ -3,6 +3,7 @@ package com.firstpenguin.app.domain.discovery.repository
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
@@ -99,18 +100,15 @@ class DiscoveryRepositoryTest {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).searchRecommendedQuotes(
-                    userId = USER_ID,
-                    query = SEARCH_QUERY,
-                    sort = DiscoveryQuoteSearchSort.LATEST,
-                    cursor = null,
-                    genre = null,
-                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(),
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("\"quotes\".\"content\""), normalizedSql)
-        assertTrue(normalizedSql.contains("like"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"quotes\".\"content\" ilike"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"books\".\"title\" ilike"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"books\".\"author\" ilike"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"users\".\"nickname\" ilike"), normalizedSql)
         assertTrue(
             normalizedSql.contains(
                 "order by \"ranked_recommendation_events\".\"recommended_at\" desc, \"quotes\".\"id\" desc",
@@ -124,12 +122,10 @@ class DiscoveryRepositoryTest {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).searchRecommendedQuotes(
-                    userId = USER_ID,
-                    query = SEARCH_QUERY,
-                    sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                    cursor = null,
-                    genre = DiscoveryGenre.KOREAN_NOVEL,
-                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(
+                        sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                        genre = DiscoveryGenre.KOREAN_NOVEL,
+                    ),
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
@@ -145,12 +141,10 @@ class DiscoveryRepositoryTest {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).searchRecommendedQuotes(
-                    userId = USER_ID,
-                    query = SEARCH_QUERY,
-                    sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                    cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
-                    genre = null,
-                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(
+                        sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                        cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
+                    ),
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
@@ -175,6 +169,20 @@ class DiscoveryRepositoryTest {
         repositoryCall(dsl)
         return capturedSql
     }
+
+    private fun searchCriteria(
+        sort: DiscoveryQuoteSearchSort = DiscoveryQuoteSearchSort.LATEST,
+        cursor: DiscoveryQuoteSearchCursor? = null,
+        genre: DiscoveryGenre? = null,
+    ): DiscoveryQuoteSearchCriteria =
+        DiscoveryQuoteSearchCriteria(
+            userId = USER_ID,
+            query = SEARCH_QUERY,
+            sort = sort,
+            cursor = cursor,
+            genre = genre,
+            limit = DISCOVERY_QUOTE_FETCH_COUNT,
+        )
 
     private companion object {
         const val USER_ID = 1L

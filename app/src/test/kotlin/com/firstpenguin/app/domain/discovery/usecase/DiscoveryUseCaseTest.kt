@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryNeedTag
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.discovery.service.DiscoveryService
@@ -177,12 +178,7 @@ class DiscoveryUseCaseTest {
         Mockito
             .`when`(
                 discoveryService.searchRecommendedQuotes(
-                    USER_ID,
-                    SEARCH_QUERY,
-                    DiscoveryQuoteSearchSort.LATEST,
-                    null,
-                    null,
-                    DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(),
                 ),
             ).thenReturn(listOf(quote))
 
@@ -212,12 +208,11 @@ class DiscoveryUseCaseTest {
         Mockito
             .`when`(
                 discoveryService.searchRecommendedQuotes(
-                    USER_ID,
-                    SEARCH_QUERY,
-                    DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                    DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
-                    DiscoveryGenre.KOREAN_NOVEL,
-                    DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(
+                        sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                        cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
+                        genre = DiscoveryGenre.KOREAN_NOVEL,
+                    ),
                 ),
             ).thenReturn(listOf(quote))
 
@@ -242,12 +237,7 @@ class DiscoveryUseCaseTest {
         Mockito
             .`when`(
                 discoveryService.searchRecommendedQuotes(
-                    USER_ID,
-                    SEARCH_QUERY,
-                    DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                    null,
-                    null,
-                    DISCOVERY_QUOTE_FETCH_COUNT,
+                    searchCriteria(sort = DiscoveryQuoteSearchSort.SCRAP_COUNT),
                 ),
             ).thenReturn(quotes)
 
@@ -315,6 +305,20 @@ class DiscoveryUseCaseTest {
             recommendedAt = RECOMMENDED_AT,
             isScrapped = isScrapped,
             scrapCount = scrapCount,
+        )
+
+    private fun searchCriteria(
+        sort: DiscoveryQuoteSearchSort = DiscoveryQuoteSearchSort.LATEST,
+        cursor: DiscoveryQuoteSearchCursor? = null,
+        genre: DiscoveryGenre? = null,
+    ): DiscoveryQuoteSearchCriteria =
+        DiscoveryQuoteSearchCriteria(
+            userId = USER_ID,
+            query = SEARCH_QUERY,
+            sort = sort,
+            cursor = cursor,
+            genre = genre,
+            limit = DISCOVERY_QUOTE_FETCH_COUNT,
         )
 
     private companion object {
