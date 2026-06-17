@@ -4,8 +4,11 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 const val RECOMMENDATION_PREFETCH_EXECUTOR_NAME = "recommendationPrefetchExecutor"
+const val RECOMMENDATION_EMBEDDING_EXECUTOR_NAME = "recommendationEmbeddingExecutor"
 
 @Configuration
 class RecommendationExecutorConfig {
@@ -18,6 +21,9 @@ class RecommendationExecutorConfig {
             setThreadNamePrefix(THREAD_NAME_PREFIX)
             initialize()
         }
+
+    @Bean(name = [RECOMMENDATION_EMBEDDING_EXECUTOR_NAME], destroyMethod = "shutdown")
+    fun recommendationEmbeddingExecutor(): ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
 
     private companion object {
         const val CORE_POOL_SIZE = 4

@@ -8,4 +8,5 @@ data class TagOption(
     val code: String,
     val label: String,
     val description: String?,
+    val emotionRangeId: Long? = null,
 )
