@@ -74,7 +74,7 @@ class RecommendationResultComposerTest {
                 moodTagIdByCode = emptyMap(),
             )
 
-        assertEquals(listOf("NEED", "EMOTION", "RELAXED", "RANDOM"), provider.calls)
+        assertEquals(listOf("EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
         assertEquals((1L..10L).toList(), result?.quotes?.map { quote -> quote.quoteId })
         assertEquals(RecommendationCandidateSource.PRIMARY, result?.quotes?.first()?.source)
         assertEquals(RecommendationCandidateSource.FALLBACK_RANDOM, result?.quotes?.last()?.source)
@@ -153,6 +153,15 @@ class RecommendationResultComposerTest {
             limit: Int,
         ): List<RecommendationCandidate> {
             calls.add(effectiveTags.firstOrNull()?.type?.name ?: "EMPTY")
+
+            return emptyList()
+        }
+
+        override fun findCandidatesByEmotionRangeId(
+            emotionRangeId: Long,
+            limit: Int,
+        ): List<RecommendationCandidate> {
+            calls.add("EMOTION_RANGE")
 
             return emptyList()
         }

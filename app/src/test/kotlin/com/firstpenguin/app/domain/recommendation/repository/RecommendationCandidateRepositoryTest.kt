@@ -63,6 +63,24 @@ class RecommendationCandidateRepositoryTest {
     }
 
     @Test
+    fun `emotion range 기반 fallback 후보를 조회한다`() {
+        val capturedQuery =
+            captureQuery { dsl ->
+                RecommendationCandidateRepository(dsl).findCandidatesByEmotionRangeId(
+                    emotionRangeId = EMOTION_RANGE_ID,
+                    limit = LIMIT,
+                )
+            }
+        val normalizedSql = capturedQuery.sql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("join \"quote_metadata\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"emotion_range_id\" = ?"), normalizedSql)
+        assertTrue(capturedQuery.bindings.contains(TagType.EMOTION.name))
+        assertTrue(capturedQuery.bindings.contains(EMOTION_RANGE_ID))
+    }
+
+    @Test
     fun `조회 row를 후보 단위로 묶어 태그 타입별 id를 채운다`() {
         val candidates =
             findCandidatesWithResult { dsl ->
@@ -243,6 +261,7 @@ class RecommendationCandidateRepositoryTest {
         const val NEED_TAG_ID = 32L
         const val MOOD_TAG_ID = 33L
         const val CONTEXT_TAG_ID = 34L
+        const val EMOTION_RANGE_ID = 1L
         const val CANDIDATE_ROW_COUNT = 4
         const val QUOTE_CONTENT = "좋은 문장"
         const val BOOK_TITLE = "좋은 책"

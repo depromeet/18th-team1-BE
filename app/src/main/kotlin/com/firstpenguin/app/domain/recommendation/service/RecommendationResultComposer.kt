@@ -60,6 +60,7 @@ class RecommendationResultComposer(
             rank(input, effectiveTags, primaryCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
         val supplementedCandidates =
             findSupplementedCandidates(
+                input = input,
                 effectiveTags = effectiveTags,
                 candidates = candidates,
                 initialRankedQuotes = initialRankedQuotes,
@@ -81,12 +82,14 @@ class RecommendationResultComposer(
     }
 
     private fun findSupplementedCandidates(
+        input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
         candidates: List<RecommendationCandidate>,
         initialRankedQuotes: List<RankedRecommendationQuote>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<SourcedRecommendationCandidate> =
         fallbackService.supplementCandidates(
+            input = input,
             effectiveTags = effectiveTags,
             existingCandidates = candidates,
             rankedQuotes = initialRankedQuotes,
