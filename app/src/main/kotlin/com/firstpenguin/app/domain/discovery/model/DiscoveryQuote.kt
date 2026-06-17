@@ -6,6 +6,7 @@ data class DiscoveryQuote(
     val quoteId: Long,
     val bookId: Long,
     val recommendedUserId: Long,
+    val recommendedUserNickname: String,
     val content: String,
     val title: String,
     val author: String,

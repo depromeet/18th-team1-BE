@@ -15,6 +15,8 @@ data class DiscoveryQuoteResponse(
     val bookId: Long,
     @field:Schema(description = "이 문장을 추천받은 사용자 ID", example = "1")
     val recommendedUserId: Long,
+    @field:Schema(description = "이 문장을 추천받은 사용자 닉네임", example = "첫번째펭귄")
+    val recommendedUserNickname: String,
     @field:Schema(description = "문장 내용", example = "새는 알에서 나오려고 투쟁한다.")
     val content: String,
     @field:Schema(description = "책 제목", example = "데미안")
@@ -50,6 +52,7 @@ data class DiscoveryQuoteResponse(
                 quoteId = quote.quoteId,
                 bookId = quote.bookId,
                 recommendedUserId = quote.recommendedUserId,
+                recommendedUserNickname = quote.recommendedUserNickname,
                 content = quote.content,
                 title = quote.title,
                 author = quote.author,

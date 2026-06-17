@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.emotion.model
 
+@Suppress("MagicNumber")
 enum class EmotionLevel(
     val value: Int,
     val label: String,

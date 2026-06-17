@@ -39,6 +39,7 @@ class DiscoveryUseCaseTest {
 
         assertEquals(1, response.quotes.size)
         assertEquals(RECOMMENDED_USER_ID, response.quotes.first().recommendedUserId)
+        assertEquals(RECOMMENDED_USER_NICKNAME, response.quotes.first().recommendedUserNickname)
         assertEquals(RECOMMENDED_AT, response.quotes.first().recommendedAt)
         assertEquals(EMOTION_VALUE, response.quotes.first().emotionValue)
         assertEquals(EMOTION_LABEL, response.quotes.first().emotionLabel)
@@ -298,6 +299,7 @@ class DiscoveryUseCaseTest {
             quoteId = quoteId,
             bookId = BOOK_ID,
             recommendedUserId = RECOMMENDED_USER_ID,
+            recommendedUserNickname = RECOMMENDED_USER_NICKNAME,
             content = "새는 알에서 나오려고 투쟁한다.",
             title = "데미안",
             author = "헤르만 헤세",
@@ -331,6 +333,7 @@ class DiscoveryUseCaseTest {
         const val QUOTE_ID = 10L
         const val BOOK_ID = 100L
         const val RECOMMENDED_USER_ID = 200L
+        const val RECOMMENDED_USER_NICKNAME = "문장수집가"
         const val NEED_TAG_ID = 49L
         const val NEED_TAG_LABEL = "공감해주는 문장"
         const val GENRE = "한국소설"

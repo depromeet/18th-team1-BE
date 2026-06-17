@@ -14,6 +14,7 @@ import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTagTable
+import com.firstpenguin.app.domain.user.repository.UserTable
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -83,6 +84,8 @@ class DiscoveryRepository(
     ) = dsl
         .select(discoveryQuoteFields(rankedRecommendationEvents, needTags, scrapCount))
         .from(rankedRecommendationEvents)
+        .join(UserTable.USERS)
+        .on(UserTable.ID.eq(recommendedUserId(rankedRecommendationEvents)))
         .join(QuoteTable.QUOTES)
         .on(QuoteTable.ID.eq(recommendedQuoteId(rankedRecommendationEvents)))
         .join(BookTable.BOOKS)
@@ -224,6 +227,7 @@ class DiscoveryRepository(
             quoteId = record.get(QuoteTable.ID),
             bookId = record.get(BookTable.ID),
             recommendedUserId = record.get(RECOMMENDED_USER_ID_FIELD),
+            recommendedUserNickname = record.get(UserTable.NICKNAME),
             content = record.get(QuoteTable.CONTENT),
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
@@ -313,6 +317,7 @@ class DiscoveryRepository(
             QuoteTable.ID,
             BookTable.ID,
             recommendedUserId(rankedRecommendationEvents),
+            UserTable.NICKNAME,
             QuoteTable.CONTENT,
             BookTable.TITLE,
             BookTable.AUTHOR,
@@ -332,7 +337,10 @@ class DiscoveryRepository(
 
     private fun recommendedUserId(table: Table<*>): Field<Long> = table.field(RECOMMENDED_USER_ID, Long::class.java)!!
 
-    private fun recommendedEmotionValue(table: Table<*>): Field<Int> = table.field(RECOMMENDED_EMOTION_VALUE, Int::class.java)!!
+    private fun recommendedEmotionValue(table: Table<*>): Field<Int> {
+        val fieldName = RECOMMENDED_EMOTION_VALUE
+        return table.field(fieldName, Int::class.java)!!
+    }
 
     private fun at(table: Table<*>): Field<LocalDateTime> = table.field(RECOMMENDED_AT, LocalDateTime::class.java)!!
 
