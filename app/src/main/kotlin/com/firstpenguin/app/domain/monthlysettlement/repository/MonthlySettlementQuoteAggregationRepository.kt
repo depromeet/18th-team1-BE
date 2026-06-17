@@ -36,7 +36,7 @@ class MonthlySettlementQuoteAggregationRepository(
         endExclusive: LocalDate,
     ): String? =
         dsl
-            .select(BookTable.CATEGORY)
+            .select(BookTable.GENRE)
             .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
             .join(RecommendationTable.RECOMMENDATIONS)
             .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
@@ -47,10 +47,10 @@ class MonthlySettlementQuoteAggregationRepository(
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(activeQuoteAndBookCondition())
             .and(bookGenreExists())
-            .groupBy(BookTable.CATEGORY)
-            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.CATEGORY.asc())
+            .groupBy(BookTable.GENRE)
+            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.GENRE.asc())
             .limit(1)
-            .fetchOne(BookTable.CATEGORY)
+            .fetchOne(BookTable.GENRE)
 
     fun findRecommendedBooksByGenre(
         userId: Long,
@@ -72,7 +72,7 @@ class MonthlySettlementQuoteAggregationRepository(
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(activeQuoteAndBookCondition())
-            .and(BookTable.CATEGORY.eq(genre))
+            .and(BookTable.GENRE.eq(genre))
             .groupBy(MONTHLY_BOOK_FIELDS)
             .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.ID.asc())
             .limit(limit)
@@ -90,7 +90,7 @@ class MonthlySettlementQuoteAggregationRepository(
             .select(MONTHLY_BOOK_FIELDS)
             .from(BookTable.BOOKS)
             .where(BookTable.DELETED_AT.isNull)
-            .and(BookTable.CATEGORY.eq(genre))
+            .and(BookTable.GENRE.eq(genre))
             .and(excludedBookCondition(excludedBookIds))
             .orderBy(BookTable.ID.asc())
             .limit(limit)
@@ -113,9 +113,9 @@ class MonthlySettlementQuoteAggregationRepository(
             .and(BookTable.DELETED_AT.isNull)
 
     private fun bookGenreExists(): Condition =
-        BookTable.CATEGORY
+        BookTable.GENRE
             .isNotNull
-            .and(DSL.trim(BookTable.CATEGORY).ne(""))
+            .and(DSL.trim(BookTable.GENRE).ne(""))
 
     private fun excludedBookCondition(excludedBookIds: List<Long>): Condition {
         if (excludedBookIds.isEmpty()) return DSL.noCondition()
@@ -129,7 +129,7 @@ class MonthlySettlementQuoteAggregationRepository(
             title = record[BookTable.TITLE]!!,
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
-            genre = record[BookTable.CATEGORY]!!,
+            genre = record[BookTable.GENRE]!!,
             sortOrder = 0,
         )
 
@@ -140,7 +140,7 @@ class MonthlySettlementQuoteAggregationRepository(
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.CATEGORY,
+                BookTable.GENRE,
             )
     }
 }
