@@ -13,10 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -27,6 +30,7 @@ import java.time.LocalDate
 
 @RestController
 @RequestMapping("/images")
+@Validated
 @Tag(name = "이미지", description = "이미지 업로드 API")
 class ImageController(
     private val imageUseCase: ImageUseCase,
@@ -112,9 +116,21 @@ class ImageController(
     )
     fun generateCalendarShareImage(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
-        @Parameter(description = "스타일 타입 (4 또는 5)", example = "4") @RequestParam type: Int,
-        @Parameter(description = "연도", example = "2026") @RequestParam year: Int,
-        @Parameter(description = "월 (1~12)", example = "11") @RequestParam month: Int,
+        @Parameter(description = "스타일 타입 (4 또는 5)", example = "4")
+        @RequestParam
+        @Min(SHARE_VIEW_4_TYPE)
+        @Max(SHARE_VIEW_5_TYPE)
+        type: Int,
+        @Parameter(description = "연도 (1~9999)", example = "2026")
+        @RequestParam
+        @Min(MIN_YEAR)
+        @Max(MAX_YEAR)
+        year: Int,
+        @Parameter(description = "월 (1~12)", example = "11")
+        @RequestParam
+        @Min(MIN_MONTH)
+        @Max(MAX_MONTH)
+        month: Int,
     ): ResponseEntity<ByteArray> =
         ResponseEntity
             .ok()
@@ -197,5 +213,12 @@ class ImageController(
                 "클라이언트는 presigned URL로 GCS에 PUT 업로드한 뒤, 도메인 생성/수정 API 호출 시 imageId를 함께 전달합니다. " +
                 "type은 DIARY(일기), USER_PROFILE(프로필 이미지), REPORT(신고) 중 하나를 지정합니다. " +
                 "contentType은 image/jpeg, image/png, image/webp만 허용합니다."
+
+        const val SHARE_VIEW_4_TYPE = 4L
+        const val SHARE_VIEW_5_TYPE = 5L
+        const val MIN_YEAR = 1L
+        const val MAX_YEAR = 9999L
+        const val MIN_MONTH = 1L
+        const val MAX_MONTH = 12L
     }
 }
