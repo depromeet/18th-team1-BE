@@ -7,7 +7,7 @@ import java.time.LocalDate
 data class RecommendationDetailResponse(
     val recommendationId: Long,
     val quote: QuoteResponse,
-    val emotionRangeId: Long,
+    val emotionValue: Int,
     val emotionTags: List<TagDto>,
     val needTag: TagDto?,
     val feelingText: String?,

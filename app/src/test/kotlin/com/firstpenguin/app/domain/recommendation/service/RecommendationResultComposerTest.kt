@@ -205,6 +205,7 @@ class RecommendationResultComposerTest {
         const val USER_ID = 1L
         const val BOOK_ID = 10L
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         const val NEED_TAG_ID = 101L
         const val EMOTION_TAG_ID = 201L
         const val ROLE_TAG_ID = 301L
@@ -241,6 +242,7 @@ class RecommendationResultComposerTest {
         fun recommendationInput(canonicalIntent: String? = null): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
+                emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
@@ -257,6 +259,7 @@ class RecommendationResultComposerTest {
         fun recommendationInputWithoutAnalysis(diaryText: String): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
+                emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),

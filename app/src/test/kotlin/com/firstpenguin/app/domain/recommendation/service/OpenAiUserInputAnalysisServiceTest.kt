@@ -165,6 +165,7 @@ class OpenAiUserInputAnalysisServiceTest {
 
     private companion object {
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         const val NEED_TAG_ID = 10L
         const val CONTEXT_TAG_ID = 20L
         const val USER_INPUT_ANALYSIS_MODEL = "gpt-5-mini"
@@ -303,6 +304,7 @@ class OpenAiUserInputAnalysisServiceTest {
         ): RecommendationInput =
             RecommendationInput(
                 userId = 1L,
+                emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = emotionTags,
                 needTag = needTag,

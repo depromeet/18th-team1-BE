@@ -47,7 +47,7 @@ class RecommendationResponseMapper(
         return RecommendationDetailResponse(
             recommendationId = recommendation.id,
             quote = toQuoteResponse(quote),
-            emotionRangeId = recommendation.emotionRangeId,
+            emotionValue = recommendation.emotionValue,
             emotionTags = emotionTags,
             needTag = needTag,
             feelingText = recommendation.feelingText,

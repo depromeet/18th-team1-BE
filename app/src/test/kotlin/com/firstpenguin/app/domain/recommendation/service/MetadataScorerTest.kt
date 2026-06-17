@@ -143,6 +143,7 @@ class MetadataScorerTest {
     ): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,
+            emotionValue = EMOTION_VALUE,
             emotionRangeId = EMOTION_RANGE_ID,
             emotionTags = emotionTags,
             needTag = tag(NEED_COMFORT_ID, TagType.NEED, "NEED_COMFORT"),
@@ -196,6 +197,7 @@ class MetadataScorerTest {
         const val USER_ID = 1L
         const val BOOK_ID = 10L
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         const val NEED_COMFORT_ID = 101L
         const val EMOTION_ANXIOUS_ID = 201L
         const val SITUATION_FAILURE_ID = 301L

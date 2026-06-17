@@ -70,6 +70,7 @@ class EffectiveTagBuilderTest {
     ): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,
+            emotionValue = SAD_EMOTION_VALUE,
             emotionRangeId = SAD_EMOTION_RANGE_ID,
             emotionTags = emotionTags,
             needTag = needTag,
@@ -118,6 +119,7 @@ class EffectiveTagBuilderTest {
     private companion object {
         const val USER_ID = 1L
         const val SAD_EMOTION_RANGE_ID = 1L
+        const val SAD_EMOTION_VALUE = 1
         const val DELTA = 0.000001
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 13, 0, 0)
     }

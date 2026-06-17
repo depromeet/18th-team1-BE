@@ -14,10 +14,14 @@ class EmotionService(
     private val tagRepository: TagRepository,
 ) {
     fun getEmotionTags(value: Int): List<Tag> {
-        val emotionRange = getEmotionRange(value)
+        val emotionRange = getEmotionRangeByValue(value)
 
         return tagRepository.getEmotionTagsByEmotionRangeId(emotionRange.id)
     }
+
+    fun getEmotionRangeByValue(value: Int): EmotionRange =
+        emotionRangeRepository.getEmotionRange(value)
+            ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
 
     fun getNeedTags(): List<Tag> = tagRepository.getNeedTags()
 
@@ -49,10 +53,6 @@ class EmotionService(
         tagRepository.getNeedTagByTagId(needTagId)
             ?: throw CustomException(ErrorCode.INVALID_NEED_TAG)
     }
-
-    private fun getEmotionRange(value: Int): EmotionRange =
-        emotionRangeRepository.getEmotionRange(value)
-            ?: throw CustomException(ErrorCode.EMOTION_RANGE_NOT_FOUND)
 
     private fun validateEmotionTagIds(
         emotionTags: List<Tag>,

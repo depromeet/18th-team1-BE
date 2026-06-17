@@ -13,6 +13,8 @@ internal object RecommendationTable {
         DSL.field(DSL.name("recommendations", "recommendation_date"), LocalDate::class.java)
     val FEELING_TEXT = DSL.field(DSL.name("recommendations", "feeling_text"), String::class.java)
     val DIARY_TEXT = DSL.field(DSL.name("recommendations", "diary_text"), String::class.java)
+    val EMOTION_VALUE =
+        DSL.field(DSL.name("recommendations", "emotion_value"), Int::class.java)
     val EMOTION_RANGE_ID =
         DSL.field(DSL.name("recommendations", "emotion_range_id"), Long::class.java)
     val CREATED_AT = DSL.field(DSL.name("recommendations", "created_at"), LocalDateTime::class.java)
