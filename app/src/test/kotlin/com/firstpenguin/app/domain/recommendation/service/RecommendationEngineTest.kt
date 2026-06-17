@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.time.LocalDateTime
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -31,8 +32,8 @@ import java.util.concurrent.TimeUnit
 class RecommendationEngineTest {
     @Test
     fun `canonical 분석이 끝나면 tag 분석 완료 전 embedding을 시작한다`() {
-        val calls = mutableListOf<String>()
-        val analysisService = ControlledUserInputAnalysisService(calls)
+        val calls = Collections.synchronizedList(mutableListOf<String>())
+        val analysisService = ControlledUserInputAnalysisService(calls, listOf(analyzedEmotionCandidate()))
         val semanticProvider = RecordingSemanticProvider(calls)
         val candidateProvider = RecordingCandidateProvider(calls)
         val engine = engine(analysisService, semanticProvider, candidateProvider)
@@ -45,19 +46,59 @@ class RecommendationEngineTest {
 
         try {
             analysisService.awaitStarted()
+            candidateProvider.awaitPrefetchCount(1)
+            assertEquals(setOf(TagType.EMOTION to EMOTION_TAG_ID), candidateProvider.prefetchedTagKeysAt(0))
+
             analysisService.completeCanonical()
 
             semanticProvider.awaitPrepared()
             assertEquals(1, semanticProvider.prepareCallCount)
             assertTrue(!analysisService.isAnalysisDone())
-            assertTrue("candidate-prefetch" !in calls)
+            assertEquals(1, candidateProvider.prefetchCallCount)
 
+            analysisService.completeAnalysis()
+            candidateProvider.awaitPrefetchCount(2)
+            val result = resultFuture.get(1, TimeUnit.SECONDS)
+
+            assertEquals(RECOMMENDATION_RESULT_COUNT, result.quotes.size)
+            assertEquals(
+                listOf("analysis-start", "candidate-prefetch", "semantic-prepare", "candidate-prefetch"),
+                synchronized(calls) { calls.take(4) },
+            )
+            assertTrue((TagType.EMOTION to ANALYZED_EMOTION_TAG_ID) in candidateProvider.prefetchedTagKeysAt(1))
+        } finally {
+            analysisService.completeCanonical()
+            analysisService.completeAnalysis()
+            resultFuture.cancel(true)
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `점수용 태그만 추가되면 후보 prefetch를 재사용한다`() {
+        val calls = Collections.synchronizedList(mutableListOf<String>())
+        val analysisService = ControlledUserInputAnalysisService(calls, listOf(contextCandidate()))
+        val semanticProvider = RecordingSemanticProvider(calls)
+        val candidateProvider = RecordingCandidateProvider(calls)
+        val engine = engine(analysisService, semanticProvider, candidateProvider)
+        val executor = Executors.newSingleThreadExecutor()
+        val resultFuture =
+            CompletableFuture.supplyAsync(
+                { engine.recommend(userId = USER_ID, request = recommendationRequest()) },
+                executor,
+            )
+
+        try {
+            analysisService.awaitStarted()
+            candidateProvider.awaitPrefetchCount(1)
+            analysisService.completeCanonical()
+            semanticProvider.awaitPrepared()
             analysisService.completeAnalysis()
             val result = resultFuture.get(1, TimeUnit.SECONDS)
 
             assertEquals(RECOMMENDATION_RESULT_COUNT, result.quotes.size)
-            assertEquals(listOf("analysis-start", "semantic-prepare", "candidate-prefetch"), calls.take(3))
-            assertTrue(TagType.CONTEXT in candidateProvider.prefetchedTagTypes)
+            assertEquals(1, candidateProvider.prefetchCallCount)
+            assertEquals(setOf(TagType.EMOTION to EMOTION_TAG_ID), candidateProvider.prefetchedTagKeysAt(0))
         } finally {
             analysisService.completeCanonical()
             analysisService.completeAnalysis()
@@ -68,6 +109,7 @@ class RecommendationEngineTest {
 
     private class ControlledUserInputAnalysisService(
         private val calls: MutableList<String>,
+        private val tagCandidates: List<TagCandidate>,
     ) : UserInputAnalysisService {
         private val started = CountDownLatch(1)
         private val canonicalAnalysisFuture = CompletableFuture<UserInputAnalysis?>()
@@ -105,19 +147,7 @@ class RecommendationEngineTest {
 
         private fun tagAnalysis(): UserInputAnalysis =
             canonicalAnalysis()
-                .copy(
-                    tagCandidates =
-                        listOf(
-                            TagCandidate(
-                                tagId = CONTEXT_TAG_ID,
-                                code = "CONTEXT_RAIN",
-                                label = "비",
-                                type = TagType.CONTEXT,
-                                source = TagCandidateSource.FEELING_TEXT,
-                                priority = TagCandidatePriority.PRIMARY,
-                            ),
-                        ),
-                )
+                .copy(tagCandidates = tagCandidates)
     }
 
     private class RecordingSemanticProvider(
@@ -152,17 +182,49 @@ class RecommendationEngineTest {
     private class RecordingCandidateProvider(
         private val calls: MutableList<String>,
     ) : RecommendationCandidateProvider {
-        val prefetchedTagTypes: MutableSet<TagType> = mutableSetOf()
+        private val firstPrefetch = CountDownLatch(1)
+        private val secondPrefetch = CountDownLatch(1)
+        private val prefetchedTagKeysByCall: MutableList<Set<Pair<TagType, Long>>> = mutableListOf()
+
+        val prefetchCallCount: Int
+            get() = synchronized(prefetchedTagKeysByCall) { prefetchedTagKeysByCall.size }
 
         override fun findCandidates(
             effectiveTags: Collection<EffectiveTag>,
             limit: Int,
         ): List<RecommendationCandidate> {
             calls.add("candidate-prefetch")
-            prefetchedTagTypes.addAll(effectiveTags.map { tag -> tag.type })
+            val callCount = recordPrefetchedTags(effectiveTags)
+            if (callCount == 1) {
+                firstPrefetch.countDown()
+            }
+            if (callCount == 2) {
+                secondPrefetch.countDown()
+            }
 
             return candidates()
         }
+
+        fun awaitPrefetchCount(count: Int) {
+            val latch =
+                if (count == 1) {
+                    firstPrefetch
+                } else {
+                    secondPrefetch
+                }
+            assertTrue(latch.await(1, TimeUnit.SECONDS))
+        }
+
+        fun prefetchedTagKeysAt(index: Int): Set<Pair<TagType, Long>> =
+            synchronized(
+                prefetchedTagKeysByCall,
+            ) { prefetchedTagKeysByCall[index] }
+
+        private fun recordPrefetchedTags(effectiveTags: Collection<EffectiveTag>): Int =
+            synchronized(prefetchedTagKeysByCall) {
+                prefetchedTagKeysByCall.add(effectiveTags.map { tag -> tag.type to tag.tagId }.toSet())
+                prefetchedTagKeysByCall.size
+            }
 
         override fun findCandidatesByEmotionRangeId(
             emotionRangeId: Long,
@@ -182,6 +244,7 @@ class RecommendationEngineTest {
         const val EMOTION_RANGE_ID = 1L
         const val EMOTION_VALUE = 1
         const val EMOTION_TAG_ID = 101L
+        const val ANALYZED_EMOTION_TAG_ID = 102L
         const val CONTEXT_TAG_ID = 201L
         const val RECOMMENDATION_RESULT_COUNT = 10
         const val CANONICAL_INTENT = "비 오는 출근길에 불안한 마음을 차분히 다독이고 싶다"
@@ -240,6 +303,26 @@ class RecommendationEngineTest {
                 emotionValue = EMOTION_VALUE,
                 emotionTagIds = listOf(EMOTION_TAG_ID),
                 feelingText = "비 오는 출근길에 마음이 불안해",
+            )
+
+        fun analyzedEmotionCandidate(): TagCandidate =
+            TagCandidate(
+                tagId = ANALYZED_EMOTION_TAG_ID,
+                code = "EMOTION_SAD",
+                label = "슬픔",
+                type = TagType.EMOTION,
+                source = TagCandidateSource.FEELING_TEXT,
+                priority = TagCandidatePriority.PRIMARY,
+            )
+
+        fun contextCandidate(): TagCandidate =
+            TagCandidate(
+                tagId = CONTEXT_TAG_ID,
+                code = "CONTEXT_RAIN",
+                label = "비",
+                type = TagType.CONTEXT,
+                source = TagCandidateSource.FEELING_TEXT,
+                priority = TagCandidatePriority.PRIMARY,
             )
 
         fun candidates(): List<RecommendationCandidate> =

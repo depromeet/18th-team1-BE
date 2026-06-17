@@ -7,6 +7,7 @@ import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataT
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTagTable
 import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.policy.RecommendationCandidateFilterPolicy
 import com.firstpenguin.app.global.enums.TagType
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -47,7 +48,7 @@ class RecommendationCandidateRepository(
         effectiveTags: Collection<EffectiveTag>,
         limit: Int,
     ): List<RecommendationCandidate> {
-        val hardFilterTags = effectiveTags.hardFilterTags()
+        val hardFilterTags = RecommendationCandidateFilterPolicy.hardFilterTags(effectiveTags)
         val hardFilterTagIds = hardFilterTags.map { tag -> tag.tagId }
         if (hardFilterTagIds.isEmpty()) return emptyList()
 
@@ -242,17 +243,6 @@ class RecommendationCandidateRepository(
             .and(BookTable.DELETED_AT.isNull)
 
     private fun activeTagCondition(): Condition = TagTable.IS_ACTIVE.isTrue
-
-    private fun Collection<EffectiveTag>.hardFilterTags(): List<EffectiveTag> {
-        val emotionTags = only(TagType.EMOTION)
-        if (emotionTags.isNotEmpty()) return emotionTags
-
-        return only(TagType.NEED)
-    }
-
-    private fun Collection<EffectiveTag>.only(tagType: TagType): List<EffectiveTag> =
-        filter { tag -> tag.type == tagType }
-            .distinctBy { tag -> tag.tagId }
 
     private companion object {
         const val CANDIDATE_QUOTE_IDS_TABLE = "candidate_quote_ids"

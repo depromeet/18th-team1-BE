@@ -2,10 +2,11 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.emotion.service.EmotionService
 import com.firstpenguin.app.domain.recommendation.dto.RecommendationRequest
+import com.firstpenguin.app.domain.recommendation.model.EffectiveTag
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
-import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
+import com.firstpenguin.app.domain.recommendation.policy.RecommendationCandidateFilterPolicy
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Qualifier
@@ -32,9 +33,11 @@ class RecommendationEngine(
         val input = buildInput(userId, request)
         val analysisTask = userInputAnalysisService.start(input)
         val userEmbedding = startUserEmbedding(input, analysisTask)
-        val prefetch = prefetcher.start(effectiveTagBuilder.build(input))
+        val selectedEffectiveTags = effectiveTagBuilder.build(input)
+        val selectedPrefetch = prefetcher.start(selectedEffectiveTags)
         val analyzedInput = input.copy(analysis = analysisTask.await())
         val effectiveTags = effectiveTagBuilder.build(analyzedInput)
+        val prefetch = prefetchFor(effectiveTags, selectedEffectiveTags, selectedPrefetch)
         val result =
             resultComposer.compose(
                 input = analyzedInput,
@@ -49,6 +52,24 @@ class RecommendationEngine(
             .takeIf { recommendationResult -> recommendationResult.quotes.size >= RECOMMENDATION_RESULT_QUOTE_COUNT }
             ?: notEnoughQuotes()
     }
+
+    private fun prefetchFor(
+        effectiveTags: List<EffectiveTag>,
+        selectedEffectiveTags: List<EffectiveTag>,
+        selectedPrefetch: RecommendationEnginePrefetch,
+    ): RecommendationEnginePrefetch =
+        if (hasSameCandidateFilter(effectiveTags, selectedEffectiveTags)) {
+            selectedPrefetch
+        } else {
+            prefetcher.refreshCandidates(selectedPrefetch, effectiveTags)
+        }
+
+    private fun hasSameCandidateFilter(
+        effectiveTags: List<EffectiveTag>,
+        selectedEffectiveTags: List<EffectiveTag>,
+    ): Boolean =
+        RecommendationCandidateFilterPolicy.hardFilterTagKeys(effectiveTags) ==
+            RecommendationCandidateFilterPolicy.hardFilterTagKeys(selectedEffectiveTags)
 
     private fun buildInput(
         userId: Long,

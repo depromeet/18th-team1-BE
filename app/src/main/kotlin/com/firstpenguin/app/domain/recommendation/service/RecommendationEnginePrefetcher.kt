@@ -20,24 +20,40 @@ class RecommendationEnginePrefetcher(
 ) {
     fun start(selectedEffectiveTags: Collection<EffectiveTag>): RecommendationEnginePrefetch =
         RecommendationEnginePrefetch(
-            candidates = async { candidateProvider.findCandidates(selectedEffectiveTags) },
-            moodTagIdByCode = async { tagRepository.getActiveMoodTagIdByCode() },
-            tagRarityWeights = async { tagRarityRepository.findMetadataTagRarityWeights() },
+            candidateFuture = async { candidateProvider.findCandidates(selectedEffectiveTags) },
+            moodTagIdByCodeFuture = async { tagRepository.getActiveMoodTagIdByCode() },
+            tagRarityWeightsFuture = async { tagRarityRepository.findMetadataTagRarityWeights() },
         )
+
+    fun refreshCandidates(
+        prefetch: RecommendationEnginePrefetch,
+        effectiveTags: Collection<EffectiveTag>,
+    ): RecommendationEnginePrefetch {
+        val refreshedCandidates = async { candidateProvider.findCandidates(effectiveTags) }
+
+        return prefetch.replaceCandidates(refreshedCandidates)
+    }
 
     private fun <T> async(block: () -> T): CompletableFuture<T> = CompletableFuture.supplyAsync(block, executor)
 }
 
 class RecommendationEnginePrefetch(
-    private val candidates: CompletableFuture<List<RecommendationCandidate>>,
-    private val moodTagIdByCode: CompletableFuture<Map<String, Long>>,
-    private val tagRarityWeights: CompletableFuture<Map<Long, Double>>,
+    private val candidateFuture: CompletableFuture<List<RecommendationCandidate>>,
+    private val moodTagIdByCodeFuture: CompletableFuture<Map<String, Long>>,
+    private val tagRarityWeightsFuture: CompletableFuture<Map<Long, Double>>,
 ) {
-    fun candidates(): List<RecommendationCandidate> = candidates.await()
+    fun candidates(): List<RecommendationCandidate> = candidateFuture.await()
 
-    fun moodTagIdByCode(): Map<String, Long> = moodTagIdByCode.await()
+    fun moodTagIdByCode(): Map<String, Long> = moodTagIdByCodeFuture.await()
 
-    fun tagRarityWeights(): Map<Long, Double> = tagRarityWeights.await()
+    fun tagRarityWeights(): Map<Long, Double> = tagRarityWeightsFuture.await()
+
+    fun replaceCandidates(candidates: CompletableFuture<List<RecommendationCandidate>>): RecommendationEnginePrefetch =
+        RecommendationEnginePrefetch(
+            candidateFuture = candidates,
+            moodTagIdByCodeFuture = moodTagIdByCodeFuture,
+            tagRarityWeightsFuture = tagRarityWeightsFuture,
+        )
 }
 
 private fun <T> CompletableFuture<T>.await(): T =
