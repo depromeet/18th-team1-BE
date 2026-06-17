@@ -106,6 +106,7 @@ class DiscoveryRepositoryTest {
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
         assertTrue(normalizedSql.contains("\"quotes\".\"content\" ilike"), normalizedSql)
+        assertTrue(normalizedSql.contains("escape '!'"), normalizedSql)
         assertFalse(normalizedSql.contains("\"books\".\"title\" ilike"), normalizedSql)
         assertFalse(normalizedSql.contains("\"books\".\"author\" ilike"), normalizedSql)
         assertFalse(normalizedSql.contains("\"users\".\"nickname\" ilike"), normalizedSql)
@@ -115,6 +116,21 @@ class DiscoveryRepositoryTest {
             ),
             normalizedSql,
         )
+    }
+
+    @Test
+    fun `검색어 메타문자는 LIKE 패턴에서 이스케이프한다`() {
+        val capturedQuery =
+            captureQuery { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    searchCriteria(query = SEARCH_META_QUERY),
+                )
+            }
+        val normalizedSql = capturedQuery.sql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"quotes\".\"content\" ilike"), normalizedSql)
+        assertTrue(normalizedSql.contains("escape '!'"), normalizedSql)
+        assertTrue(capturedQuery.bindings.contains(ESCAPED_SEARCH_META_QUERY), capturedQuery.bindings.toString())
     }
 
     @Test
@@ -155,40 +171,52 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("\"quotes\".\"id\" < ?"), normalizedSql)
     }
 
-    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
+    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String = captureQuery(repositoryCall).sql
+
+    private fun captureQuery(repositoryCall: (DSLContext) -> Unit): CapturedQuery {
         var capturedSql = ""
+        var capturedBindings = emptyList<Any?>()
         lateinit var dsl: DSLContext
         val connection =
             MockConnection(
                 MockDataProvider { context ->
                     capturedSql = context.sql()
+                    capturedBindings = context.bindings().toList()
                     arrayOf(MockResult(0, dsl.newResult(*DISCOVERY_QUOTE_FIELDS)))
                 },
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
         repositoryCall(dsl)
-        return capturedSql
+        return CapturedQuery(capturedSql, capturedBindings)
     }
 
     private fun searchCriteria(
+        query: String = SEARCH_QUERY,
         sort: DiscoveryQuoteSearchSort = DiscoveryQuoteSearchSort.LATEST,
         cursor: DiscoveryQuoteSearchCursor? = null,
         genre: DiscoveryGenre? = null,
     ): DiscoveryQuoteSearchCriteria =
         DiscoveryQuoteSearchCriteria(
             userId = USER_ID,
-            query = SEARCH_QUERY,
+            query = query,
             sort = sort,
             cursor = cursor,
             genre = genre,
             limit = DISCOVERY_QUOTE_FETCH_COUNT,
         )
 
+    private data class CapturedQuery(
+        val sql: String,
+        val bindings: List<Any?>,
+    )
+
     private companion object {
         const val USER_ID = 1L
         const val DISCOVERY_QUOTE_FETCH_COUNT = 11
         const val QUOTE_ID = 10L
         const val SEARCH_QUERY = "새"
+        const val SEARCH_META_QUERY = "100%_!"
+        const val ESCAPED_SEARCH_META_QUERY = "%100!%!_!!%"
         const val SCRAP_COUNT = 3
         val RECOMMENDED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 5, 12, 34, 56)
         val DISCOVERY_QUOTE_FIELDS: Array<Field<*>> =

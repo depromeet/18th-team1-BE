@@ -124,10 +124,16 @@ class DiscoveryRepository(
 
     private fun searchContentCondition(query: String): Condition =
         DSL.condition(
-            "{0} ilike {1}",
+            "{0} ilike {1} escape '!'",
             QuoteTable.CONTENT,
-            DSL.value("%$query%"),
+            DSL.value("%${escapeLikePattern(query)}%"),
         )
+
+    private fun escapeLikePattern(query: String): String =
+        query
+            .replace(LIKE_ESCAPE, "$LIKE_ESCAPE$LIKE_ESCAPE")
+            .replace("%", "$LIKE_ESCAPE%")
+            .replace("_", "${LIKE_ESCAPE}_")
 
     private fun cursorCondition(
         rankedRecommendationEvents: Table<*>,
@@ -356,6 +362,7 @@ class DiscoveryRepository(
         const val NEED_TAG_LABEL = "need_tag_label"
         const val SCRAP_COUNT_QUOTE_ID = "scrap_count_quote_id"
         const val SCRAP_COUNT = "scrap_count"
+        const val LIKE_ESCAPE = "!"
         const val LATEST_RECOMMENDATION_RANK = 1
 
         val RECOMMENDED_USER_ID_FIELD: Field<Long> = DSL.field(RECOMMENDED_USER_ID, Long::class.java)
