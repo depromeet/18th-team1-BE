@@ -6,6 +6,8 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVer
 import com.firstpenguin.app.domain.recommendation.model.RecommendationAnalysisLog
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource.FALLBACK_EMOTION
+import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource.PRIMARY
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
@@ -72,6 +74,7 @@ class RecommendationResultComposer(
             rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
                 .diversifyRoleTags()
                 .preferEmotionMatches()
+                .preferEmotionSources()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
         if (rankedQuotes.isEmpty()) return null
@@ -182,7 +185,7 @@ class RecommendationResultComposer(
 }
 
 private fun RecommendationInput.analysisLog(userEmbedding: UserSemanticEmbedding?): RecommendationAnalysisLog? {
-    val analysis = analysis ?: return fallbackAnalysisLog()
+    val analysis = analysis ?: return fallbackAnalysisLog(userEmbedding)
 
     return RecommendationAnalysisLog(
         llmModel = analysis.llmModel,
@@ -197,7 +200,7 @@ private fun RecommendationInput.analysisLog(userEmbedding: UserSemanticEmbedding
     )
 }
 
-private fun RecommendationInput.fallbackAnalysisLog(): RecommendationAnalysisLog? {
+private fun RecommendationInput.fallbackAnalysisLog(userEmbedding: UserSemanticEmbedding?): RecommendationAnalysisLog? {
     if (!hasAnalysisText()) return null
     val modelVersion = RecommendationAiModelVersion.USER_INPUT_ANALYSIS_V1
 
@@ -205,12 +208,12 @@ private fun RecommendationInput.fallbackAnalysisLog(): RecommendationAnalysisLog
         llmModel = modelVersion.model,
         llmModelVersion = modelVersion.version,
         canonicalIntent = null,
-        embeddingInputText = null,
+        embeddingInputText = userEmbedding?.inputText,
         inputTokens = null,
         cachedTokens = null,
         outputTokens = null,
         llmElapsedMs = null,
-        embeddingElapsedMs = null,
+        embeddingElapsedMs = userEmbedding?.embeddingElapsedMs,
     )
 }
 
@@ -221,7 +224,14 @@ private fun RankedQuotes.preferEmotionMatches(): RankedQuotes =
         .plus(filter { quote -> quote.isMissingEmotionMatch() })
         .distinctBy { quote -> quote.quoteId }
 
+private fun RankedQuotes.preferEmotionSources(): RankedQuotes =
+    filter { quote -> quote.source.isEmotionSource() }
+        .plus(filterNot { quote -> quote.source.isEmotionSource() })
+        .distinctBy { quote -> quote.quoteId }
+
 private fun RankedRecommendationQuote.isMissingEmotionMatch(): Boolean = score.emotionScore <= NO_EMOTION_SCORE
+
+private fun RecommendationCandidateSource.isEmotionSource(): Boolean = this == PRIMARY || this == FALLBACK_EMOTION
 
 private fun String?.hasValue(): Boolean = !isNullOrBlank()
 
