@@ -10,6 +10,8 @@ import com.firstpenguin.app.domain.recommendation.model.UserInputAnalysis
 import com.firstpenguin.app.global.enums.TagType
 import org.springframework.stereotype.Service
 
+private typealias TagOptionGroups = Map<TagType, List<TagOption>>
+
 @Service
 class OpenAiUserInputAnalysisService(
     private val tagRepository: TagRepository,
@@ -29,7 +31,7 @@ class OpenAiUserInputAnalysisService(
         }
 
     private fun analyzeOrThrow(input: RecommendationInput): UserInputAnalysis {
-        val tagGroups = findTagGroups()
+        val tagGroups = findTagGroups(input)
         val request = requestBuilder.build(input, tagGroups)
         val response =
             measureRecommendationElapsed {
@@ -41,10 +43,11 @@ class OpenAiUserInputAnalysisService(
             .withOpenAiUsage(request.model, response.value, response.elapsedMs)
     }
 
-    private fun findTagGroups(): Map<TagType, List<TagOption>> =
+    private fun findTagGroups(input: RecommendationInput): TagOptionGroups =
         tagRepository
             .getActiveTagsByType()
-            .onlyUserInputParseTagGroups()
+            .filterKeys(USER_INPUT_PARSE_TAG_TYPES::contains)
+            .onlyInputEmotionRange(input)
 
     private fun RecommendationInput.hasText(): Boolean = feelingText.hasValue() || diaryText.hasValue()
 
@@ -52,8 +55,12 @@ class OpenAiUserInputAnalysisService(
 
     private fun String?.hasValue(): Boolean = normalizedText() != null
 
-    private fun Map<TagType, List<TagOption>>.onlyUserInputParseTagGroups(): Map<TagType, List<TagOption>> =
-        filterKeys { type -> type in USER_INPUT_PARSE_TAG_TYPES }
+    private fun TagOptionGroups.onlyInputEmotionRange(input: RecommendationInput): TagOptionGroups =
+        mapValues { (type, options) ->
+            if (type != TagType.EMOTION) return@mapValues options
+
+            options.filter { option -> option.emotionRangeId == input.emotionRangeId }
+        }
 
     private fun UserInputAnalysis.withOpenAiUsage(
         model: String,

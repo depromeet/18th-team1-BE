@@ -22,6 +22,11 @@ interface RecommendationCandidateProvider {
         limit: Int = DEFAULT_CANDIDATE_LIMIT,
     ): List<RecommendationCandidate>
 
+    fun findCandidatesByEmotionRangeId(
+        emotionRangeId: Long,
+        limit: Int = DEFAULT_CANDIDATE_LIMIT,
+    ): List<RecommendationCandidate>
+
     fun findRelaxedCandidates(limit: Int = DEFAULT_CANDIDATE_LIMIT): List<RecommendationCandidate>
 
     fun findRandomCandidates(limit: Int = DEFAULT_CANDIDATE_LIMIT): List<RecommendationCandidate>
@@ -34,6 +39,7 @@ interface RecommendationCandidateProvider {
 }
 
 @Repository
+@Suppress("TooManyFunctions")
 class RecommendationCandidateRepository(
     private val dsl: DSLContext,
 ) : RecommendationCandidateProvider {
@@ -63,6 +69,40 @@ class RecommendationCandidateRepository(
             .fetch()
             .toRecommendationCandidates()
     }
+
+    override fun findCandidatesByEmotionRangeId(
+        emotionRangeId: Long,
+        limit: Int,
+    ): List<RecommendationCandidate> =
+        dsl
+            .select(CANDIDATE_ROW_FIELDS)
+            .from(
+                dsl
+                    .select(QuoteTable.ID.`as`(CANDIDATE_QUOTE_ID_NAME))
+                    .from(QuoteTable.QUOTES)
+                    .join(BookTable.BOOKS)
+                    .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+                    .join(QuoteMetadataTable.QUOTE_METADATA)
+                    .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+                    .where(activeQuoteAndBookCondition())
+                    .and(emotionRangeMatchExists(emotionRangeId))
+                    .orderBy(QuoteTable.ID.asc())
+                    .limit(limit)
+                    .asTable(CANDIDATE_QUOTE_IDS_TABLE),
+            ).join(QuoteTable.QUOTES)
+            .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
+            .join(BookTable.BOOKS)
+            .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(QuoteMetadataTable.QUOTE_METADATA)
+            .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
+            .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .on(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+            .join(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
+            .where(activeTagCondition())
+            .orderBy(QuoteTable.ID.asc())
+            .fetch()
+            .toRecommendationCandidates()
 
     override fun findRelaxedCandidates(limit: Int): List<RecommendationCandidate> =
         dsl
@@ -103,6 +143,8 @@ class RecommendationCandidateRepository(
                     .from(QuoteTable.QUOTES)
                     .join(BookTable.BOOKS)
                     .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+                    .join(QuoteMetadataTable.QUOTE_METADATA)
+                    .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
                     .where(activeQuoteAndBookCondition())
                     .orderBy(DSL.rand())
                     .limit(limit)
@@ -111,12 +153,13 @@ class RecommendationCandidateRepository(
             .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
-            .leftJoin(QuoteMetadataTable.QUOTE_METADATA)
+            .join(QuoteMetadataTable.QUOTE_METADATA)
             .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
-            .leftJoin(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
             .on(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
-            .leftJoin(TagTable.TAGS)
-            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID).and(activeTagCondition()))
+            .join(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
+            .where(activeTagCondition())
             .orderBy(QuoteTable.ID.asc())
             .fetch()
             .toRecommendationCandidates()
@@ -177,6 +220,19 @@ class RecommendationCandidateRepository(
                 .where(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
                 .and(TagTable.ID.`in`(hardFilterTagIds))
                 .and(TagTable.TYPE.`in`(hardFilterTypeNames))
+                .and(activeTagCondition()),
+        )
+
+    private fun emotionRangeMatchExists(emotionRangeId: Long): Condition =
+        DSL.exists(
+            DSL
+                .selectOne()
+                .from(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+                .join(TagTable.TAGS)
+                .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
+                .where(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+                .and(TagTable.TYPE.eq(TagType.EMOTION.name))
+                .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
                 .and(activeTagCondition()),
         )
 

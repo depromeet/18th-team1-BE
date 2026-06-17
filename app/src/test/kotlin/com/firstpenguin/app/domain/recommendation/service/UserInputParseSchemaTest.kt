@@ -30,14 +30,15 @@ class UserInputParseSchemaTest {
             required.containsAll(
                 listOf(
                     "canonicalIntent",
-                    "emotionTagCandidates",
                     "needTagCandidates",
                     "situationTagCandidates",
                     "contextTagCandidates",
                     "roleTagCandidates",
+                    "emotionTagCandidates",
                 ),
             ),
         )
+        assertTrue(required.indexOf("roleTagCandidates") < required.indexOf("emotionTagCandidates"))
         assertFalse(required.contains("intentType"))
         assertFalse(required.contains("tagCandidates"))
         assertFalse(required.contains("quoteId"))
@@ -51,6 +52,7 @@ class UserInputParseSchemaTest {
         assertTrue(schema.contains("EMOTION_CODE"))
         assertTrue(schema.contains("needTagCandidates"))
         assertTrue(schema.contains("NEED_CODE"))
+        assertTrue(schema.indexOf("NEED_CODE") < schema.indexOf("EMOTION_CODE"))
     }
 
     @Test
@@ -69,15 +71,30 @@ class UserInputParseSchemaTest {
         assertTrue(priorityEnum.contains("PRIMARY"))
     }
 
+    @Test
+    fun `tag candidate schema는 confidence를 요구하지 않는다`() {
+        val itemSchema = itemSchemaOf("needTagCandidates")
+        val required = itemSchema["required"] as List<*>
+        val properties = itemSchema["properties"] as Map<*, *>
+
+        assertFalse(required.contains("confidence"))
+        assertFalse(properties.containsKey("confidence"))
+    }
+
     private fun priorityEnumOf(fieldName: String): List<*> {
-        val schemaBody = userInputParseSchema(tagGroups)["schema"] as Map<*, *>
-        val properties = schemaBody["properties"] as Map<*, *>
-        val candidateSchema = properties[fieldName] as Map<*, *>
-        val itemSchema = candidateSchema["items"] as Map<*, *>
+        val itemSchema = itemSchemaOf(fieldName)
         val itemProperties = itemSchema["properties"] as Map<*, *>
         val prioritySchema = itemProperties["priority"] as Map<*, *>
 
         return prioritySchema["enum"] as List<*>
+    }
+
+    private fun itemSchemaOf(fieldName: String): Map<*, *> {
+        val schemaBody = userInputParseSchema(tagGroups)["schema"] as Map<*, *>
+        val properties = schemaBody["properties"] as Map<*, *>
+        val candidateSchema = properties[fieldName] as Map<*, *>
+
+        return candidateSchema["items"] as Map<*, *>
     }
 
     private companion object {
