@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.emotion.model.Tag
 
 data class RecommendationInput(
     val userId: Long,
+    val emotionValue: Int,
     val emotionRangeId: Long,
     val emotionTags: List<Tag>,
     val needTag: Tag?,

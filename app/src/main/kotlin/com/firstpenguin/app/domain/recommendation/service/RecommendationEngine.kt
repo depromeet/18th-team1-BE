@@ -45,11 +45,13 @@ class RecommendationEngine(
         request: RecommendationRequest,
     ): RecommendationInput {
         val selectedTagIds = request.emotionTagIds + listOfNotNull(request.needTagId)
+        val emotionRange = emotionService.getEmotionRangeByValue(request.emotionValue)
         val (emotionTags, needTag) = emotionService.getEmotionTagsAndNeedTagByIds(selectedTagIds)
 
         return RecommendationInput(
             userId = userId,
-            emotionRangeId = request.emotionRangeId,
+            emotionValue = request.emotionValue,
+            emotionRangeId = emotionRange.id,
             emotionTags = emotionTags,
             needTag = needTag,
             feelingText = request.feelingText.normalizedText(),

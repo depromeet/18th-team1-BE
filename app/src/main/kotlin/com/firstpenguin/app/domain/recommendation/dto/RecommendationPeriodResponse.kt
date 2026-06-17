@@ -27,6 +27,7 @@ data class RecommendationPeriodResponse(
 data class RecommendationPeriodItemResponse(
     val recommendationId: Long,
     val recommendationDate: LocalDate,
+    val emotionValue: Int,
     val emotionRangeName: EmotionRangeName,
     val quote: QuoteResponse,
 ) {
@@ -38,6 +39,7 @@ data class RecommendationPeriodItemResponse(
             RecommendationPeriodItemResponse(
                 recommendationId = recommendation.id,
                 recommendationDate = recommendation.recommendationDate,
+                emotionValue = recommendation.emotionValue,
                 emotionRangeName = recommendation.emotionRangeName,
                 quote = quote,
             )
