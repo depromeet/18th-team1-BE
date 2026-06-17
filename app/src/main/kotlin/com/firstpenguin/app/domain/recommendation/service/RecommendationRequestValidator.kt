@@ -15,8 +15,10 @@ class RecommendationRequestValidator(
     fun validate(request: RecommendationRequest) {
         validateEmotionTagCount(request.emotionTagIds)
         validateNeedInput(request)
+        val emotionRange = emotionService.getEmotionRangeByValue(request.emotionValue)
+
         emotionService.validateTags(
-            emotionRangeId = request.emotionRangeId,
+            emotionRangeId = emotionRange.id,
             emotionTagIds = request.emotionTagIds,
             needTagId = request.needTagId,
         )

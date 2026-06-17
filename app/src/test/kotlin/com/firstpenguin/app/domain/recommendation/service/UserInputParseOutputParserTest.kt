@@ -104,6 +104,7 @@ class UserInputParseOutputParserTest {
 
     private companion object {
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         const val NEED_TAG_ID = 10L
         const val NEED_PERSPECTIVE_TAG_ID = 11L
         const val EMOTION_TAG_ID = 20L
@@ -114,6 +115,7 @@ class UserInputParseOutputParserTest {
         val input =
             RecommendationInput(
                 userId = 1L,
+                emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = emptyList(),
                 needTag = null,

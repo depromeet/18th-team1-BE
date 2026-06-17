@@ -40,6 +40,7 @@ class UserEmbeddingInputBuilderTest {
     private companion object {
         const val USER_ID = 1L
         const val EMOTION_RANGE_ID = 1L
+        const val EMOTION_VALUE = 1
         const val EMOTION_TAG_ID = 10L
         const val NEED_TAG_ID = 20L
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 14, 0, 0)
@@ -47,6 +48,7 @@ class UserEmbeddingInputBuilderTest {
         fun recommendationInput(canonicalIntent: String?): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
+                emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "불안")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "위로"),

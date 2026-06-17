@@ -22,13 +22,13 @@ class RecommendationService(
         userId: Long,
         feelingText: String?,
         diaryText: String?,
-        emotionRangeId: Long,
+        emotionValue: Int,
     ): Long =
         recommendationCommandRepository.insertRecommendation(
             userId = userId,
             feelingText = feelingText,
             diaryText = diaryText,
-            emotionRangeId = emotionRangeId,
+            emotionValue = emotionValue,
         )
 
     fun createRankedRecommendationQuotes(
