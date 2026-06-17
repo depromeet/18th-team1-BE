@@ -61,7 +61,7 @@ class OpenAiUserInputAnalysisServiceTest {
         assertEquals("user-input-analysis-v1-gpt-5-mini", openAi.tagRequest.promptCacheKey)
         assertEquals("user-canonical-intent-v1-gpt-5-mini", openAi.canonicalRequest.promptCacheKey)
         assertEquals("24h", openAi.tagRequest.promptCacheRetention)
-        assertEquals(160, openAi.canonicalRequest.maxOutputTokens)
+        assertEquals(768, openAi.canonicalRequest.maxOutputTokens)
         assertTrue(
             openAi.tagRequest.text.format
                 .toString()

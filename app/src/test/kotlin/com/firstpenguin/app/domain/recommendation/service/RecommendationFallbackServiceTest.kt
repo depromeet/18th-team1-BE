@@ -100,13 +100,15 @@ class RecommendationFallbackServiceTest {
     }
 
     @Test
-    fun `top score가 낮으면 후보가 충분해도 모든 fallback 단계를 검토한다`() {
+    fun `top score가 낮으면 후보가 충분해도 emotion과 semantic까지 우선 보강한다`() {
+        val events = mutableListOf<String>()
         val provider =
             FakeRecommendationCandidateProvider(
                 needCandidates = listOf(candidate(11L)),
                 emotionCandidates = listOf(candidate(12L)),
                 relaxedCandidates = listOf(candidate(13L)),
                 randomCandidates = listOf(candidate(14L)),
+                events = events,
             )
         val service = RecommendationFallbackService(provider)
         val existingCandidates = (1L..10L).map(::candidate)
@@ -117,11 +119,15 @@ class RecommendationFallbackServiceTest {
                 effectiveTags = effectiveTags,
                 existingCandidates = existingCandidates,
                 rankedQuotes = listOf(rankedQuote(existingCandidates.first(), finalScore = LOW_SCORE)),
+                semanticCandidates = {
+                    events.add("SEMANTIC")
+                    listOf(candidate(15L))
+                },
             )
 
-        assertEquals(listOf("EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
+        assertEquals(listOf("EMOTION_RANGE", "SEMANTIC"), events)
         assertEquals(
-            listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 12L, 11L, 13L, 14L),
+            listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 12L, 15L),
             result.map { candidate -> candidate.quoteId },
         )
     }

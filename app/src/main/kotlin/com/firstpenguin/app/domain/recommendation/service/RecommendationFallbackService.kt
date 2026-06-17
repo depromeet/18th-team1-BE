@@ -33,7 +33,7 @@ class RecommendationFallbackService(
             .takeUntilEnough(
                 accumulator = accumulator,
                 minimumCandidateCount = minimumCandidateCount,
-                forceFallback = forceFallback,
+                forcedFallbackStepCount = forceFallback.stepCount(),
             ).forEach { step -> accumulator.add(step.findCandidates(), step.source) }
 
         return accumulator.toList()
@@ -76,19 +76,28 @@ class RecommendationFallbackService(
     private fun List<FallbackStep>.takeUntilEnough(
         accumulator: CandidateAccumulator,
         minimumCandidateCount: Int,
-        forceFallback: Boolean,
+        forcedFallbackStepCount: Int,
     ): Sequence<FallbackStep> =
         sequence {
-            for (step in this@takeUntilEnough) {
-                if (accumulator.isEnough(minimumCandidateCount, forceFallback)) break
+            for ((index, step) in this@takeUntilEnough.withIndex()) {
+                if (index >= forcedFallbackStepCount && accumulator.isEnough(minimumCandidateCount)) break
                 yield(step)
             }
+        }
+
+    private fun Boolean.stepCount(): Int =
+        if (this) {
+            FORCED_FALLBACK_STEP_COUNT
+        } else {
+            NO_FORCED_FALLBACK_STEP_COUNT
         }
 
     private companion object {
         const val MINIMUM_CANDIDATE_COUNT = 10
         const val FALLBACK_FETCH_LIMIT = 300
         const val LOW_TOP_SCORE_THRESHOLD = 0.35
+        const val NO_FORCED_FALLBACK_STEP_COUNT = 0
+        const val FORCED_FALLBACK_STEP_COUNT = 2
     }
 }
 
@@ -119,15 +128,6 @@ private class CandidateAccumulator(
     }
 
     fun isEnough(minimumCandidateCount: Int): Boolean = candidatesByQuoteId.size >= minimumCandidateCount
-
-    fun isEnough(
-        minimumCandidateCount: Int,
-        forceFallback: Boolean,
-    ): Boolean {
-        if (forceFallback) return false
-
-        return candidatesByQuoteId.size >= minimumCandidateCount
-    }
 
     fun toList(): List<SourcedRecommendationCandidate> = candidatesByQuoteId.values.toList()
 }
