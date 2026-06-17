@@ -31,11 +31,11 @@ private fun userInputParseObjectSchema(tagGroups: Map<TagType, List<TagOption>>)
 private fun requiredUserInputParseFields(): List<String> =
     listOf(
         "canonicalIntent",
-        "emotionTagCandidates",
         "needTagCandidates",
         "situationTagCandidates",
         "contextTagCandidates",
         "roleTagCandidates",
+        "emotionTagCandidates",
     )
 
 private fun userInputParseProperties(tagGroups: Map<TagType, List<TagOption>>): Map<String, Any> =
@@ -46,13 +46,6 @@ private fun userInputParseProperties(tagGroups: Map<TagType, List<TagOption>>): 
                 "description" to "사용자의 현재 마음과 원하는 도움을 요약한 한국어 한 문장",
                 "minLength" to CANONICAL_INTENT_MIN_LENGTH,
                 "maxLength" to CANONICAL_INTENT_MAX_LENGTH,
-            ),
-        "emotionTagCandidates" to
-            tagCandidatesSchema(
-                options = tagGroups.getValue(TagType.EMOTION),
-                description = "텍스트에 명확히 드러난 사용자 감정 보조 후보. PRIMARY priority를 사용하지 않는다.",
-                maxItems = EMOTION_TAG_MAX_ITEMS,
-                priorities = listOf(TagCandidatePriority.SECONDARY, TagCandidatePriority.BACKGROUND),
             ),
         "needTagCandidates" to
             tagCandidatesSchema(
@@ -78,6 +71,13 @@ private fun userInputParseProperties(tagGroups: Map<TagType, List<TagOption>>): 
                 description = "사용자가 원하는 문장의 역할 후보. 명확한 경우에만 반환한다.",
                 maxItems = ROLE_TAG_MAX_ITEMS,
             ),
+        "emotionTagCandidates" to
+            tagCandidatesSchema(
+                options = tagGroups.getValue(TagType.EMOTION),
+                description = "텍스트에 명확히 드러난 사용자 감정 보조 후보. PRIMARY priority를 사용하지 않는다.",
+                maxItems = EMOTION_TAG_MAX_ITEMS,
+                priorities = listOf(TagCandidatePriority.SECONDARY, TagCandidatePriority.BACKGROUND),
+            ),
     )
 
 private fun tagCandidatesSchema(
@@ -100,7 +100,7 @@ private fun tagCandidateSchema(
     mapOf(
         "type" to "object",
         "additionalProperties" to false,
-        "required" to listOf("tagCode", "source", "priority", "confidence"),
+        "required" to listOf("tagCode", "source", "priority"),
         "properties" to tagCandidateProperties(options, priorities),
     )
 
@@ -123,13 +123,6 @@ private fun tagCandidateProperties(
             enumSchema(
                 values = priorities.map { priority -> priority.name },
                 description = "같은 카테고리 안에서 추천 엔진에 전달할 우선순위",
-            ),
-        "confidence" to
-            mapOf(
-                "type" to "number",
-                "description" to "텍스트 근거가 얼마나 명확한지 0.0부터 1.0 사이로 표현한다.",
-                "minimum" to 0.0,
-                "maximum" to 1.0,
             ),
     )
 

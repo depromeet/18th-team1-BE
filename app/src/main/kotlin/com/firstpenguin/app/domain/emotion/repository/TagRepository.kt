@@ -89,6 +89,7 @@ class TagRepository(
             .select(
                 TagTable.ID,
                 TagTable.TYPE,
+                TagTable.EMOTION_RANGE_ID,
                 TagTable.CODE,
                 TagTable.LABEL,
                 TagTable.DESCRIPTION,
@@ -127,6 +128,7 @@ class TagRepository(
             code = record[TagTable.CODE]!!,
             label = record[TagTable.LABEL]!!,
             description = record[TagTable.DESCRIPTION],
+            emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
         )
 
     private fun tagFields(): List<Field<*>> =

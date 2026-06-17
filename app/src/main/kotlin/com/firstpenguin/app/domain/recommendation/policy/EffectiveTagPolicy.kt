@@ -35,8 +35,7 @@ object EffectiveTagPolicy {
 
     fun effectiveImportance(candidate: TagCandidate): Double =
         sourceWeights.getValue(candidate.source) *
-            priorityWeights.getValue(candidate.priority) *
-            candidate.confidence.coerceIn(0.0, 1.0)
+            priorityWeights.getValue(candidate.priority)
 
     fun mergeImportance(importances: List<Double>): Double =
         USER_SELECTED_IMPORTANCE -

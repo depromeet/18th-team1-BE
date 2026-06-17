@@ -4,9 +4,9 @@ import com.firstpenguin.app.global.enums.TagType
 
 internal val USER_INPUT_PARSE_TAG_TYPES =
     listOf(
-        TagType.EMOTION,
         TagType.NEED,
         TagType.SITUATION,
         TagType.CONTEXT,
         TagType.ROLE,
+        TagType.EMOTION,
     )
