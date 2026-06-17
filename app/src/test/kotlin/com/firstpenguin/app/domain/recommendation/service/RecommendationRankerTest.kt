@@ -49,7 +49,7 @@ class RecommendationRankerTest {
         val result =
             ranker.rank(listOf(lowScoreCandidate, highScoreCandidate)) { candidate ->
                 when (candidate.quoteId) {
-                    highScoreCandidate.quoteId -> score(metadataScore = 1.0, semanticScore = 0.0)
+                    highScoreCandidate.quoteId -> score(metadataScore = 1.0, semanticScore = 0.5)
                     else -> score(metadataScore = 0.1, semanticScore = 0.9)
                 }
             }
@@ -63,7 +63,7 @@ class RecommendationRankerTest {
         const val BOOK_ID = 100L
         const val METADATA_SCORE = 0.8
         const val SEMANTIC_SCORE = 0.6
-        const val EXPECTED_FINAL_SCORE = 0.71
+        const val EXPECTED_FINAL_SCORE = 0.69
         const val DELTA = 0.000001
 
         fun candidate(quoteId: Long): RecommendationCandidate =

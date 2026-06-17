@@ -34,12 +34,6 @@ private fun JsonNode.toUserInputAnalysis(
     )
 
 private fun JsonNode.tagCandidateNodes(): List<Pair<TagType, JsonNode>> =
-    listOf(
-        TagType.EMOTION to "emotionTagCandidates",
-        TagType.NEED to "needTagCandidates",
-        TagType.SITUATION to "situationTagCandidates",
-        TagType.CONTEXT to "contextTagCandidates",
-        TagType.ROLE to "roleTagCandidates",
-    ).flatMap { (type, fieldName) ->
-        path(fieldName).toList().map { node -> type to node }
+    USER_INPUT_PARSE_TAG_SPECS.flatMap { spec ->
+        path(spec.fieldName).toList().map { node -> spec.type to node }
     }
