@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.quote.repository
 
+import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.quote.model.Quote
 import com.firstpenguin.app.domain.quote.model.QuoteSourceType
 import org.jooq.DSLContext
@@ -21,6 +22,20 @@ class QuoteRepository(
             .where(QuoteTable.ID.eq(id))
             .and(QuoteTable.DELETED_AT.isNull)
             .fetchOne(::toQuote)
+
+    fun findBookCoverImageUrlsByQuoteIds(quoteIds: List<Long>): Map<Long, String> {
+        if (quoteIds.isEmpty()) return emptyMap()
+
+        return dsl
+            .select(QuoteTable.ID, BookTable.COVER_IMAGE_URL)
+            .from(QuoteTable.QUOTES)
+            .join(BookTable.BOOKS)
+            .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .where(QuoteTable.ID.`in`(quoteIds))
+            .and(QuoteTable.DELETED_AT.isNull)
+            .and(BookTable.DELETED_AT.isNull)
+            .fetchMap(QuoteTable.ID, BookTable.COVER_IMAGE_URL)
+    }
 
     fun getMaxQuoteId(): Long =
         dsl

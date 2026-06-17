@@ -90,9 +90,9 @@ class MonthlySettlementEmotionAggregationRepository(
             .and(BookTable.DELETED_AT.isNull)
 
     private fun bookGenreExists(): Condition =
-        BookTable.CATEGORY
+        BookTable.GENRE
             .isNotNull
-            .and(DSL.trim(BookTable.CATEGORY).ne(""))
+            .and(DSL.trim(BookTable.GENRE).ne(""))
 
     private fun toEmotionTagCount(
         index: Int,
@@ -113,7 +113,7 @@ class MonthlySettlementEmotionAggregationRepository(
             title = record[BookTable.TITLE]!!,
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
-            genre = record[BookTable.CATEGORY]!!,
+            genre = record[BookTable.GENRE]!!,
         )
 
     private companion object {
@@ -126,7 +126,7 @@ class MonthlySettlementEmotionAggregationRepository(
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.CATEGORY,
+                BookTable.GENRE,
             )
     }
 }

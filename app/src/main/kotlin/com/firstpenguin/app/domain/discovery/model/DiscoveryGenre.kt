@@ -6,15 +6,15 @@ import com.firstpenguin.app.global.exception.ErrorCode
 enum class DiscoveryGenre(
     val value: String,
 ) {
-    KOREAN_NOVEL("한국소설"),
-    JAPANESE_NOVEL("일본소설"),
-    ENGLISH_NOVEL("영미소설"),
+    GENERAL_LITERATURE("일반문학"),
+    SCIENCE_FICTION("SF"),
+    MYSTERY("추리･미스터리"),
+    HORROR_THRILLER("공포･스릴러"),
     FANTASY("판타지"),
-    CLASSIC_LITERATURE("고전문학"),
-    HUMANITIES("인문"),
-    PHILOSOPHY("철학"),
-    ESSAY_POETRY("에세이•시"),
-    MOVIE_DRAMA_ORIGINAL("영화•드라마 원작"),
+    ROMANCE("로맨스"),
+    HISTORICAL("역사"),
+    MARTIAL_ARTS("무협"),
+    ESSAY_POETRY("시･에세이"),
     ;
 
     companion object {
