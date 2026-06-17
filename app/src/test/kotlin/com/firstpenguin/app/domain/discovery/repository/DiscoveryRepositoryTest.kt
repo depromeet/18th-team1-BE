@@ -3,6 +3,8 @@ package com.firstpenguin.app.domain.discovery.repository
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import org.jooq.DSLContext
@@ -39,6 +41,10 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_scraps"), normalizedSql)
         assertTrue(normalizedSql.contains("is_scrapped"), normalizedSql)
+        assertTrue(normalizedSql.contains("recommendation_tags"), normalizedSql)
+        assertTrue(normalizedSql.contains("need_tag_id"), normalizedSql)
+        assertTrue(normalizedSql.contains("need_tag_label"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_scraps\".\"user_id\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("row_number()"), normalizedSql)
         assertTrue(normalizedSql.contains(" union all "), normalizedSql)
@@ -88,6 +94,73 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
     }
 
+    @Test
+    fun `검색어가 있으면 문장 내용 검색 조건을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    userId = USER_ID,
+                    query = SEARCH_QUERY,
+                    sort = DiscoveryQuoteSearchSort.LATEST,
+                    cursor = null,
+                    genre = null,
+                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"quotes\".\"content\""), normalizedSql)
+        assertTrue(normalizedSql.contains("like"), normalizedSql)
+        assertTrue(
+            normalizedSql.contains(
+                "order by \"ranked_recommendation_events\".\"recommended_at\" desc, \"quotes\".\"id\" desc",
+            ),
+            normalizedSql,
+        )
+    }
+
+    @Test
+    fun `스크랩순 검색은 스크랩 수 집계와 정렬을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    userId = USER_ID,
+                    query = SEARCH_QUERY,
+                    sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                    cursor = null,
+                    genre = DiscoveryGenre.KOREAN_NOVEL,
+                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("quote_scrap_counts"), normalizedSql)
+        assertTrue(normalizedSql.contains("count(\"quote_scraps\".\"id\")"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"category\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("order by \"scrap_count\" desc"), normalizedSql)
+    }
+
+    @Test
+    fun `스크랩순 검색 커서가 있으면 스크랩 수와 최신순 보조 조건을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    userId = USER_ID,
+                    query = SEARCH_QUERY,
+                    sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                    cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
+                    genre = null,
+                    limit = DISCOVERY_QUOTE_FETCH_COUNT,
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"scrap_count\" < ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"scrap_count\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"recommended_at\" < cast(? as timestamp)"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"quotes\".\"id\" < ?"), normalizedSql)
+    }
+
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
         var capturedSql = ""
         lateinit var dsl: DSLContext
@@ -107,6 +180,8 @@ class DiscoveryRepositoryTest {
         const val USER_ID = 1L
         const val DISCOVERY_QUOTE_FETCH_COUNT = 11
         const val QUOTE_ID = 10L
+        const val SEARCH_QUERY = "새"
+        const val SCRAP_COUNT = 3
         val RECOMMENDED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 5, 12, 34, 56)
         val DISCOVERY_QUOTE_FIELDS: Array<Field<*>> =
             arrayOf(
@@ -118,8 +193,11 @@ class DiscoveryRepositoryTest {
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
                 BookTable.CATEGORY,
+                DSL.field("need_tag_id", Long::class.java),
+                DSL.field("need_tag_label", String::class.java),
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
+                DSL.field("scrap_count", Int::class.java),
             )
     }
 }
