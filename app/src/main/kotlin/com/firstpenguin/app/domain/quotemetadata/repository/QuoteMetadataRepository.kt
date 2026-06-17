@@ -27,7 +27,7 @@ class QuoteMetadataRepository(
         dsl
             .selectCount()
             .from(QuoteTable.QUOTES)
-            .where(QuoteTable.DELETED_AT.isNull)
+            .where(batchTargetQuoteCondition())
             .fetchOne(0, Int::class.java) ?: 0
 
     fun countCreatedMetadata(): Int =
@@ -36,14 +36,14 @@ class QuoteMetadataRepository(
             .from(QuoteMetadataTable.QUOTE_METADATA)
             .join(QuoteTable.QUOTES)
             .on(QuoteTable.ID.eq(QuoteMetadataTable.QUOTE_ID))
-            .where(QuoteTable.DELETED_AT.isNull)
+            .where(batchTargetQuoteCondition())
             .fetchOne(0, Int::class.java) ?: 0
 
     fun countPendingQuotes(): Int =
         dsl
             .selectCount()
             .from(QuoteTable.QUOTES)
-            .where(QuoteTable.DELETED_AT.isNull)
+            .where(batchTargetQuoteCondition())
             .and(metadataNotExists())
             .and(activeBatchItemNotExists())
             .fetchOne(0, Int::class.java) ?: 0
@@ -52,7 +52,7 @@ class QuoteMetadataRepository(
         dsl
             .select(QUOTE_FIELDS)
             .from(QuoteTable.QUOTES)
-            .where(QuoteTable.DELETED_AT.isNull)
+            .where(batchTargetQuoteCondition())
             .and(metadataNotExists())
             .and(activeBatchItemNotExists())
             .orderBy(QuoteTable.ID.asc())
@@ -177,3 +177,8 @@ class QuoteMetadataRepository(
             )
     }
 }
+
+private fun batchTargetQuoteCondition() =
+    QuoteTable.DELETED_AT
+        .isNull
+        .and(QuoteTable.SOURCE_TYPE.eq(QuoteSourceType.BOOK_INSPIRED.name))

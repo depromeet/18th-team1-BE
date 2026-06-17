@@ -25,7 +25,9 @@ docs/                 — 프로젝트 문서 (convention.md, husky.md)
 ## Git 규칙
 
 - 브랜치: `타입/#이슈번호/설명` (예: `feat/#10/user-signup`, `fix/#15/token-expired`)
+- GitHub 이슈 생성 시 assignees는 현재 작업자 본인으로 지정한다.
 - 커밋: Conventional Commits — 이모지는 commit-msg 훅이 자동 삽입
+- 커밋은 구현 범위와 관심사 기준으로 적절히 나눈다. 하나의 커밋은 한 가지 목적을 가져야 하며, 서로 독립적인 기능 구현, 리팩터링, 문서/설정 변경은 가능하면 분리한다.
 - PR 대상: `dev` 브랜치
 - 머지 순서: feature → dev → main(배포)
 - `dev` 브랜치에 직접 커밋하거나 push하지 않는다. 모든 변경은 작업 브랜치에서 커밋하고 PR로 반영한다.

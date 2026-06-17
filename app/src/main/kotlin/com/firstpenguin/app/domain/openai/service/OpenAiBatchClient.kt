@@ -103,6 +103,7 @@ class OpenAiBatchClient(
             status = BatchJobStatus.from(response.getValue("status").toString()),
             outputFileId = response["output_file_id"] as? String,
             errorFileId = response["error_file_id"] as? String,
+            errorMessage = response.batchErrorMessage(),
         )
     }
 
@@ -120,3 +121,20 @@ class OpenAiBatchClient(
             setReadTimeout(OPENAI_READ_TIMEOUT)
         }
 }
+
+private fun Map<String, Any?>.batchErrorMessage(): String? =
+    batchErrors()
+        .mapNotNull { error -> error as? Map<*, *> }
+        .mapNotNull { error -> error["message"]?.toString() }
+        .take(MAX_BATCH_ERROR_MESSAGE_COUNT)
+        .joinToString(ERROR_MESSAGE_SEPARATOR)
+        .ifBlank { null }
+
+private fun Map<String, Any?>.batchErrors(): List<*> {
+    val errors = this["errors"] as? Map<*, *> ?: return emptyList<Any>()
+
+    return errors["data"] as? List<*> ?: emptyList<Any>()
+}
+
+private const val MAX_BATCH_ERROR_MESSAGE_COUNT = 3
+private const val ERROR_MESSAGE_SEPARATOR = " | "

@@ -11,6 +11,13 @@ data class DiscoveryQuote(
     val author: String,
     val bookCoverImageUrl: String,
     val genre: String?,
+    val needTag: DiscoveryNeedTag?,
     val recommendedAt: LocalDateTime,
     val isScrapped: Boolean,
+    val scrapCount: Int,
+)
+
+data class DiscoveryNeedTag(
+    val id: Long,
+    val label: String,
 )

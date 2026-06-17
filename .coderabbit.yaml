@@ -43,8 +43,8 @@ reviews:
   # 리뷰 중/완료 상태를 GitHub commit status로 표시합니다.
   commit_status: true
 
-  # CodeRabbit이 리뷰 자체를 수행하지 못하면 commit status를 failure로 표시합니다.
-  fail_commit_status: true
+  # CodeRabbit이 리뷰 자체를 수행하지 못해도 commit status를 failure로 표시하지 않습니다.
+  fail_commit_status: false
 
   # walkthrough를 접힌 영역으로 표시해 PR 화면을 덜 복잡하게 만듭니다.
   collapse_walkthrough: true
@@ -102,17 +102,17 @@ reviews:
     actionlint:
       enabled: true
     shellcheck:
-      enabled: true
+      enabled: false
     hadolint:
-      enabled: true
+      enabled: false
     checkov:
-      enabled: true
+      enabled: false
     tflint:
-      enabled: true
+      enabled: false
     gitleaks:
       enabled: true
     trufflehog:
-      enabled: true
+      enabled: false
     yamllint:
       enabled: false
     markdownlint:

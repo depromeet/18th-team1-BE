@@ -11,6 +11,7 @@ internal object TagTable {
     val TYPE = DSL.field(DSL.name("tags", "type"), String::class.java)
     val CODE = DSL.field(DSL.name("tags", "code"), String::class.java)
     val DESCRIPTION = DSL.field(DSL.name("tags", "description"), String::class.java)
+    val DISPLAY_GROUP = DSL.field(DSL.name("tags", "display_group"), String::class.java)
     val SORT_ORDER = DSL.field(DSL.name("tags", "sort_order"), Int::class.java)
     val IS_ACTIVE = DSL.field(DSL.name("tags", "is_active"), Boolean::class.java)
     val CREATED_AT = DSL.field(DSL.name("tags", "created_at"), LocalDateTime::class.java)

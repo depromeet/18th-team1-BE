@@ -50,10 +50,10 @@ class RecommendationController(
 
     @Operation(
         summary = "추천 문장 더보기 API",
-        description = "추천 기록에 추가 후보 문장 9개를 저장하고 반환한다.",
+        description = "추천 시작 시 저장된 후보 중 최초 문장을 제외한 9개를 반환한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
-    @PostMapping("/{recommendationId}/quotes")
+    @GetMapping("/{recommendationId}/quotes/more")
     fun getNextRecommendationQuotes(
         @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @PathVariable recommendationId: Long,

@@ -3,6 +3,9 @@ package com.firstpenguin.app.domain.discovery.repository
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
+import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import org.jooq.DSLContext
@@ -14,6 +17,7 @@ import org.jooq.tools.jdbc.MockDataProvider
 import org.jooq.tools.jdbc.MockResult
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DiscoveryRepositoryTest {
@@ -32,10 +36,16 @@ class DiscoveryRepositoryTest {
 
         assertTrue(normalizedSql.contains("recommendations"), normalizedSql)
         assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertFalse(normalizedSql.contains("daily_recommendation_quotes"), normalizedSql)
+        assertFalse(normalizedSql.contains("daily_recommendation_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_scraps"), normalizedSql)
         assertTrue(normalizedSql.contains("is_scrapped"), normalizedSql)
+        assertTrue(normalizedSql.contains("recommendation_tags"), normalizedSql)
+        assertTrue(normalizedSql.contains("need_tag_id"), normalizedSql)
+        assertTrue(normalizedSql.contains("need_tag_label"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_scraps\".\"user_id\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("row_number()"), normalizedSql)
         assertTrue(normalizedSql.contains(" union all "), normalizedSql)
@@ -85,25 +95,129 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
     }
 
-    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
+    @Test
+    fun `검색어가 있으면 문장 내용 검색 조건을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    searchCriteria(),
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"quotes\".\"content\" ilike"), normalizedSql)
+        assertTrue(normalizedSql.contains("escape '!'"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"books\".\"title\" ilike"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"books\".\"author\" ilike"), normalizedSql)
+        assertFalse(normalizedSql.contains("\"users\".\"nickname\" ilike"), normalizedSql)
+        assertTrue(
+            normalizedSql.contains(
+                "order by \"ranked_recommendation_events\".\"recommended_at\" desc, \"quotes\".\"id\" desc",
+            ),
+            normalizedSql,
+        )
+    }
+
+    @Test
+    fun `검색어 메타문자는 LIKE 패턴에서 이스케이프한다`() {
+        val capturedQuery =
+            captureQuery { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    searchCriteria(query = SEARCH_META_QUERY),
+                )
+            }
+        val normalizedSql = capturedQuery.sql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"quotes\".\"content\" ilike"), normalizedSql)
+        assertTrue(normalizedSql.contains("escape '!'"), normalizedSql)
+        assertTrue(capturedQuery.bindings.contains(ESCAPED_SEARCH_META_QUERY), capturedQuery.bindings.toString())
+    }
+
+    @Test
+    fun `스크랩순 검색은 스크랩 수 집계와 정렬을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    searchCriteria(
+                        sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                        genre = DiscoveryGenre.GENERAL_LITERATURE,
+                    ),
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("quote_scrap_counts"), normalizedSql)
+        assertTrue(normalizedSql.contains("count(\"quote_scraps\".\"id\")"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("order by \"scrap_count\" desc"), normalizedSql)
+    }
+
+    @Test
+    fun `스크랩순 검색 커서가 있으면 스크랩 수와 최신순 보조 조건을 추가한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                DiscoveryRepository(dsl).searchRecommendedQuotes(
+                    searchCriteria(
+                        sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
+                        cursor = DiscoveryQuoteSearchCursor(RECOMMENDED_AT, QUOTE_ID, SCRAP_COUNT),
+                    ),
+                )
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("\"scrap_count\" < ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"scrap_count\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"recommended_at\" < cast(? as timestamp)"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"quotes\".\"id\" < ?"), normalizedSql)
+    }
+
+    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String = captureQuery(repositoryCall).sql
+
+    private fun captureQuery(repositoryCall: (DSLContext) -> Unit): CapturedQuery {
         var capturedSql = ""
+        var capturedBindings = emptyList<Any?>()
         lateinit var dsl: DSLContext
         val connection =
             MockConnection(
                 MockDataProvider { context ->
                     capturedSql = context.sql()
+                    capturedBindings = context.bindings().toList()
                     arrayOf(MockResult(0, dsl.newResult(*DISCOVERY_QUOTE_FIELDS)))
                 },
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
         repositoryCall(dsl)
-        return capturedSql
+        return CapturedQuery(capturedSql, capturedBindings)
     }
+
+    private fun searchCriteria(
+        query: String = SEARCH_QUERY,
+        sort: DiscoveryQuoteSearchSort = DiscoveryQuoteSearchSort.LATEST,
+        cursor: DiscoveryQuoteSearchCursor? = null,
+        genre: DiscoveryGenre? = null,
+    ): DiscoveryQuoteSearchCriteria =
+        DiscoveryQuoteSearchCriteria(
+            userId = USER_ID,
+            query = query,
+            sort = sort,
+            cursor = cursor,
+            genre = genre,
+            limit = DISCOVERY_QUOTE_FETCH_COUNT,
+        )
+
+    private data class CapturedQuery(
+        val sql: String,
+        val bindings: List<Any?>,
+    )
 
     private companion object {
         const val USER_ID = 1L
         const val DISCOVERY_QUOTE_FETCH_COUNT = 11
         const val QUOTE_ID = 10L
+        const val SEARCH_QUERY = "새"
+        const val SEARCH_META_QUERY = "100%_!"
+        const val ESCAPED_SEARCH_META_QUERY = "%100!%!_!!%"
+        const val SCRAP_COUNT = 3
         val RECOMMENDED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 5, 12, 34, 56)
         val DISCOVERY_QUOTE_FIELDS: Array<Field<*>> =
             arrayOf(
@@ -115,8 +229,11 @@ class DiscoveryRepositoryTest {
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
                 BookTable.GENRE,
+                DSL.field("need_tag_id", Long::class.java),
+                DSL.field("need_tag_label", String::class.java),
                 DSL.field("recommended_at", LocalDateTime::class.java),
                 QuoteScrapTable.ID.isNotNull.`as`("is_scrapped"),
+                DSL.field("scrap_count", Int::class.java),
             )
     }
 }

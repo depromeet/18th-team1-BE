@@ -98,6 +98,17 @@ class TagRepository(
             .fetch(::toTagOption)
             .groupBy { tag -> tag.type }
 
+    fun getActiveMoodTagIdByCode(): Map<String, Long> =
+        dsl
+            .select(TagTable.CODE, TagTable.ID)
+            .from(TagTable.TAGS)
+            .where(
+                TagTable.TYPE
+                    .eq(TagType.MOOD.name)
+                    .and(TagTable.IS_ACTIVE.isTrue),
+            ).fetch()
+            .associate { record -> record[TagTable.CODE]!! to record[TagTable.ID]!! }
+
     private fun toTag(record: Record): Tag =
         Tag(
             id = record[TagTable.ID]!!,
@@ -106,6 +117,7 @@ class TagRepository(
             label = record[TagTable.LABEL]!!,
             type = TagType.from(record[TagTable.TYPE]!!),
             createdAt = record[TagTable.CREATED_AT]!!,
+            displayGroup = record[TagTable.DISPLAY_GROUP],
         )
 
     private fun toTagOption(record: Record): TagOption =
@@ -124,6 +136,7 @@ class TagRepository(
             TagTable.CODE,
             TagTable.LABEL,
             TagTable.TYPE,
+            TagTable.DISPLAY_GROUP,
             TagTable.CREATED_AT,
         )
 }

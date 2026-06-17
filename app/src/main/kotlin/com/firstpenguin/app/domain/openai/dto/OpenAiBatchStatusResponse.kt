@@ -7,4 +7,5 @@ data class OpenAiBatchStatusResponse(
     val status: BatchJobStatus,
     val outputFileId: String?,
     val errorFileId: String?,
+    val errorMessage: String?,
 )

@@ -29,18 +29,22 @@ GET /api/users/me
 ```json
 {
   "id": 1,
+  "provider": "KAKAO",
   "email": "user@example.com",
   "nickname": "책읽는펭귄",
-  "profileImageUrl": "https://cdn.example.com/profile.png"
+  "profileImageUrl": "https://cdn.example.com/profile.png",
+  "createdAt": "2026-06-13"
 }
 ```
 
 | 필드 | 설명 |
 |------|------|
 | `id` | 사용자 ID |
+| `provider` | 가입/로그인에 사용한 OAuth provider. `KAKAO` 또는 `GOOGLE` |
 | `email` | OAuth provider에서 제공한 이메일. 제공되지 않으면 `null` |
 | `nickname` | 서비스에서 사용하는 사용자 닉네임 |
 | `profileImageUrl` | `users.profile_image_id`로 연결된 이미지 URL. 연결된 이미지가 없으면 `null` |
+| `createdAt` | 가입한 날짜 |
 
 `profileImageUrl`은 `images.url`을 조회해서 응답에 포함한다.
 클라이언트는 `profileImageId`가 아니라 조회 가능한 URL만 받는다.
@@ -67,19 +71,29 @@ Content-Type: application/json
 | `profileImageId` | 변경할 프로필 이미지 ID. `null`이면 변경하지 않음 |
 
 `nickname`, `profileImageId` 중 하나 이상은 반드시 포함해야 한다.
-두 값이 모두 `null`이면 `INVALID_INPUT`으로 처리한다.
+필드는 생략할 수 있으며, 두 값이 모두 생략되거나 `null`이면 `INVALID_INPUT`으로 처리한다.
 
-`null` 필드는 변경하지 않는다.
+생략하거나 `null`인 필드는 변경하지 않는다.
 따라서 현재 API로는 프로필 이미지를 제거할 수 없다.
+
+닉네임만 변경할 때는 `profileImageId`를 보내지 않아도 된다.
+
+```json
+{
+  "nickname": "새닉네임"
+}
+```
 
 응답은 수정 후 `UserResponse`를 반환한다.
 
 ```json
 {
   "id": 1,
+  "provider": "KAKAO",
   "email": "user@example.com",
   "nickname": "새닉네임",
-  "profileImageUrl": "https://cdn.example.com/profile.png"
+  "profileImageUrl": "https://cdn.example.com/profile.png",
+  "createdAt": "2026-06-13"
 }
 ```
 
@@ -141,6 +155,7 @@ provider 표시 이름은 `provider_display_name`에 별도로 저장한다.
 다음 시나리오를 검증한다.
 
 - 내 정보 조회 시 `profileImageId`가 있으면 `profileImageUrl`을 응답한다.
+- 내 정보 조회 시 OAuth provider를 응답한다.
 - `PATCH /api/users/me`는 닉네임만 변경할 수 있다.
 - `PATCH /api/users/me`는 프로필 이미지만 변경할 수 있다.
 - 두 필드가 모두 `null`이면 실패한다.

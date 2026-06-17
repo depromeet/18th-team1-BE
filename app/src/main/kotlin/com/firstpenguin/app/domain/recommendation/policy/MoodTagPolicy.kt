@@ -13,8 +13,8 @@ class MoodTagPolicy {
     fun resolveMoodTagCodes(
         input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
+        intentType: IntentType = IntentTypePolicy.resolve(input, effectiveTags),
     ): Set<String> {
-        val intentType = input.analysis?.intentType ?: IntentType.EMOTION_NEED_BASED
         if (IntentFocusWeightPolicy.weightOf(intentType, TagType.MOOD) <= 0.0) return emptySet()
 
         return moodScores(input, effectiveTags)
