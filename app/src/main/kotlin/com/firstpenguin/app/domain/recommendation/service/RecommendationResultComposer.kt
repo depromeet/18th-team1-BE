@@ -123,7 +123,10 @@ class RecommendationResultComposer(
             )
 
         return recommendationRanker
-            .rank(recommendationCandidates) { candidate ->
+            .rank(
+                candidates = recommendationCandidates,
+                useSemanticScore = semanticScores.isNotEmpty(),
+            ) { candidate ->
                 metadataScorer
                     .score(
                         input = input,

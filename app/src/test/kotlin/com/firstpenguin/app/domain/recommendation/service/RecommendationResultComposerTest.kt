@@ -101,6 +101,22 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `semantic score가 없으면 metadataScore를 finalScore로 사용한다`() {
+        val composer = composer()
+
+        val result =
+            composer.compose(
+                input = recommendationInput(),
+                effectiveTags = effectiveTags,
+                candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+            )
+        val mainScore = requireNotNull(result).mainQuote.score
+
+        assertEquals(mainScore.metadataScore, mainScore.finalScore)
+    }
+
+    @Test
     fun `감정 점수가 없는 후보는 감정 매칭 후보보다 뒤로 미룬다`() {
         val candidates =
             listOf(candidate(MISSING_EMOTION_QUOTE_ID, roleTagId = 1L, tagIdsByType = emptyMap())) +
