@@ -29,17 +29,8 @@ data class DiscoveryQuoteResponse(
     val genre: String?,
     @field:Schema(description = "추천 당시 선택한 NEED 태그. 선택 태그가 없으면 null", nullable = true)
     val needTag: DiscoveryNeedTagResponse?,
-    @field:Schema(
-        description =
-            "추천 당시 입력한 감정 단계. " +
-                "1=아주 별로에요, 2=별로에요, 3=약간 별로에요, 4=그저그래요, 5=나쁘지 않아요, " +
-                "6=꽤 괜찮아요, 7=약간 기분 좋아요, 8=기분 좋아요, 9=아주 기분 좋아요!",
-        example = "7",
-        allowableValues = ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-    )
-    val emotionValue: Int,
-    @field:Schema(description = "추천 당시 입력한 감정 단계 표시 문구", example = "약간 기분 좋아요")
-    val emotionLabel: String,
+    @field:Schema(description = "추천 당시 입력한 감정 단계")
+    val emotion: DiscoveryEmotionResponse,
     @field:Schema(description = "문장이 추천 이력에 등록된 시각", example = "2026-06-05T12:34:56")
     val recommendedAt: LocalDateTime,
     @get:JsonProperty("isScrapped")
@@ -59,10 +50,32 @@ data class DiscoveryQuoteResponse(
                 bookCoverImageUrl = quote.bookCoverImageUrl,
                 genre = quote.genre,
                 needTag = quote.needTag?.let(DiscoveryNeedTagResponse::from),
-                emotionValue = quote.emotionValue,
-                emotionLabel = EmotionLevel.from(quote.emotionValue).label,
+                emotion = DiscoveryEmotionResponse.from(EmotionLevel.from(quote.emotionValue)),
                 recommendedAt = quote.recommendedAt,
                 isScrapped = quote.isScrapped,
+            )
+    }
+}
+
+@Schema(description = "추천 당시 입력한 감정 단계 응답")
+data class DiscoveryEmotionResponse(
+    @field:Schema(
+        description =
+            "추천 당시 입력한 감정 단계 값. " +
+                "1=아주 별로에요, 2=별로에요, 3=약간 별로에요, 4=그저그래요, 5=나쁘지 않아요, " +
+                "6=꽤 괜찮아요, 7=약간 기분 좋아요, 8=기분 좋아요, 9=아주 기분 좋아요!",
+        example = "7",
+        allowableValues = ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    )
+    val value: Int,
+    @field:Schema(description = "추천 당시 입력한 감정 단계 표시 문구", example = "약간 기분 좋아요")
+    val label: String,
+) {
+    companion object {
+        fun from(emotionLevel: EmotionLevel): DiscoveryEmotionResponse =
+            DiscoveryEmotionResponse(
+                value = emotionLevel.value,
+                label = emotionLevel.label,
             )
     }
 }

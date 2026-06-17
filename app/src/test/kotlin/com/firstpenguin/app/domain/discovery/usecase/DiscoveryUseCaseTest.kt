@@ -41,8 +41,18 @@ class DiscoveryUseCaseTest {
         assertEquals(RECOMMENDED_USER_ID, response.quotes.first().recommendedUserId)
         assertEquals(RECOMMENDED_USER_NICKNAME, response.quotes.first().recommendedUserNickname)
         assertEquals(RECOMMENDED_AT, response.quotes.first().recommendedAt)
-        assertEquals(EMOTION_VALUE, response.quotes.first().emotionValue)
-        assertEquals(EMOTION_LABEL, response.quotes.first().emotionLabel)
+        assertEquals(
+            EMOTION_VALUE,
+            response.quotes
+                .first()
+                .emotion.value,
+        )
+        assertEquals(
+            EMOTION_LABEL,
+            response.quotes
+                .first()
+                .emotion.label,
+        )
         assertEquals(GENRE, response.quotes.first().genre)
         assertEquals(
             NEED_TAG_ID,
