@@ -87,8 +87,8 @@ class UserInputParseRequestBuilder(
     private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
 
     private fun Map<TagType, List<TagOption>>.toAllowedTagsPayload(): Map<String, List<Map<String, String>>> =
-        USER_INPUT_PARSE_TAG_TYPES.filter(::containsKey).associate { type ->
-            type.name to get(type).orEmpty().map { option -> option.toPayload() }
+        USER_INPUT_PARSE_TAG_SPECS.filter { spec -> spec.type in this }.associate { spec ->
+            spec.type.name to get(spec.type).orEmpty().map { option -> option.toPayload() }
         }
 
     private fun TagOption.toPayload(): Map<String, String> =
