@@ -8,9 +8,6 @@ import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
-import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.HttpServerErrorException
-import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.body
@@ -52,9 +49,7 @@ class OpenAiEmbeddingClient(
     ): List<List<Double>> =
         runCatching {
             validateInputs(inputs)
-            executeWithRetry {
-                requestEmbeddings(inputs, model).toEmbeddings()
-            }
+            requestEmbeddings(inputs, model).toEmbeddings()
         }.getOrElse { exception -> throw exception.toEmbeddingException() }
 
     private fun validateInputs(inputs: List<String>) {
@@ -80,37 +75,6 @@ class OpenAiEmbeddingClient(
             setConnectTimeout(OPENAI_CONNECT_TIMEOUT)
             setReadTimeout(OPENAI_READ_TIMEOUT)
         }
-
-    private fun <T> executeWithRetry(operation: () -> T): T {
-        var delayMillis = INITIAL_RETRY_DELAY_MILLIS
-        var lastException: Exception? = null
-
-        repeat(MAX_RETRY_ATTEMPTS) { attempt ->
-            try {
-                return operation()
-            } catch (exception: RestClientException) {
-                lastException = exception
-
-                if (!exception.isRetryable() || attempt == MAX_RETRY_ATTEMPTS - 1) {
-                    throw exception
-                }
-
-                Thread.sleep(delayMillis)
-                delayMillis =
-                    (delayMillis * BACKOFF_MULTIPLIER)
-                        .coerceAtMost(MAX_RETRY_DELAY_MILLIS)
-            }
-        }
-
-        throw requireNotNull(lastException)
-    }
-
-    private companion object {
-        const val MAX_RETRY_ATTEMPTS = 3
-        const val INITIAL_RETRY_DELAY_MILLIS = 1_000L
-        const val MAX_RETRY_DELAY_MILLIS = 8_000L
-        const val BACKOFF_MULTIPLIER = 2
-    }
 }
 
 private fun Throwable.toEmbeddingException(): Throwable =
@@ -118,12 +82,4 @@ private fun Throwable.toEmbeddingException(): Throwable =
         CustomException(ErrorCode.QUOTE_EMBEDDING_OPENAI_REQUEST_FAILED).also { it.initCause(this) }
     } else {
         this
-    }
-
-private fun Throwable.isRetryable(): Boolean =
-    when (this) {
-        is HttpServerErrorException -> true
-        is ResourceAccessException -> true
-        is HttpClientErrorException.TooManyRequests -> true
-        else -> false
     }
