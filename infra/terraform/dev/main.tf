@@ -215,7 +215,7 @@ resource "google_storage_bucket" "images" {
   uniform_bucket_level_access = true
 
   cors {
-    origin          = ["https://dev.senti.today", "http://localhost:3000"]
+    origin          = ["https://dev.senti.today", "https://senti.today", "http://localhost:3000"]
     method          = ["GET", "PUT"]
     response_header = ["Content-Type", "Access-Control-Allow-Origin"]
     max_age_seconds = 3600
