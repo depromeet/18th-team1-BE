@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.RankedRecommendationQuote
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.model.RecommendationFinalScoreWeights
 import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import org.springframework.stereotype.Component
 
@@ -10,10 +11,11 @@ class RecommendationRanker {
     fun rank(
         candidates: List<RecommendationCandidate>,
         useSemanticScore: Boolean = true,
+        scoreWeights: RecommendationFinalScoreWeights = RecommendationFinalScoreWeights.DEFAULT,
         scoreOf: (RecommendationCandidate) -> RecommendationScoreBreakdown,
     ): List<RankedRecommendationQuote> =
         candidates
-            .map { candidate -> candidate to scoreOf(candidate).withFinalScore(useSemanticScore) }
+            .map { candidate -> candidate to scoreOf(candidate).withFinalScore(useSemanticScore, scoreWeights) }
             .sortedWith(
                 compareByDescending<Pair<RecommendationCandidate, RecommendationScoreBreakdown>> {
                     it.second.finalScore
@@ -27,15 +29,16 @@ class RecommendationRanker {
                 )
             }
 
-    private fun RecommendationScoreBreakdown.withFinalScore(useSemanticScore: Boolean): RecommendationScoreBreakdown {
+    private fun RecommendationScoreBreakdown.withFinalScore(
+        useSemanticScore: Boolean,
+        scoreWeights: RecommendationFinalScoreWeights,
+    ): RecommendationScoreBreakdown {
         if (!useSemanticScore) return copy(finalScore = metadataScore)
 
-        return copy(finalScore = METADATA_WEIGHT * metadataScore + SEMANTIC_WEIGHT * semanticScore)
+        return copy(finalScore = scoreWeights.metadata * metadataScore + scoreWeights.semantic * semanticScore)
     }
 
     private companion object {
         const val FIRST_RANK = 1
-        const val METADATA_WEIGHT = 0.45
-        const val SEMANTIC_WEIGHT = 0.55
     }
 }

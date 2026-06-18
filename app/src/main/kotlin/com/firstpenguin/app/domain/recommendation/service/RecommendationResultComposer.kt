@@ -12,6 +12,7 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.UserSemanticEmbedding
+import com.firstpenguin.app.domain.recommendation.policy.RecommendationFinalScoreWeightPolicy
 import org.springframework.stereotype.Component
 
 private const val FIRST_RANK = 1
@@ -116,6 +117,7 @@ class RecommendationResultComposer(
     ): List<RankedRecommendationQuote> {
         val recommendationCandidates = candidates.map { candidate -> candidate.candidate }
         val sourceByQuoteId = candidates.associate { candidate -> candidate.quoteId to candidate.source }
+        val scoreWeights = RecommendationFinalScoreWeightPolicy.weightsOf(effectiveTags, recommendationCandidates)
         val semanticScores =
             semanticProvider.findScores(
                 userEmbedding = userEmbedding,
@@ -126,6 +128,7 @@ class RecommendationResultComposer(
             .rank(
                 candidates = recommendationCandidates,
                 useSemanticScore = semanticScores.isNotEmpty(),
+                scoreWeights = scoreWeights,
             ) { candidate ->
                 metadataScorer
                     .score(

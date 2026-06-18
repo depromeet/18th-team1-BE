@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.recommendation.service
 
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
+import com.firstpenguin.app.domain.recommendation.model.RecommendationFinalScoreWeights
 import com.firstpenguin.app.domain.recommendation.model.RecommendationScoreBreakdown
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -42,6 +43,24 @@ class RecommendationRankerTest {
     }
 
     @Test
+    fun `semantic score 비율을 전달하면 finalScore에 반영한다`() {
+        val candidate = candidate(QUOTE_ID)
+
+        val result =
+            ranker.rank(
+                candidates = listOf(candidate),
+                scoreWeights = RecommendationFinalScoreWeights.SEMANTIC_FOCUSED,
+            ) {
+                score(
+                    metadataScore = METADATA_SCORE,
+                    semanticScore = SEMANTIC_SCORE,
+                )
+            }
+
+        assertEquals(EXPECTED_SEMANTIC_FOCUSED_SCORE, result.first().score.finalScore, DELTA)
+    }
+
+    @Test
     fun `finalScore 기준으로 정렬하고 rank를 다시 부여한다`() {
         val lowScoreCandidate = candidate(quoteId = 1L)
         val highScoreCandidate = candidate(quoteId = 2L)
@@ -64,6 +83,7 @@ class RecommendationRankerTest {
         const val METADATA_SCORE = 0.8
         const val SEMANTIC_SCORE = 0.6
         const val EXPECTED_FINAL_SCORE = 0.69
+        const val EXPECTED_SEMANTIC_FOCUSED_SCORE = 0.66
         const val DELTA = 0.000001
 
         fun candidate(quoteId: Long): RecommendationCandidate =
