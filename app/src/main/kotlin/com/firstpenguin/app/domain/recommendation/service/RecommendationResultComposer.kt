@@ -96,7 +96,11 @@ class RecommendationResultComposer(
     ): List<SourcedRecommendationCandidate> =
         semanticSeedCandidates(input, userEmbedding, candidates)
             .let { semanticSeeds ->
-                val existingCandidates = sourceCandidates(candidates, RecommendationCandidateSource.PRIMARY) + semanticSeeds
+                val existingCandidates =
+                    sourceCandidates(
+                        candidates,
+                        RecommendationCandidateSource.PRIMARY,
+                    ) + semanticSeeds
                 fallbackService.supplementSourcedCandidates(
                     input = input,
                     effectiveTags = effectiveTags,
@@ -122,9 +126,17 @@ class RecommendationResultComposer(
         return semanticProvider
             .findSimilarCandidates(
                 userEmbedding = userEmbedding,
-                excludedQuoteIds = candidates.map { candidate -> candidate.quoteId },
+                excludedQuoteIds =
+                    candidates.map { candidate ->
+                        candidate.quoteId
+                    },
                 limit = SEMANTIC_SEED_CANDIDATE_LIMIT,
-            ).map { candidate -> SourcedRecommendationCandidate(candidate = candidate, source = RecommendationCandidateSource.FALLBACK_SEMANTIC) }
+            ).map { candidate ->
+                SourcedRecommendationCandidate(
+                    candidate = candidate,
+                    source = RecommendationCandidateSource.FALLBACK_SEMANTIC,
+                )
+            }
     }
 
     private fun rank(
@@ -260,7 +272,8 @@ private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(): Boolean =
 
 private fun RankedRecommendationQuote.isStrongSemanticMatch(): Boolean = score.semanticScore >= STRONG_SEMANTIC_SCORE
 
-private fun RecommendationCandidateSource.isEmotionSource(): Boolean = this == RecommendationCandidateSource.PRIMARY || this == RecommendationCandidateSource.FALLBACK_EMOTION
+private fun RecommendationCandidateSource.isEmotionSource(): Boolean =
+    this == RecommendationCandidateSource.PRIMARY || this == RecommendationCandidateSource.FALLBACK_EMOTION
 
 private fun RecommendationInput.shouldExpandSemanticCandidates(userEmbedding: UserSemanticEmbedding?): Boolean =
     userEmbedding != null && hasAnalysisText()
