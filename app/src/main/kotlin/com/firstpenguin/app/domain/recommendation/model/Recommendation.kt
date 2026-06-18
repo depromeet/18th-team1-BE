@@ -15,4 +15,5 @@ data class Recommendation(
     val emotionRangeId: Long,
     val emotionRangeName: EmotionRangeName,
     val createdAt: LocalDateTime,
+    val deletedAt: LocalDateTime?,
 )

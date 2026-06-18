@@ -56,10 +56,12 @@ class RecommendationCommandRepository(
             .execute()
     }
 
-    fun deleteById(id: Long) {
+    fun softDeleteById(id: Long) {
         dsl
-            .deleteFrom(RecommendationTable.RECOMMENDATIONS)
+            .update(RecommendationTable.RECOMMENDATIONS)
+            .set(RecommendationTable.DELETED_AT, LocalDateTime.now())
             .where(RecommendationTable.ID.eq(id))
+            .and(RecommendationTable.DELETED_AT.isNull)
             .execute()
     }
 

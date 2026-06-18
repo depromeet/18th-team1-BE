@@ -18,4 +18,5 @@ internal object RecommendationTable {
     val EMOTION_RANGE_ID =
         DSL.field(DSL.name("recommendations", "emotion_range_id"), Long::class.java)
     val CREATED_AT = DSL.field(DSL.name("recommendations", "created_at"), LocalDateTime::class.java)
+    val DELETED_AT = DSL.field(DSL.name("recommendations", "deleted_at"), LocalDateTime::class.java)
 }
