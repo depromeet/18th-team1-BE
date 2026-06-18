@@ -31,13 +31,15 @@ class MetadataScorer(
         val moodScore = moodScore(input, effectiveTags, candidate, moodTagIdByCode, tagRarityWeights, intentType)
         val metadataScore =
             metadataScore(
+                input = input,
                 intentType = intentType,
                 needScore = needScore,
                 emotionScore = emotionScore,
                 contextScore = contextScore,
                 situationScore = situationScore,
                 moodScore = moodScore,
-            ) * missingEmotionPenalty(effectiveTags, emotionScore)
+            ) * missingEmotionPenalty(effectiveTags, emotionScore) *
+                unsupportedSpecificityPenalty(effectiveTags, candidate)
 
         return RecommendationScoreBreakdown(
             needScore = needScore,
@@ -84,6 +86,7 @@ class MetadataScorer(
     }
 
     private fun metadataScore(
+        input: RecommendationInput,
         intentType: IntentType,
         needScore: Double,
         emotionScore: Double,
@@ -99,7 +102,7 @@ class MetadataScorer(
                 TagType.SITUATION to situationScore,
                 TagType.MOOD to moodScore,
             )
-        val weights = IntentFocusWeightPolicy.weightsOf(intentType)
+        val weights = IntentFocusWeightPolicy.weightsOf(input, intentType)
 
         return scores.entries.sumOf { (type, score) -> score * (weights[type] ?: NO_WEIGHT) }
     }
@@ -114,6 +117,47 @@ class MetadataScorer(
             else -> MISSING_EMOTION_PENALTY
         }
 
+    private fun unsupportedSpecificityPenalty(
+        effectiveTags: List<EffectiveTag>,
+        candidate: RecommendationCandidate,
+    ): Double =
+        unsupportedSituationPenalty(effectiveTags, candidate) *
+            unsupportedContextPenalty(effectiveTags, candidate)
+
+    private fun unsupportedSituationPenalty(
+        effectiveTags: List<EffectiveTag>,
+        candidate: RecommendationCandidate,
+    ): Double =
+        unsupportedTagPenalty(
+            effectiveTags = effectiveTags,
+            candidate = candidate,
+            tagType = TagType.SITUATION,
+            penalty = UNSUPPORTED_SITUATION_PENALTY,
+        )
+
+    private fun unsupportedContextPenalty(
+        effectiveTags: List<EffectiveTag>,
+        candidate: RecommendationCandidate,
+    ): Double =
+        unsupportedTagPenalty(
+            effectiveTags = effectiveTags,
+            candidate = candidate,
+            tagType = TagType.CONTEXT,
+            penalty = UNSUPPORTED_CONTEXT_PENALTY,
+        )
+
+    private fun unsupportedTagPenalty(
+        effectiveTags: List<EffectiveTag>,
+        candidate: RecommendationCandidate,
+        tagType: TagType,
+        penalty: Double,
+    ): Double =
+        when {
+            effectiveTags.any { tag -> tag.type == tagType } -> NO_PENALTY
+            candidate.tagIds(tagType).isEmpty() -> NO_PENALTY
+            else -> penalty
+        }
+
     private fun RecommendationCandidate.tagIds(tagType: TagType): Set<Long> = tagIdsByType[tagType].orEmpty()
 
     private companion object {
@@ -123,5 +167,7 @@ class MetadataScorer(
         const val NO_SCORE = 0.0
         const val NO_PENALTY = 1.0
         const val MISSING_EMOTION_PENALTY = 0.5
+        const val UNSUPPORTED_SITUATION_PENALTY = 0.9
+        const val UNSUPPORTED_CONTEXT_PENALTY = 0.95
     }
 }
