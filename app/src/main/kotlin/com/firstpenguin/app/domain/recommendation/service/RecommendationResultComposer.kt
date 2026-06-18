@@ -23,6 +23,8 @@ private const val NO_ROLE_TAG_COUNT = 0
 private const val DEFAULT_SEMANTIC_SCORE = 0.0
 private const val STRONG_SEMANTIC_SCORE = 0.55
 private const val STRONG_SEMANTIC_METADATA_SCORE = 0.25
+private const val LOW_METADATA_SEMANTIC_DEFER_SCORE = 0.30
+private const val SEMANTIC_DOMINANCE_MARGIN = 0.15
 
 private typealias RankedQuotes = List<RankedRecommendationQuote>
 private typealias SemanticExpansion = RecommendationSemanticExpansionDecision
@@ -84,9 +86,11 @@ class RecommendationResultComposer(
         val rankedQuotes =
             rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
                 .deferLowMetadataSemanticFallbacks()
+                .deferLowMetadataSemanticDominatedQuotes()
                 .diversifyRoleTags()
                 .preferEmotionMatches(semanticExpansion)
                 .preferEmotionSources(semanticExpansion)
+                .deferLowMetadataSemanticDominatedQuotes()
                 .deferLowMetadataSemanticFallbacks()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
@@ -282,16 +286,34 @@ private fun RankedQuotes.preferEmotionSources(semanticExpansion: SemanticExpansi
         .distinctBy { quote -> quote.quoteId }
 
 private fun RankedQuotes.deferLowMetadataSemanticFallbacks(): RankedQuotes =
-    filterNot(RankedRecommendationQuote::isLowMetadataSemanticFallback)
-        .plus(filter(RankedRecommendationQuote::isLowMetadataSemanticFallback))
-        .distinctBy { quote -> quote.quoteId }
+    filterNot { quote ->
+        quote.source == RecommendationCandidateSource.FALLBACK_SEMANTIC &&
+            quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE
+    }.plus(
+        filter { quote ->
+            quote.source == RecommendationCandidateSource.FALLBACK_SEMANTIC &&
+                quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE
+        },
+    ).distinctBy { quote -> quote.quoteId }
+
+private fun RankedQuotes.deferLowMetadataSemanticDominatedQuotes(): RankedQuotes =
+    take(SCORE_PRIORITY_QUOTE_COUNT)
+        .plus(
+            drop(SCORE_PRIORITY_QUOTE_COUNT)
+                .filterNot { quote ->
+                    quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
+                        quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
+                },
+        ).plus(
+            drop(SCORE_PRIORITY_QUOTE_COUNT)
+                .filter { quote ->
+                    quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
+                        quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
+                },
+        ).distinctBy { quote -> quote.quoteId }
 
 private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(semanticExpansion: SemanticExpansion): Boolean =
     score.emotionScore <= NO_EMOTION_SCORE && !isStrongSemanticMatch(semanticExpansion)
-
-private fun RankedRecommendationQuote.isLowMetadataSemanticFallback(): Boolean =
-    source == RecommendationCandidateSource.FALLBACK_SEMANTIC &&
-        score.metadataScore < STRONG_SEMANTIC_METADATA_SCORE
 
 private fun RankedRecommendationQuote.isStrongSemanticMatch(semanticExpansion: SemanticExpansion): Boolean =
     score.semanticScore >= STRONG_SEMANTIC_SCORE &&

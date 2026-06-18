@@ -404,6 +404,56 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `metadataScore가 낮고 semanticScore가 높은 primary 후보도 top10 뒤로 미룬다`() {
+        val semanticDominatedQuoteId = 1L
+        val candidates =
+            listOf(
+                candidate(
+                    quoteId = semanticDominatedQuoteId,
+                    roleTagId = semanticDominatedQuoteId,
+                    tagIdsByType = mapOf(TagType.EMOTION to setOf(EMOTION_TAG_ID)),
+                ),
+            ) + (2L..11L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+        val userEmbedding = UserSemanticEmbedding("친구와 나를 비교해서 마음이 위축된다", listOf(0.1))
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = userEmbedding,
+                semanticScores =
+                    mapOf(
+                        semanticDominatedQuoteId to HIGH_SEMANTIC_SCORE - 0.2,
+                        2L to HIGH_SEMANTIC_SCORE,
+                        3L to HIGH_SEMANTIC_SCORE,
+                        4L to HIGH_SEMANTIC_SCORE,
+                    ),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "친구와 나를 비교해서 마음이 위축된다",
+                feelingText = "비교돼서 위축돼",
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags =
+                    effectiveTags +
+                        effectiveTag(SITUATION_TAG_ID, "SITUATION_COMPARISON", TagType.SITUATION),
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+                userEmbedding = userEmbedding,
+            )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
+
+        assertTrue(
+            semanticDominatedQuoteId !in quoteIds,
+            requireNotNull(result).quotes.joinToString { quote ->
+                "${quote.quoteId}:${quote.score.metadataScore}:${quote.score.semanticScore}"
+            },
+        )
+    }
+
+    @Test
     fun `metadataScore가 충분한 semantic fallback 후보는 top10에 유지한다`() {
         val semanticCandidate =
             candidate(
