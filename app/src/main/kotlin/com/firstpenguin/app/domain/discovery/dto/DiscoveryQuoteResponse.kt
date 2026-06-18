@@ -25,6 +25,9 @@ data class DiscoveryQuoteResponse(
     val author: String,
     @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover-placeholder.png")
     val bookCoverImageUrl: String,
+    @get:JsonProperty("genre_id")
+    @field:Schema(description = "책 장르 ID", example = "1")
+    val genreId: Long,
     @field:Schema(description = "책 장르", example = "일반문학", nullable = true)
     val genre: String?,
     @field:Schema(description = "추천 당시 선택한 NEED 태그. 선택 태그가 없으면 null", nullable = true)
@@ -48,6 +51,7 @@ data class DiscoveryQuoteResponse(
                 title = quote.title,
                 author = quote.author,
                 bookCoverImageUrl = quote.bookCoverImageUrl,
+                genreId = quote.genreId,
                 genre = quote.genre,
                 needTag = quote.needTag?.let(DiscoveryNeedTagResponse::from),
                 emotion = DiscoveryEmotionResponse.from(EmotionLevel.from(quote.emotionValue)),

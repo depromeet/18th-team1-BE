@@ -17,6 +17,14 @@ class GenreRepository(
             .orderBy(GenreTable.SORT_ORDER.asc(), GenreTable.ID.asc())
             .fetch(::toGenre)
 
+    fun existsById(id: Long): Boolean =
+        dsl.fetchExists(
+            dsl
+                .selectOne()
+                .from(GenreTable.GENRES)
+                .where(GenreTable.ID.eq(id)),
+        )
+
     private fun toGenre(record: Record): Genre =
         Genre(
             id = record[GenreTable.ID]!!,
