@@ -1,13 +1,10 @@
 package com.firstpenguin.app.domain.user.repository
 
-import com.firstpenguin.app.domain.user.model.OAuthUserProfile
-import com.firstpenguin.app.domain.user.model.Provider
 import com.firstpenguin.app.domain.user.model.User
 import com.firstpenguin.app.domain.user.model.UserStatus
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.Record
-import org.jooq.UpdateSetMoreStep
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -22,68 +19,19 @@ class UserRepository(
             .where(UserTable.ID.eq(id))
             .fetchOne(::toUser)
 
-    fun findByProviderAndProviderId(
-        provider: Provider,
-        providerId: String,
+    fun create(
+        nickname: String,
+        now: LocalDateTime,
     ): User? =
         dsl
-            .select(USER_FIELDS)
-            .from(UserTable.USERS)
-            .where(UserTable.PROVIDER.eq(provider.name))
-            .and(UserTable.PROVIDER_ID.eq(providerId))
-            .fetchOne(::toUser)
-
-    fun createOAuthUser(
-        profile: OAuthUserProfile,
-        nickname: String,
-    ): User? {
-        val now = LocalDateTime.now()
-
-        return dsl
             .insertInto(UserTable.USERS)
-            .set(UserTable.PROVIDER, profile.provider.name)
-            .set(UserTable.PROVIDER_ID, profile.providerId)
-            .set(UserTable.EMAIL, profile.email)
-            .set(UserTable.PROVIDER_DISPLAY_NAME, profile.providerDisplayName)
             .set(UserTable.NICKNAME, nickname)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
-            .set(UserTable.LAST_LOGIN_AT, now)
             .set(UserTable.CREATED_AT, now)
             .set(UserTable.UPDATED_AT, now)
             .onConflictDoNothing()
             .returningResult(USER_FIELDS)
             .fetchOne(::toUser)
-    }
-
-    fun updateOAuthLogin(profile: OAuthUserProfile): User? {
-        val now = LocalDateTime.now()
-        return oauthLoginUpdateStep(profile, now)
-            .where(UserTable.PROVIDER.eq(profile.provider.name))
-            .and(UserTable.PROVIDER_ID.eq(profile.providerId))
-            .returningResult(USER_FIELDS)
-            .fetchOne(::toUser)
-    }
-
-    private fun oauthLoginUpdateStep(
-        profile: OAuthUserProfile,
-        now: LocalDateTime,
-    ): UpdateSetMoreStep<Record> {
-        var step = baseOAuthLoginUpdateStep(profile, now)
-        profile.email?.let { step = step.set(UserTable.EMAIL, it) }
-        return step
-    }
-
-    private fun baseOAuthLoginUpdateStep(
-        profile: OAuthUserProfile,
-        now: LocalDateTime,
-    ): UpdateSetMoreStep<Record> =
-        dsl
-            .update(UserTable.USERS)
-            .set(UserTable.PROVIDER_DISPLAY_NAME, profile.providerDisplayName)
-            .set(UserTable.STATUS, UserStatus.ACTIVE.name)
-            .set(UserTable.DELETED_AT, null as LocalDateTime?)
-            .set(UserTable.LAST_LOGIN_AT, now)
-            .set(UserTable.UPDATED_AT, now)
 
     fun update(
         id: Long,
@@ -113,14 +61,9 @@ class UserRepository(
     private fun toUser(record: Record): User =
         User(
             id = record.get(UserTable.ID),
-            provider = Provider.valueOf(record.get(UserTable.PROVIDER)),
-            providerId = record.get(UserTable.PROVIDER_ID),
-            email = record.get(UserTable.EMAIL),
-            providerDisplayName = record.get(UserTable.PROVIDER_DISPLAY_NAME),
             nickname = record.get(UserTable.NICKNAME),
             profileImageId = record.get(UserTable.PROFILE_IMAGE_ID),
             status = UserStatus.valueOf(record.get(UserTable.STATUS)),
-            lastLoginAt = record.get(UserTable.LAST_LOGIN_AT),
             deletedAt = record.get(UserTable.DELETED_AT),
             createdAt = record.get(UserTable.CREATED_AT),
             updatedAt = record.get(UserTable.UPDATED_AT),
@@ -130,14 +73,9 @@ class UserRepository(
         val USER_FIELDS: List<Field<*>> =
             listOf(
                 UserTable.ID,
-                UserTable.PROVIDER,
-                UserTable.PROVIDER_ID,
-                UserTable.EMAIL,
-                UserTable.PROVIDER_DISPLAY_NAME,
                 UserTable.NICKNAME,
                 UserTable.PROFILE_IMAGE_ID,
                 UserTable.STATUS,
-                UserTable.LAST_LOGIN_AT,
                 UserTable.DELETED_AT,
                 UserTable.CREATED_AT,
                 UserTable.UPDATED_AT,
