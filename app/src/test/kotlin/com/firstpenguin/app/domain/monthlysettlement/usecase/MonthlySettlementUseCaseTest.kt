@@ -29,11 +29,11 @@ class MonthlySettlementUseCaseTest {
     }
 
     @Test
-    fun `저장된 월말 결산이 있으면 그대로 응답한다`() {
+    fun `월말 결산은 저장본 조회 없이 조합 결과로 응답한다`() {
         val targetMonth = YearMonth.now(SEOUL_ZONE).minusMonths(1)
         val snapshot = snapshot(targetMonth)
         Mockito
-            .`when`(monthlySettlementService.findSnapshot(USER_ID, targetMonth))
+            .`when`(monthlySettlementService.createSnapshot(USER_ID, targetMonth))
             .thenReturn(snapshot)
 
         val response =
@@ -49,16 +49,13 @@ class MonthlySettlementUseCaseTest {
         assertEquals(RECOMMENDATION_MESSAGE, response.recommendationMessage)
         assertEquals(SELECTED_QUOTE_ID, response.monthlyBook?.quoteId)
         assertEquals(BOOK_PURCHASE_LINK, response.monthlyBook?.bookPurchaseLink)
-        Mockito.verify(monthlySettlementService).findSnapshot(USER_ID, targetMonth)
-        Mockito.verify(monthlySettlementService, Mockito.never()).createSnapshot(USER_ID, targetMonth)
+        Mockito.verify(monthlySettlementService).createSnapshot(USER_ID, targetMonth)
+        Mockito.verify(monthlySettlementService, Mockito.never()).findSnapshot(USER_ID, targetMonth)
     }
 
     @Test
-    fun `저장된 결산도 생성 가능한 결산도 없으면 빈 응답을 반환한다`() {
+    fun `조합 가능한 결산이 없으면 빈 응답을 반환한다`() {
         val targetMonth = YearMonth.now(SEOUL_ZONE).minusMonths(1)
-        Mockito
-            .`when`(monthlySettlementService.findSnapshot(USER_ID, targetMonth))
-            .thenReturn(null)
         Mockito
             .`when`(monthlySettlementService.createSnapshot(USER_ID, targetMonth))
             .thenReturn(null)
@@ -78,15 +75,34 @@ class MonthlySettlementUseCaseTest {
     }
 
     @Test
-    fun `현재 월은 월말 결산 조회를 차단한다`() {
+    fun `현재 월도 월말 결산 조회를 허용한다`() {
         val currentMonth = YearMonth.now(SEOUL_ZONE)
+        val snapshot = snapshot(currentMonth)
+        Mockito
+            .`when`(monthlySettlementService.createSnapshot(USER_ID, currentMonth))
+            .thenReturn(snapshot)
+
+        val response =
+            monthlySettlementUseCase.getMonthlySettlement(
+                userId = USER_ID,
+                year = currentMonth.year,
+                month = currentMonth.monthValue,
+            )
+
+        assertEquals(SHARED_QUOTE_COUNT, response.sharedQuoteCount)
+        Mockito.verify(monthlySettlementService).createSnapshot(USER_ID, currentMonth)
+    }
+
+    @Test
+    fun `미래 월은 월말 결산 조회를 차단한다`() {
+        val futureMonth = YearMonth.now(SEOUL_ZONE).plusMonths(1)
 
         val exception =
             assertFailsWith<CustomException> {
                 monthlySettlementUseCase.getMonthlySettlement(
                     userId = USER_ID,
-                    year = currentMonth.year,
-                    month = currentMonth.monthValue,
+                    year = futureMonth.year,
+                    month = futureMonth.monthValue,
                 )
             }
 
