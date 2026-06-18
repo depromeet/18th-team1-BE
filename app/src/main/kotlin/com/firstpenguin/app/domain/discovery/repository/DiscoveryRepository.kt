@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.discovery.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
-import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryNeedTag
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
@@ -34,7 +33,7 @@ class DiscoveryRepository(
     fun findRecommendedQuotes(
         userId: Long,
         cursor: DiscoveryCursor?,
-        genre: DiscoveryGenre?,
+        genreId: Long?,
         limit: Int,
     ): List<DiscoveryQuote> {
         if (limit <= 0) return emptyList()
@@ -46,7 +45,7 @@ class DiscoveryRepository(
 
         return baseDiscoveryQuery(userId, rankedRecommendationEvents, needTags, scrapCount)
             .where(latestRecommendedQuoteCondition(rankedRecommendationEvents, cursor))
-            .and(activeQuoteCondition(genre))
+            .and(activeQuoteCondition(genreId))
             .orderBy(latestOrderBy(rankedRecommendationEvents))
             .limit(limit)
             .fetch(::toDiscoveryQuote)
@@ -68,7 +67,7 @@ class DiscoveryRepository(
             quoteScrapCounts,
             scrapCount,
         ).where(latestRecommendationRankCondition(rankedRecommendationEvents))
-            .and(activeQuoteCondition(criteria.genre))
+            .and(activeQuoteCondition(criteria.genreId))
             .and(searchContentCondition(criteria.query))
             .and(searchCursorCondition(criteria.sort, rankedRecommendationEvents, scrapCount, criteria.cursor))
             .orderBy(searchOrderBy(criteria.sort, rankedRecommendationEvents, scrapCount))
@@ -119,11 +118,11 @@ class DiscoveryRepository(
     private fun latestRecommendationRankCondition(rankedRecommendationEvents: Table<*>): Condition =
         recommendationRank(rankedRecommendationEvents).eq(LATEST_RECOMMENDATION_RANK)
 
-    private fun activeQuoteCondition(genre: DiscoveryGenre?): Condition =
+    private fun activeQuoteCondition(genreId: Long?): Condition =
         QuoteTable.DELETED_AT
             .isNull
             .and(BookTable.DELETED_AT.isNull)
-            .and(genre?.let { selectedGenre -> BookTable.GENRE.eq(selectedGenre.value) } ?: DSL.noCondition())
+            .and(genreId?.let { selectedGenreId -> BookTable.GENRE_ID.eq(selectedGenreId) } ?: DSL.noCondition())
 
     private fun searchContentCondition(query: String): Condition =
         DSL.condition(
@@ -232,6 +231,7 @@ class DiscoveryRepository(
             title = record.get(BookTable.TITLE),
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
+            genreId = record.get(BookTable.GENRE_ID),
             genre = record.get(BookTable.GENRE),
             needTag = toNeedTag(record),
             emotionValue = record.get(RECOMMENDED_EMOTION_VALUE_FIELD),
@@ -322,6 +322,7 @@ class DiscoveryRepository(
             BookTable.TITLE,
             BookTable.AUTHOR,
             BookTable.COVER_IMAGE_URL,
+            BookTable.GENRE_ID,
             BookTable.GENRE,
             needTagId(needTags),
             needTagLabel(needTags),

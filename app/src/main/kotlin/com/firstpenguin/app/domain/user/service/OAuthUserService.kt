@@ -48,9 +48,15 @@ class OAuthUserService(
     ): User {
         val account = getActiveOAuthAccount(profile)
         validateOAuthAccountMatchesUser(account, user)
-        validateAuthenticatableStatus(user)
+        val loginUser =
+            if (user.status == UserStatus.WITHDRAWAL_REQUESTED) {
+                userRepository.reactivateWithdrawalRequested(user.id, LocalDateTime.now()) ?: user
+            } else {
+                user
+            }
+        validateAuthenticatableStatus(loginUser)
         updateOAuthAccountLogin(account, profile)
-        return user
+        return loginUser
     }
 
     private fun createOAuthAccount(
@@ -95,6 +101,7 @@ class OAuthUserService(
         when (status) {
             UserStatus.ACTIVE -> null
             UserStatus.BLOCKED -> ErrorCode.AUTH_USER_BLOCKED
+            UserStatus.WITHDRAWAL_REQUESTED -> ErrorCode.AUTH_USER_DELETED
             UserStatus.DELETED -> ErrorCode.AUTH_USER_DELETED
         }
 }

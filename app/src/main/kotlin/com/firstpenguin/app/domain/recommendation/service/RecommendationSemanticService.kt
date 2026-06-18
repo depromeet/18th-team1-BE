@@ -24,6 +24,7 @@ interface RecommendationSemanticProvider {
     fun findSimilarCandidates(
         userEmbedding: UserSemanticEmbedding?,
         excludedQuoteIds: Collection<Long>,
+        limit: Int = DEFAULT_SIMILAR_CANDIDATE_LIMIT,
     ): List<RecommendationCandidate>
 }
 
@@ -91,20 +92,22 @@ class RecommendationSemanticService(
     override fun findSimilarCandidates(
         userEmbedding: UserSemanticEmbedding?,
         excludedQuoteIds: Collection<Long>,
+        limit: Int,
     ): List<RecommendationCandidate> {
         if (userEmbedding == null) return emptyList()
         val quoteIds =
             quoteEmbeddingRepository.findMostSimilarQuoteIds(
                 userEmbedding = userEmbedding.embedding,
                 excludedQuoteIds = excludedQuoteIds,
-                limit = SEMANTIC_FALLBACK_LIMIT,
+                limit = limit,
             )
 
         return candidateProvider.findCandidatesByQuoteIds(quoteIds)
     }
 
     private companion object {
-        const val SEMANTIC_FALLBACK_LIMIT = 300
         const val EMBEDDING_TIMEOUT_MILLIS = 8_000L
     }
 }
+
+private const val DEFAULT_SIMILAR_CANDIDATE_LIMIT = 300

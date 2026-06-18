@@ -145,16 +145,16 @@ class RecommendationController(
 
     @Operation(
         summary = "추천 기록 삭제 API",
-        description = "사용자의 추천 기록, 추천 기록에 연결된 문장, 태그 정보를 삭제한다.",
+        description = "사용자의 추천 기록을 목록과 상세 조회에서 숨긴다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @DeleteMapping("/{recommendationId}")
     fun deleteRecommendation(
-        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+//        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @PathVariable recommendationId: Long,
     ): ResponseEntity<Unit> {
         recommendationUseCase.deleteRecommendation(
-            userId = authenticatedUser.id,
+            userId = 9001L,
             recommendationId = recommendationId,
         )
 

@@ -99,6 +99,7 @@ class MonthlySettlementRepositoryTest {
         val normalizedSql = capturedSql.normalized()
 
         assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"aladin_link\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"recommendations\".\"user_id\" = ?"), normalizedSql)
         assertTrue(
             normalizedSql.contains("\"recommendations\".\"recommendation_date\" >= cast(? as date)"),

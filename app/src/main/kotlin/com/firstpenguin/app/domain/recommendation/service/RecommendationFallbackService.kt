@@ -21,13 +21,33 @@ class RecommendationFallbackService(
         rankedQuotes: List<RankedRecommendationQuote> = emptyList(),
         minimumCandidateCount: Int = MINIMUM_CANDIDATE_COUNT,
         semanticCandidates: () -> List<RecommendationCandidate> = { emptyList() },
+        prioritizeSemanticFallback: Boolean = false,
+    ): List<SourcedRecommendationCandidate> =
+        supplementSourcedCandidates(
+            input = input,
+            effectiveTags = effectiveTags,
+            existingCandidates = existingCandidates.map { candidate -> candidate.toSourcedPrimaryCandidate() },
+            rankedQuotes = rankedQuotes,
+            minimumCandidateCount = minimumCandidateCount,
+            semanticCandidates = semanticCandidates,
+            prioritizeSemanticFallback = prioritizeSemanticFallback,
+        )
+
+    fun supplementSourcedCandidates(
+        input: RecommendationInput,
+        effectiveTags: List<EffectiveTag>,
+        existingCandidates: List<SourcedRecommendationCandidate>,
+        rankedQuotes: List<RankedRecommendationQuote> = emptyList(),
+        minimumCandidateCount: Int = MINIMUM_CANDIDATE_COUNT,
+        semanticCandidates: () -> List<RecommendationCandidate> = { emptyList() },
+        prioritizeSemanticFallback: Boolean = false,
     ): List<SourcedRecommendationCandidate> {
         val forceFallback = rankedQuotes.hasLowTopScore()
 
         val accumulator = CandidateAccumulator(existingCandidates)
         if (!forceFallback && accumulator.isEnough(minimumCandidateCount)) return accumulator.toList()
 
-        val fallbackSteps = fallbackSteps(input, effectiveTags, semanticCandidates)
+        val fallbackSteps = fallbackSteps(input, effectiveTags, semanticCandidates, prioritizeSemanticFallback)
 
         fallbackSteps
             .takeUntilEnough(
@@ -43,22 +63,38 @@ class RecommendationFallbackService(
         input: RecommendationInput,
         effectiveTags: List<EffectiveTag>,
         semanticCandidates: () -> List<RecommendationCandidate>,
-    ): List<FallbackStep> =
-        listOf(
+        prioritizeSemanticFallback: Boolean,
+    ): List<FallbackStep> {
+        val exactEmotionStep =
+            fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
+                candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT)
+            }
+        val emotionRangeStep =
             fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
                 candidateProvider.findCandidatesByEmotionRangeId(input.emotionRangeId, FALLBACK_FETCH_LIMIT)
-            },
-            fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates),
-            fallbackStep(RecommendationCandidateSource.FALLBACK_NEED) {
-                candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT)
-            },
-            fallbackStep(RecommendationCandidateSource.FALLBACK_RELAXED) {
-                candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT)
-            },
-            fallbackStep(RecommendationCandidateSource.FALLBACK_RANDOM) {
-                candidateProvider.findRandomCandidates(FALLBACK_FETCH_LIMIT)
-            },
-        )
+            }
+        val semanticStep = fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates)
+        val emotionSteps = listOf(exactEmotionStep, emotionRangeStep)
+        val firstSteps =
+            if (prioritizeSemanticFallback) {
+                listOf(semanticStep) + emotionSteps
+            } else {
+                emotionSteps + semanticStep
+            }
+
+        return firstSteps +
+            listOf(
+                fallbackStep(RecommendationCandidateSource.FALLBACK_NEED) {
+                    candidateProvider.findCandidates(effectiveTags.only(TagType.NEED), FALLBACK_FETCH_LIMIT)
+                },
+                fallbackStep(RecommendationCandidateSource.FALLBACK_RELAXED) {
+                    candidateProvider.findRelaxedCandidates(FALLBACK_FETCH_LIMIT)
+                },
+                fallbackStep(RecommendationCandidateSource.FALLBACK_RANDOM) {
+                    candidateProvider.findRandomCandidates(FALLBACK_FETCH_LIMIT)
+                },
+            )
+    }
 
     private fun fallbackStep(
         source: RecommendationCandidateSource,
@@ -106,13 +142,20 @@ private data class FallbackStep(
     val findCandidates: () -> List<RecommendationCandidate>,
 )
 
+private fun RecommendationCandidate.toSourcedPrimaryCandidate(): SourcedRecommendationCandidate =
+    SourcedRecommendationCandidate(candidate = this, source = RecommendationCandidateSource.PRIMARY)
+
 private class CandidateAccumulator(
-    initialCandidates: List<RecommendationCandidate>,
+    initialCandidates: List<SourcedRecommendationCandidate>,
 ) {
     private val candidatesByQuoteId = linkedMapOf<Long, SourcedRecommendationCandidate>()
 
     init {
-        add(initialCandidates, RecommendationCandidateSource.PRIMARY)
+        add(initialCandidates)
+    }
+
+    fun add(candidates: List<SourcedRecommendationCandidate>) {
+        candidates.forEach { candidate -> candidatesByQuoteId.putIfAbsent(candidate.quoteId, candidate) }
     }
 
     fun add(

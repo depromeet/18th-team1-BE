@@ -26,7 +26,7 @@ class DiscoveryController(
             "누군가에게 한 번이라도 추천된 문장을 최신 추천 이력 순으로 10개씩 조회한다. " +
                 "첫 페이지는 `cursor` 없이 요청하고, 다음 페이지는 직전 응답의 `nextCursor` 값을 그대로 전달한다. " +
                 "`cursor`는 서버가 발급하는 URL-safe Base64 인코딩 문자열이며 클라이언트에서 직접 생성하거나 해석하지 않는다. " +
-                "`genre`는 생략하거나 `전체`이면 전체 장르를 조회한다.",
+                "`genre_id`를 생략하면 전체 장르를 조회하고, 전달하면 해당 장르 ID에 속한 문장만 조회한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @GetMapping("/quotes")
@@ -41,30 +41,17 @@ class DiscoveryController(
         )
         @RequestParam(required = false) cursor: String?,
         @Parameter(
-            description = "책 장르 필터. 생략하거나 `전체`이면 전체 장르를 조회한다.",
-            example = "일반문학",
-            schema =
-                Schema(
-                    allowableValues = [
-                        "전체",
-                        "일반문학",
-                        "SF",
-                        "추리･미스터리",
-                        "공포･스릴러",
-                        "판타지",
-                        "로맨스",
-                        "역사",
-                        "무협",
-                        "시･에세이",
-                    ],
-                ),
+            name = "genre_id",
+            description = "책 장르 ID 필터. 생략하면 전체 장르를 조회한다. 장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다.",
+            example = "1",
+            schema = Schema(type = "integer", format = "int64"),
         )
-        @RequestParam(required = false) genre: String?,
+        @RequestParam(name = "genre_id", required = false) genreId: Long?,
     ): DiscoveryQuotesResponse =
         discoveryUseCase.getDiscoveryQuotes(
             userId = authenticatedUser.id,
             cursor = cursor,
-            genre = genre,
+            genreId = genreId,
         )
 
     @Operation(
@@ -72,8 +59,8 @@ class DiscoveryController(
         description =
             "추천 이력이 있는 문장을 문장 내용 기준으로 검색한다. " +
                 "검색어는 `quotes.content`에만 적용하고, 책 제목/저자/닉네임/감정 값은 검색하지 않는다. " +
-                "`sort`는 생략하면 최신순이며, `scrapCount`를 전달하면 스크랩 많은순으로 조회한다. " +
-                "`genre`는 생략하거나 `전체`이면 전체 장르를 조회한다. " +
+                "`sort`는 생략하면 최신순이며, `scrap`을 전달하면 스크랩 많은순으로 조회한다. " +
+                "`genre_id`를 생략하면 전체 장르에서 검색하고, 전달하면 해당 장르 ID에 속한 문장만 검색한다. " +
                 "다음 페이지는 직전 응답의 `nextCursor` 값을 그대로 전달한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
@@ -86,7 +73,7 @@ class DiscoveryController(
         @Parameter(
             description = "검색 정렬. 생략하면 최신순이다.",
             example = "latest",
-            schema = Schema(allowableValues = ["latest", "scrapCount"]),
+            schema = Schema(allowableValues = ["latest", "scrap"]),
         )
         @RequestParam(required = false) sort: String?,
         @Parameter(
@@ -97,31 +84,18 @@ class DiscoveryController(
         )
         @RequestParam(required = false) cursor: String?,
         @Parameter(
-            description = "책 장르 필터. 생략하거나 `전체`이면 전체 장르를 조회한다.",
-            example = "일반문학",
-            schema =
-                Schema(
-                    allowableValues = [
-                        "전체",
-                        "일반문학",
-                        "SF",
-                        "추리･미스터리",
-                        "공포･스릴러",
-                        "판타지",
-                        "로맨스",
-                        "역사",
-                        "무협",
-                        "시･에세이",
-                    ],
-                ),
+            name = "genre_id",
+            description = "책 장르 ID 필터. 생략하면 전체 장르에서 검색한다. 장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다.",
+            example = "1",
+            schema = Schema(type = "integer", format = "int64"),
         )
-        @RequestParam(required = false) genre: String?,
+        @RequestParam(name = "genre_id", required = false) genreId: Long?,
     ): DiscoveryQuotesResponse =
         discoveryUseCase.searchDiscoveryQuotes(
             userId = authenticatedUser.id,
             query = query,
             sort = sort,
             cursor = cursor,
-            genre = genre,
+            genreId = genreId,
         )
 }

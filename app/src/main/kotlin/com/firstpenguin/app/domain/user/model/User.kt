@@ -7,6 +7,8 @@ data class User(
     val nickname: String,
     val profileImageId: Long?,
     val status: UserStatus,
+    val withdrawalRequestedAt: LocalDateTime?,
+    val withdrawalDueAt: LocalDateTime?,
     val deletedAt: LocalDateTime?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
