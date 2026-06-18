@@ -454,6 +454,49 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `metadataScore가 낮고 semanticScore가 높은 후보는 top3 보호 대상에서 제외한다`() {
+        val semanticDominatedQuoteId = 1L
+        val candidates =
+            listOf(
+                candidate(
+                    quoteId = semanticDominatedQuoteId,
+                    roleTagId = semanticDominatedQuoteId,
+                    tagIdsByType = emptyMap(),
+                ),
+            ) + (2L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+        val userEmbedding = UserSemanticEmbedding("친구와 나를 비교해서 마음이 위축된다", listOf(0.1))
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = userEmbedding,
+                semanticScores = mapOf(semanticDominatedQuoteId to MODERATE_SEMANTIC_DOMINANCE_SCORE),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+
+        val result =
+            composer.compose(
+                input =
+                    recommendationInput(
+                        canonicalIntent = "친구와 나를 비교해서 마음이 위축된다",
+                        feelingText = "비교돼서 위축돼",
+                    ),
+                effectiveTags =
+                    effectiveTags
+                        .plus(effectiveTag(SITUATION_TAG_ID, "SITUATION_COMPARISON", TagType.SITUATION)),
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+                userEmbedding = userEmbedding,
+            )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
+
+        assertTrue(
+            quoteIds.indexOf(semanticDominatedQuoteId) >= TOP_THREE_COUNT,
+            requireNotNull(result).quotes.joinToString { quote ->
+                "${quote.quoteId}:${quote.score.metadataScore}:${quote.score.semanticScore}"
+            },
+        )
+    }
+
+    @Test
     fun `metadataScore가 충분한 semantic fallback 후보는 top10에 유지한다`() {
         val semanticCandidate =
             candidate(
@@ -704,7 +747,9 @@ class RecommendationResultComposerTest {
         const val HIGH_SEMANTIC_FALLBACK_QUOTE_ID = 101L
         const val HIGH_SEMANTIC_SCORE = 1.0
         const val LOW_SEMANTIC_SCORE = 0.1
+        const val MODERATE_SEMANTIC_DOMINANCE_SCORE = 0.58
         const val HAPPY_EMOTION_VALUE = 8
+        const val TOP_THREE_COUNT = 3
         const val SPECIFIC_SEMANTIC_SEED_CANDIDATE_LIMIT = 30
         const val EMBEDDING_ELAPSED_MS = 123L
         const val FALLBACK_EMBEDDING_INPUT = "diaryText: 행복해서!"
