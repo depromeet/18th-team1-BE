@@ -211,6 +211,7 @@ class RecommendationEngineTest {
         override fun findSimilarCandidates(
             userEmbedding: UserSemanticEmbedding?,
             excludedQuoteIds: Collection<Long>,
+            limit: Int,
         ): List<RecommendationCandidate> = emptyList()
     }
 

@@ -9,6 +9,8 @@ internal object UserTable {
     val NICKNAME = DSL.field(DSL.name("users", "nickname"), String::class.java)
     val PROFILE_IMAGE_ID = DSL.field(DSL.name("users", "profile_image_id"), Long::class.java)
     val STATUS = DSL.field(DSL.name("users", "status"), String::class.java)
+    val WITHDRAWAL_REQUESTED_AT = DSL.field(DSL.name("users", "withdrawal_requested_at"), LocalDateTime::class.java)
+    val WITHDRAWAL_DUE_AT = DSL.field(DSL.name("users", "withdrawal_due_at"), LocalDateTime::class.java)
     val DELETED_AT = DSL.field(DSL.name("users", "deleted_at"), LocalDateTime::class.java)
     val CREATED_AT = DSL.field(DSL.name("users", "created_at"), LocalDateTime::class.java)
     val UPDATED_AT = DSL.field(DSL.name("users", "updated_at"), LocalDateTime::class.java)

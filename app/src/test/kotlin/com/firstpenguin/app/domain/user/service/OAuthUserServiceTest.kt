@@ -121,6 +121,67 @@ class OAuthUserServiceTest {
         )
     }
 
+    @Test
+    fun `탈퇴 요청 사용자는 유예 기간 안에 같은 OAuth 로그인 시 활성 상태로 복구한다`() {
+        val withdrawalUser =
+            user(
+                status = UserStatus.WITHDRAWAL_REQUESTED,
+                withdrawalDueAt = LocalDateTime.now().plusDays(1),
+            )
+        val reactivatedUser =
+            withdrawalUser.copy(
+                status = UserStatus.ACTIVE,
+                withdrawalRequestedAt = null,
+                withdrawalDueAt = null,
+            )
+        Mockito
+            .`when`(oAuthAccountRepository.findActiveByProviderAndProviderId(Provider.KAKAO, PROVIDER_ID))
+            .thenReturn(oAuthAccount())
+        Mockito
+            .`when`(userRepository.reactivateWithdrawalRequested(eqValue(USER_ID), anyDateTime()))
+            .thenReturn(reactivatedUser)
+        Mockito
+            .`when`(
+                oAuthAccountRepository.updateLogin(
+                    eqValue(OAUTH_ACCOUNT_ID),
+                    eqValue(OAUTH_USER_PROFILE),
+                    anyDateTime(),
+                ),
+            ).thenReturn(oAuthAccount())
+
+        val result = oAuthUserService.updateOAuthLogin(withdrawalUser, OAUTH_USER_PROFILE)
+
+        assertEquals(reactivatedUser, result)
+        Mockito.verify(userRepository).reactivateWithdrawalRequested(eqValue(USER_ID), anyDateTime())
+    }
+
+    @Test
+    fun `탈퇴 요청 자동 취소에 실패하면 로그인 정보를 갱신하지 않는다`() {
+        val withdrawalUser =
+            user(
+                status = UserStatus.WITHDRAWAL_REQUESTED,
+                withdrawalDueAt = LocalDateTime.now().minusDays(1),
+            )
+        Mockito
+            .`when`(oAuthAccountRepository.findActiveByProviderAndProviderId(Provider.KAKAO, PROVIDER_ID))
+            .thenReturn(oAuthAccount())
+        Mockito
+            .`when`(userRepository.reactivateWithdrawalRequested(eqValue(USER_ID), anyDateTime()))
+            .thenReturn(null)
+
+        val exception =
+            assertFailsWith<CustomException> {
+                oAuthUserService.updateOAuthLogin(withdrawalUser, OAUTH_USER_PROFILE)
+            }
+
+        assertEquals(ErrorCode.AUTH_USER_DELETED, exception.errorCode)
+        Mockito.verify(oAuthAccountRepository, Mockito.never()).updateLogin(
+            anyLong(),
+            anyOAuthUserProfile(),
+            anyDateTime(),
+        )
+    }
+
     private fun anyLong(): Long {
         Mockito.anyLong()
         return 0L
@@ -143,6 +204,8 @@ class OAuthUserServiceTest {
 
     private fun user(
         status: UserStatus = UserStatus.ACTIVE,
+        withdrawalRequestedAt: LocalDateTime? = null,
+        withdrawalDueAt: LocalDateTime? = null,
         deletedAt: LocalDateTime? = null,
     ): User {
         val now = LocalDateTime.now()
@@ -152,6 +215,8 @@ class OAuthUserServiceTest {
             nickname = USER_NICKNAME,
             profileImageId = null,
             status = status,
+            withdrawalRequestedAt = withdrawalRequestedAt,
+            withdrawalDueAt = withdrawalDueAt,
             deletedAt = deletedAt,
             createdAt = now,
             updatedAt = now,

@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.user.usecase
 
+import com.firstpenguin.app.domain.auth.service.RefreshTokenService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.user.dto.UpdateUserRequest
 import com.firstpenguin.app.domain.user.model.OAuthAccount
@@ -17,6 +18,7 @@ import kotlin.test.assertEquals
 class UserUseCaseTest {
     private lateinit var imageService: ImageService
     private lateinit var oAuthUserService: OAuthUserService
+    private lateinit var refreshTokenService: RefreshTokenService
     private lateinit var userService: UserService
     private lateinit var userUseCase: UserUseCase
 
@@ -24,8 +26,9 @@ class UserUseCaseTest {
     fun setUp() {
         imageService = Mockito.mock(ImageService::class.java)
         oAuthUserService = Mockito.mock(OAuthUserService::class.java)
+        refreshTokenService = Mockito.mock(RefreshTokenService::class.java)
         userService = Mockito.mock(UserService::class.java)
-        userUseCase = UserUseCase(imageService, oAuthUserService, userService)
+        userUseCase = UserUseCase(imageService, oAuthUserService, refreshTokenService, userService)
     }
 
     @Test
@@ -70,12 +73,22 @@ class UserUseCaseTest {
         Mockito.verify(userService).updateProfile(USER_ID, null, PROFILE_IMAGE_ID)
     }
 
+    @Test
+    fun `내 계정 탈퇴 요청 시 사용자 상태를 변경하고 모든 refresh token을 삭제한다`() {
+        userUseCase.withdrawMe(USER_ID)
+
+        Mockito.verify(userService).requestWithdrawal(USER_ID)
+        Mockito.verify(refreshTokenService).logoutAll(USER_ID)
+    }
+
     private fun user(): User =
         User(
             id = USER_ID,
             nickname = "penguin",
             profileImageId = null,
             status = UserStatus.ACTIVE,
+            withdrawalRequestedAt = null,
+            withdrawalDueAt = null,
             deletedAt = null,
             createdAt = CREATED_AT,
             updatedAt = CREATED_AT,

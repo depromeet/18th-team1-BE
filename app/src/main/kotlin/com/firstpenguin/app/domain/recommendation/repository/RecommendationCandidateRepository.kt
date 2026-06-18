@@ -54,7 +54,7 @@ class RecommendationCandidateRepository(
 
         return dsl
             .select(CANDIDATE_ROW_FIELDS)
-            .from(candidateQuoteIdsTable(hardFilterTags, limit))
+            .from(candidateQuoteIdsTable(effectiveTags, hardFilterTags, limit))
             .join(QuoteTable.QUOTES)
             .on(QuoteTable.ID.eq(CANDIDATE_QUOTE_ID))
             .join(BookTable.BOOKS)
@@ -188,6 +188,7 @@ class RecommendationCandidateRepository(
     }
 
     private fun candidateQuoteIdsTable(
+        effectiveTags: Collection<EffectiveTag>,
         hardFilterTags: List<EffectiveTag>,
         limit: Int,
     ): Table<*> {
@@ -203,9 +204,27 @@ class RecommendationCandidateRepository(
             .on(QuoteMetadataTable.QUOTE_ID.eq(QuoteTable.ID))
             .where(activeQuoteAndBookCondition())
             .and(hardFilterMatchExists(hardFilterTagIds, hardFilterTypeNames))
-            .orderBy(QuoteTable.ID.asc())
+            .orderBy(metadataMatchScore(effectiveTags).desc(), QuoteTable.ID.asc())
             .limit(limit)
             .asTable(CANDIDATE_QUOTE_IDS_TABLE)
+    }
+
+    private fun metadataMatchScore(effectiveTags: Collection<EffectiveTag>): Field<Double> {
+        val scoreExpression =
+            effectiveTags
+                .distinctBy { tag -> tag.type to tag.tagId }
+                .fold<EffectiveTag, Field<Double>>(DSL.inline(NO_METADATA_MATCH_SCORE)) { score, tag ->
+                    score + DSL.`when`(TagTable.ID.eq(tag.tagId), tag.importance).otherwise(NO_METADATA_MATCH_SCORE)
+                }
+
+        return DSL
+            .select(DSL.coalesce(DSL.sum(scoreExpression), NO_METADATA_MATCH_SCORE))
+            .from(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
+            .join(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
+            .where(QuoteMetadataTagTable.QUOTE_METADATA_ID.eq(QuoteMetadataTable.ID))
+            .and(activeTagCondition())
+            .asField()
     }
 
     private fun hardFilterMatchExists(
@@ -247,6 +266,7 @@ class RecommendationCandidateRepository(
     private companion object {
         const val CANDIDATE_QUOTE_IDS_TABLE = "candidate_quote_ids"
         const val CANDIDATE_QUOTE_ID_NAME = "quote_id"
+        const val NO_METADATA_MATCH_SCORE = 0.0
         val CANDIDATE_QUOTE_ID: Field<Long> =
             DSL.field(DSL.name(CANDIDATE_QUOTE_IDS_TABLE, CANDIDATE_QUOTE_ID_NAME), Long::class.java)
         val CANDIDATE_ROW_FIELDS: List<Field<*>> =
