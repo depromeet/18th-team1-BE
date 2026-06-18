@@ -14,6 +14,16 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+private const val GENRE_ID_LIST_FILTER_DESCRIPTION =
+    "책 장르 ID 필터. 생략하면 전체 장르를 조회한다. " +
+        "장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다. " +
+        "1=일반문학, 2=SF, 3=추리･미스터리, 4=공포･스릴러, 5=판타지, 6=로맨스, 7=역사, 8=무협, 9=시･에세이."
+
+private const val GENRE_ID_SEARCH_FILTER_DESCRIPTION =
+    "책 장르 ID 필터. 생략하면 전체 장르에서 검색한다. " +
+        "장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다. " +
+        "1=일반문학, 2=SF, 3=추리･미스터리, 4=공포･스릴러, 5=판타지, 6=로맨스, 7=역사, 8=무협, 9=시･에세이."
+
 @RestController
 @RequestMapping("/discovery")
 @Tag(name = "발견탭", description = "추천 이력 기반 발견탭 API")
@@ -42,7 +52,7 @@ class DiscoveryController(
         @RequestParam(required = false) cursor: String?,
         @Parameter(
             name = "genre_id",
-            description = "책 장르 ID 필터. 생략하면 전체 장르를 조회한다. 장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다.",
+            description = GENRE_ID_LIST_FILTER_DESCRIPTION,
             example = "1",
             schema = Schema(type = "integer", format = "int64"),
         )
@@ -85,7 +95,7 @@ class DiscoveryController(
         @RequestParam(required = false) cursor: String?,
         @Parameter(
             name = "genre_id",
-            description = "책 장르 ID 필터. 생략하면 전체 장르에서 검색한다. 장르 ID는 `GET /genres` 응답의 `genre_id` 값을 사용한다.",
+            description = GENRE_ID_SEARCH_FILTER_DESCRIPTION,
             example = "1",
             schema = Schema(type = "integer", format = "int64"),
         )
