@@ -6,8 +6,6 @@ import com.firstpenguin.app.domain.recommendation.model.RecommendationAiModelVer
 import com.firstpenguin.app.domain.recommendation.model.RecommendationAnalysisLog
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidate
 import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource
-import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource.FALLBACK_EMOTION
-import com.firstpenguin.app.domain.recommendation.model.RecommendationCandidateSource.PRIMARY
 import com.firstpenguin.app.domain.recommendation.model.RecommendationInput
 import com.firstpenguin.app.domain.recommendation.model.RecommendationResult
 import com.firstpenguin.app.domain.recommendation.model.SourcedRecommendationCandidate
@@ -21,6 +19,8 @@ private const val SCORE_PRIORITY_QUOTE_COUNT = 3
 private const val MAX_SAME_ROLE_TAG_COUNT = 3
 private const val NO_ROLE_TAG_COUNT = 0
 private const val DEFAULT_SEMANTIC_SCORE = 0.0
+private const val SEMANTIC_SEED_CANDIDATE_LIMIT = 30
+private const val STRONG_SEMANTIC_SCORE = 0.45
 
 private typealias RankedQuotes = List<RankedRecommendationQuote>
 
@@ -94,18 +94,50 @@ class RecommendationResultComposer(
         initialRankedQuotes: List<RankedRecommendationQuote>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<SourcedRecommendationCandidate> =
-        fallbackService.supplementCandidates(
-            input = input,
-            effectiveTags = effectiveTags,
-            existingCandidates = candidates,
-            rankedQuotes = initialRankedQuotes,
-            semanticCandidates = {
-                semanticProvider.findSimilarCandidates(
-                    userEmbedding = userEmbedding,
-                    excludedQuoteIds = candidates.map { candidate -> candidate.quoteId },
+        semanticSeedCandidates(input, userEmbedding, candidates)
+            .let { semanticSeeds ->
+                val existingCandidates =
+                    sourceCandidates(
+                        candidates,
+                        RecommendationCandidateSource.PRIMARY,
+                    ) + semanticSeeds
+                fallbackService.supplementSourcedCandidates(
+                    input = input,
+                    effectiveTags = effectiveTags,
+                    existingCandidates = existingCandidates,
+                    rankedQuotes = initialRankedQuotes,
+                    semanticCandidates = {
+                        semanticProvider.findSimilarCandidates(
+                            userEmbedding = userEmbedding,
+                            excludedQuoteIds = existingCandidates.map { candidate -> candidate.quoteId },
+                        )
+                    },
+                    prioritizeSemanticFallback = input.shouldExpandSemanticCandidates(userEmbedding),
                 )
-            },
-        )
+            }
+
+    private fun semanticSeedCandidates(
+        input: RecommendationInput,
+        userEmbedding: UserSemanticEmbedding?,
+        candidates: List<RecommendationCandidate>,
+    ): List<SourcedRecommendationCandidate> {
+        if (!input.shouldExpandSemanticCandidates(userEmbedding)) return emptyList()
+
+        return semanticProvider
+            .findSimilarCandidates(
+                userEmbedding = userEmbedding,
+                excludedQuoteIds =
+                    candidates.map { candidate ->
+                        candidate.quoteId
+                    },
+                limit = SEMANTIC_SEED_CANDIDATE_LIMIT,
+            ).map { candidate ->
+                SourcedRecommendationCandidate(
+                    candidate = candidate,
+                    source = RecommendationCandidateSource.FALLBACK_SEMANTIC,
+                )
+            }
+    }
 
     private fun rank(
         input: RecommendationInput,
@@ -226,18 +258,25 @@ private fun RecommendationInput.fallbackAnalysisLog(userEmbedding: UserSemanticE
 private fun RecommendationInput.hasAnalysisText(): Boolean = feelingText.hasValue() || diaryText.hasValue()
 
 private fun RankedQuotes.preferEmotionMatches(): RankedQuotes =
-    filterNot { quote -> quote.isMissingEmotionMatch() }
-        .plus(filter { quote -> quote.isMissingEmotionMatch() })
+    filterNot { quote -> quote.shouldDeferForMissingEmotion() }
+        .plus(filter { quote -> quote.shouldDeferForMissingEmotion() })
         .distinctBy { quote -> quote.quoteId }
 
 private fun RankedQuotes.preferEmotionSources(): RankedQuotes =
-    filter { quote -> quote.source.isEmotionSource() }
-        .plus(filterNot { quote -> quote.source.isEmotionSource() })
+    filter { quote -> quote.source.isEmotionSource() || quote.isStrongSemanticMatch() }
+        .plus(filterNot { quote -> quote.source.isEmotionSource() || quote.isStrongSemanticMatch() })
         .distinctBy { quote -> quote.quoteId }
 
-private fun RankedRecommendationQuote.isMissingEmotionMatch(): Boolean = score.emotionScore <= NO_EMOTION_SCORE
+private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(): Boolean =
+    score.emotionScore <= NO_EMOTION_SCORE && !isStrongSemanticMatch()
 
-private fun RecommendationCandidateSource.isEmotionSource(): Boolean = this == PRIMARY || this == FALLBACK_EMOTION
+private fun RankedRecommendationQuote.isStrongSemanticMatch(): Boolean = score.semanticScore >= STRONG_SEMANTIC_SCORE
+
+private fun RecommendationCandidateSource.isEmotionSource(): Boolean =
+    this == RecommendationCandidateSource.PRIMARY || this == RecommendationCandidateSource.FALLBACK_EMOTION
+
+private fun RecommendationInput.shouldExpandSemanticCandidates(userEmbedding: UserSemanticEmbedding?): Boolean =
+    userEmbedding != null && hasAnalysisText()
 
 private fun String?.hasValue(): Boolean = !isNullOrBlank()
 
