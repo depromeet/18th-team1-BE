@@ -72,7 +72,7 @@ class DiscoveryController(
         description =
             "추천 이력이 있는 문장을 문장 내용 기준으로 검색한다. " +
                 "검색어는 `quotes.content`에만 적용하고, 책 제목/저자/닉네임/감정 값은 검색하지 않는다. " +
-                "`sort`는 생략하면 최신순이며, `scrapCount`를 전달하면 스크랩 많은순으로 조회한다. " +
+                "`sort`는 생략하면 최신순이며, `scrap`을 전달하면 스크랩 많은순으로 조회한다. " +
                 "`genre`는 생략하거나 `전체`이면 전체 장르를 조회한다. " +
                 "다음 페이지는 직전 응답의 `nextCursor` 값을 그대로 전달한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -86,7 +86,7 @@ class DiscoveryController(
         @Parameter(
             description = "검색 정렬. 생략하면 최신순이다.",
             example = "latest",
-            schema = Schema(allowableValues = ["latest", "scrapCount"]),
+            schema = Schema(allowableValues = ["latest", "scrap"]),
         )
         @RequestParam(required = false) sort: String?,
         @Parameter(

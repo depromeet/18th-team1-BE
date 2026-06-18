@@ -7,7 +7,7 @@ enum class DiscoveryQuoteSearchSort(
     val value: String,
 ) {
     LATEST("latest"),
-    SCRAP_COUNT("scrapCount"),
+    SCRAP_COUNT("scrap"),
     ;
 
     companion object {

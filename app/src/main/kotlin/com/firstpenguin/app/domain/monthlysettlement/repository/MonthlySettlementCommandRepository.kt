@@ -41,6 +41,7 @@ class MonthlySettlementCommandRepository(
             .set(MonthlySettlementTable.SELECTED_BOOK_AUTHOR, command.monthlyBook?.author)
             .set(MonthlySettlementTable.SELECTED_BOOK_COVER_IMAGE_URL, command.monthlyBook?.bookCoverImageUrl)
             .set(MonthlySettlementTable.SELECTED_BOOK_GENRE, command.monthlyBook?.genre)
+            .set(MonthlySettlementTable.SELECTED_BOOK_PURCHASE_LINK, command.monthlyBook?.bookPurchaseLink)
             .onConflict(
                 MonthlySettlementTable.USER_ID,
                 MonthlySettlementTable.SETTLEMENT_YEAR,
