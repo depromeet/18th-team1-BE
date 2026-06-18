@@ -64,13 +64,14 @@ internal object SharedCalendarImageMonthTitleHelper {
         val lastDay = month.lengthOfMonth()
         // Java DayOfWeek: MON=1..SUN=7 → Korean: 일=0, 월=1, ..., 토=6
         val startCol = firstDay.dayOfWeek.value % 7
+        val slotHeight = calendarSlotHeight(startCol, lastDay)
 
         for (day in 1..lastDay) {
             val offset = startCol + day - 1
             val col = offset % 7
             val row = offset / 7
             val cellX = COLUMN_CENTERS[col] - (CELL_WIDTH / 2).toInt()
-            val cellY = FIRST_CELL_TOP + row * SLOT_HEIGHT
+            val cellY = FIRST_CELL_TOP + row * slotHeight
             drawCell(cellX, cellY)
             drawDayNumber(day, cellX, cellY)
         }
@@ -80,7 +81,7 @@ internal object SharedCalendarImageMonthTitleHelper {
             val col = offset % 7
             val row = offset / 7
             val coverCenterX = COLUMN_CENTERS[col]
-            val cellCenterY = FIRST_CELL_TOP + row * SLOT_HEIGHT + (CELL_HEIGHT / 2).toInt()
+            val cellCenterY = FIRST_CELL_TOP + row * slotHeight + (CELL_HEIGHT / 2).toInt()
             val coverY = cellCenterY - COVER_HEIGHT / 2
             drawStackedCovers(coverImages, coverCenterX, coverY)
         }
@@ -172,6 +173,16 @@ internal object SharedCalendarImageMonthTitleHelper {
     }
 }
 
+private fun calendarSlotHeight(
+    startCol: Int,
+    lastDay: Int,
+): Int {
+    val rowCount = (startCol + lastDay + DAYS_IN_WEEK - 1) / DAYS_IN_WEEK
+    if (rowCount >= SIX_WEEK_ROW_COUNT) return SIX_WEEK_SLOT_HEIGHT
+
+    return SLOT_HEIGHT
+}
+
 private fun Graphics2D.configureRendering() {
     setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
@@ -253,6 +264,9 @@ private const val MONTH_FONT_PATH = "fonts/GT-Pressura-Bold-Trial.otf"
 
 private const val FIRST_CELL_TOP = 605
 private const val SLOT_HEIGHT = 241
+private const val SIX_WEEK_SLOT_HEIGHT = 202
+private const val SIX_WEEK_ROW_COUNT = 6
+private const val DAYS_IN_WEEK = 7
 private const val CELL_WIDTH = 109.54F
 private const val CELL_HEIGHT = 109.54F
 private const val CELL_ARC = 20F
