@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.user.usecase
 
+import com.firstpenguin.app.domain.auth.service.RefreshTokenService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.user.dto.UpdateUserRequest
 import com.firstpenguin.app.domain.user.dto.UserResponse
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class UserUseCase(
     private val imageService: ImageService,
     private val oAuthUserService: OAuthUserService,
+    private val refreshTokenService: RefreshTokenService,
     private val userService: UserService,
 ) {
     @Transactional(readOnly = true)
@@ -36,5 +38,11 @@ class UserUseCase(
         request.profileImageId?.let { imageService.validateExists(it) }
         userService.updateProfile(userId, request.nickname, request.profileImageId)
         return getMe(userId)
+    }
+
+    @Transactional
+    fun withdrawMe(userId: Long) {
+        userService.requestWithdrawal(userId)
+        refreshTokenService.logoutAll(userId)
     }
 }
