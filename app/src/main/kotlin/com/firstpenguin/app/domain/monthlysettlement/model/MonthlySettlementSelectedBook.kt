@@ -8,4 +8,5 @@ data class MonthlySettlementSelectedBook(
     val author: String,
     val bookCoverImageUrl: String,
     val genre: String,
+    val bookPurchaseLink: String,
 )

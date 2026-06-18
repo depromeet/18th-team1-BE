@@ -28,5 +28,7 @@ internal object MonthlySettlementTable {
         DSL.field(DSL.name("monthly_settlements", "selected_book_cover_image_url"), String::class.java)
     val SELECTED_BOOK_GENRE =
         DSL.field(DSL.name("monthly_settlements", "selected_book_genre"), String::class.java)
+    val SELECTED_BOOK_PURCHASE_LINK =
+        DSL.field(DSL.name("monthly_settlements", "selected_book_purchase_link"), String::class.java)
     val CREATED_AT = DSL.field(DSL.name("monthly_settlements", "created_at"), LocalDateTime::class.java)
 }

@@ -114,6 +114,7 @@ class MonthlySettlementEmotionAggregationRepository(
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
             genre = record[BookTable.GENRE]!!,
+            bookPurchaseLink = record[BookTable.ALADIN_LINK]!!,
         )
 
     private companion object {
@@ -127,6 +128,7 @@ class MonthlySettlementEmotionAggregationRepository(
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
                 BookTable.GENRE,
+                BookTable.ALADIN_LINK,
             )
     }
 }
