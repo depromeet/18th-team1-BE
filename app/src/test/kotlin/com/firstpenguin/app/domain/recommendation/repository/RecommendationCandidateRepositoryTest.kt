@@ -41,11 +41,41 @@ class RecommendationCandidateRepositoryTest {
         assertTrue(normalizedSql.contains("\"tags\".\"id\" in"), normalizedSql)
         assertTrue(normalizedSql.contains("\"tags\".\"type\" in"), normalizedSql)
         assertTrue(normalizedSql.contains("\"tags\".\"is_active\" = true"), normalizedSql)
+        assertTrue(normalizedSql.contains("coalesce(sum"), normalizedSql)
+        assertTrue(normalizedSql.contains("case when"), normalizedSql)
+        assertTrue(normalizedSql.contains("order by"), normalizedSql)
         assertTrue(normalizedSql.contains("fetch next ? rows only"), normalizedSql)
         assertTrue(capturedQuery.bindings.contains(EMOTION_TAG_ID))
-        assertFalse(capturedQuery.bindings.contains(NEED_TAG_ID))
+        assertTrue(capturedQuery.bindings.contains(NEED_TAG_ID), capturedQuery.toString())
         assertTrue(capturedQuery.bindings.contains(TagType.EMOTION.name))
         assertFalse(capturedQuery.bindings.contains(TagType.NEED.name))
+    }
+
+    @Test
+    fun `후보 조회는 hard filter 이후 전체 effective tag match score 순으로 후보 풀을 자른다`() {
+        val capturedQuery =
+            captureQuery { dsl ->
+                RecommendationCandidateRepository(dsl).findCandidates(
+                    effectiveTags =
+                        listOf(
+                            EFFECTIVE_EMOTION_TAG,
+                            EFFECTIVE_CONTEXT_TAG,
+                            EFFECTIVE_SITUATION_TAG,
+                        ),
+                    limit = LIMIT,
+                )
+            }
+        val normalizedSql = capturedQuery.sql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("coalesce(sum"), normalizedSql)
+        assertTrue(normalizedSql.contains("case when"), normalizedSql)
+        assertTrue(normalizedSql.contains("order by"), normalizedSql)
+        assertTrue(capturedQuery.bindings.contains(EMOTION_TAG_ID))
+        assertTrue(capturedQuery.bindings.contains(CONTEXT_TAG_ID), capturedQuery.toString())
+        assertTrue(capturedQuery.bindings.contains(SITUATION_TAG_ID), capturedQuery.toString())
+        assertTrue(capturedQuery.bindings.contains(TagType.EMOTION.name))
+        assertFalse(capturedQuery.bindings.contains(TagType.CONTEXT.name))
+        assertFalse(capturedQuery.bindings.contains(TagType.SITUATION.name))
     }
 
     @Test
@@ -261,6 +291,7 @@ class RecommendationCandidateRepositoryTest {
         const val NEED_TAG_ID = 32L
         const val MOOD_TAG_ID = 33L
         const val CONTEXT_TAG_ID = 34L
+        const val SITUATION_TAG_ID = 35L
         const val EMOTION_RANGE_ID = 1L
         const val CANDIDATE_ROW_COUNT = 4
         const val QUOTE_CONTENT = "좋은 문장"
@@ -283,6 +314,12 @@ class RecommendationCandidateRepositoryTest {
                 tagId = CONTEXT_TAG_ID,
                 code = "CONTEXT_HOME",
                 type = TagType.CONTEXT,
+            )
+        val EFFECTIVE_SITUATION_TAG =
+            EffectiveTag(
+                tagId = SITUATION_TAG_ID,
+                code = "SITUATION_ROMANCE",
+                type = TagType.SITUATION,
             )
         val CANDIDATE_FIELDS: Array<Field<*>> =
             arrayOf(

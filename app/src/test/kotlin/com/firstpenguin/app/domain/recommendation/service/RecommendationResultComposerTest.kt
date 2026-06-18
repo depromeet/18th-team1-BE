@@ -101,6 +101,38 @@ class RecommendationResultComposerTest {
     }
 
     @Test
+    fun `context situation metadata coverage가 낮으면 semantic score 비중을 높여 랭킹한다`() {
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("좋아하는 사람을 떠올리며 설레는 마음을 오래 느끼고 싶다", listOf(0.1)),
+                semanticScores = mapOf(1L to 0.5, 2L to 0.6),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val situationEffectiveTags =
+            effectiveTags +
+                EffectiveTag(
+                    tagId = SITUATION_TAG_ID,
+                    code = "SITUATION_ROMANCE",
+                    type = TagType.SITUATION,
+                )
+        val candidates =
+            listOf(
+                candidate(1L, roleTagId = 1L),
+                candidate(2L, roleTagId = 2L, tagIdsByType = mapOf(TagType.EMOTION to setOf(EMOTION_TAG_ID))),
+            ) + (3L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+
+        val result =
+            composer.compose(
+                input = recommendationInput(canonicalIntent = "좋아하는 사람을 떠올리며 설레는 마음을 오래 느끼고 싶다"),
+                effectiveTags = situationEffectiveTags,
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+            )
+
+        assertEquals(2L, result?.mainQuote?.quoteId)
+    }
+
+    @Test
     fun `semantic score가 없으면 metadataScore를 finalScore로 사용한다`() {
         val composer = composer()
 
@@ -291,6 +323,7 @@ class RecommendationResultComposerTest {
         const val EMOTION_VALUE = 1
         const val NEED_TAG_ID = 101L
         const val EMOTION_TAG_ID = 201L
+        const val SITUATION_TAG_ID = 202L
         const val ROLE_TAG_ID = 301L
         const val OTHER_ROLE_TAG_ID = 302L
         const val MISSING_EMOTION_QUOTE_ID = 1L
