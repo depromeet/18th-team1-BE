@@ -48,6 +48,7 @@ class MonthlySettlementUseCaseTest {
         assertEquals(listOf(TAG_LABEL), response.emotionTags.map { emotionTag -> emotionTag.label })
         assertEquals(RECOMMENDATION_MESSAGE, response.recommendationMessage)
         assertEquals(SELECTED_QUOTE_ID, response.monthlyBook?.quoteId)
+        assertEquals(BOOK_PURCHASE_LINK, response.monthlyBook?.bookPurchaseLink)
         Mockito.verify(monthlySettlementService).findSnapshot(USER_ID, targetMonth)
         Mockito.verify(monthlySettlementService, Mockito.never()).createSnapshot(USER_ID, targetMonth)
     }
@@ -130,6 +131,7 @@ class MonthlySettlementUseCaseTest {
                             author = AUTHOR,
                             bookCoverImageUrl = BOOK_COVER_IMAGE_URL,
                             genre = GENRE,
+                            bookPurchaseLink = BOOK_PURCHASE_LINK,
                         ),
                     createdAt = CREATED_AT,
                 ),
@@ -169,6 +171,7 @@ class MonthlySettlementUseCaseTest {
         const val TITLE = "홍학의 자리"
         const val AUTHOR = "정해연"
         const val BOOK_COVER_IMAGE_URL = "https://cdn.example.com/book-cover-placeholder.png"
+        const val BOOK_PURCHASE_LINK = "https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=1"
         const val QUOTE_CONTENT = "어떤 기억은 아물지 않습니다."
         const val RECOMMENDATION_MESSAGE = "무기력한 3월을 보내셨군요. 이 감정과 유사한 문장이 담긴 책을 추천해요."
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 4, 1, 0, 0)

@@ -87,6 +87,7 @@ data class MonthlySettlementMonthlyBookResponse(
     val author: String,
     val bookCoverImageUrl: String,
     val genre: String,
+    val bookPurchaseLink: String,
 ) {
     companion object {
         fun from(monthlyBook: MonthlySettlementSelectedBook): MonthlySettlementMonthlyBookResponse =
@@ -98,6 +99,7 @@ data class MonthlySettlementMonthlyBookResponse(
                 author = monthlyBook.author,
                 bookCoverImageUrl = monthlyBook.bookCoverImageUrl,
                 genre = monthlyBook.genre,
+                bookPurchaseLink = monthlyBook.bookPurchaseLink,
             )
     }
 }
