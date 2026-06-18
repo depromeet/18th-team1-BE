@@ -111,6 +111,74 @@ class MetadataScorerTest {
     }
 
     @Test
+    fun `happy 입력은 mood보다 emotion 매칭을 더 중요하게 계산한다`() {
+        val effectiveTags = listOf(effectiveTag(EMOTION_HAPPY_ID, "EMOTION_HAPPY", TagType.EMOTION, 1.0))
+        val emotionCandidate =
+            candidate(
+                quoteId = 1L,
+                tagIdsByType = mapOf(TagType.EMOTION to setOf(EMOTION_HAPPY_ID)),
+            )
+        val moodCandidate =
+            candidate(
+                quoteId = 2L,
+                tagIdsByType = mapOf(TagType.MOOD to setOf(MOOD_LIGHT_ID)),
+            )
+
+        val emotionScore =
+            scorer.score(
+                input = recommendationInput(emotionValue = HAPPY_EMOTION_VALUE, emotionTags = emptyList()),
+                effectiveTags = effectiveTags,
+                candidate = emotionCandidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+        val moodScore =
+            scorer.score(
+                input = recommendationInput(emotionValue = HAPPY_EMOTION_VALUE, emotionTags = emptyList()),
+                effectiveTags = effectiveTags,
+                candidate = moodCandidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+
+        assertTrue(emotionScore.metadataScore > moodScore.metadataScore)
+    }
+
+    @Test
+    fun `입력에 없는 situation을 가진 후보는 metadataScore를 낮춘다`() {
+        val effectiveTags = listOf(effectiveTag(EMOTION_HAPPY_ID, "EMOTION_HAPPY", TagType.EMOTION, 1.0))
+        val generalCandidate =
+            candidate(
+                quoteId = 1L,
+                tagIdsByType = mapOf(TagType.EMOTION to setOf(EMOTION_HAPPY_ID)),
+            )
+        val specificCandidate =
+            candidate(
+                quoteId = 2L,
+                tagIdsByType =
+                    mapOf(
+                        TagType.EMOTION to setOf(EMOTION_HAPPY_ID),
+                        TagType.SITUATION to setOf(SITUATION_ROMANCE_ID),
+                    ),
+            )
+
+        val generalScore =
+            scorer.score(
+                input = recommendationInput(emotionValue = HAPPY_EMOTION_VALUE, emotionTags = emptyList()),
+                effectiveTags = effectiveTags,
+                candidate = generalCandidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+        val specificScore =
+            scorer.score(
+                input = recommendationInput(emotionValue = HAPPY_EMOTION_VALUE, emotionTags = emptyList()),
+                effectiveTags = effectiveTags,
+                candidate = specificCandidate,
+                moodTagIdByCode = moodTagIdByCode,
+            )
+
+        assertTrue(generalScore.metadataScore > specificScore.metadataScore)
+    }
+
+    @Test
     fun `감정 tag가 선택됐는데 후보 감정 score가 없으면 metadataScore를 낮춘다`() {
         val candidate = candidate(quoteId = 1L, tagIdsByType = mapOf(TagType.NEED to setOf(NEED_COMFORT_ID)))
         val effectiveTags =
@@ -138,10 +206,11 @@ class MetadataScorerTest {
 
     private fun recommendationInput(
         emotionTags: List<Tag> = listOf(tag(EMOTION_ANXIOUS_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
+        emotionValue: Int = EMOTION_VALUE,
     ): RecommendationInput =
         RecommendationInput(
             userId = USER_ID,
-            emotionValue = EMOTION_VALUE,
+            emotionValue = emotionValue,
             emotionRangeId = EMOTION_RANGE_ID,
             emotionTags = emotionTags,
             needTag = tag(NEED_COMFORT_ID, TagType.NEED, "NEED_COMFORT"),
@@ -196,12 +265,16 @@ class MetadataScorerTest {
         const val BOOK_ID = 10L
         const val EMOTION_RANGE_ID = 1L
         const val EMOTION_VALUE = 1
+        const val HAPPY_EMOTION_VALUE = 8
         const val NEED_COMFORT_ID = 101L
         const val EMOTION_ANXIOUS_ID = 201L
+        const val EMOTION_HAPPY_ID = 202L
         const val SITUATION_FAILURE_ID = 301L
+        const val SITUATION_ROMANCE_ID = 302L
         const val CONTEXT_RAIN_ID = 401L
         const val MOOD_WARM_ID = 501L
         const val MOOD_CALM_TONE_ID = 502L
+        const val MOOD_LIGHT_ID = 503L
         const val DELTA = 0.000001
 
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 13, 0, 0)
@@ -209,6 +282,7 @@ class MetadataScorerTest {
             mapOf(
                 "MOOD_WARM" to MOOD_WARM_ID,
                 "MOOD_CALM_TONE" to MOOD_CALM_TONE_ID,
+                "MOOD_LIGHT" to MOOD_LIGHT_ID,
             )
     }
 }
