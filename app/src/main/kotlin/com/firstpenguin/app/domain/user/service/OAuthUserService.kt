@@ -29,8 +29,16 @@ class OAuthUserService(
         nickname: String,
     ): User? {
         val now = LocalDateTime.now()
+        return createUserWithOAuthAccount(profile, nickname, now)
+    }
+
+    private fun createUserWithOAuthAccount(
+        profile: OAuthUserProfile,
+        nickname: String,
+        now: LocalDateTime,
+    ): User? {
         val user = userRepository.create(nickname, now) ?: return null
-        oAuthAccountRepository.create(user.id, profile, now) ?: throw CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
+        createOAuthAccount(user, profile, now)
         return user
     }
 
@@ -38,15 +46,31 @@ class OAuthUserService(
         user: User,
         profile: OAuthUserProfile,
     ): User {
-        val account =
-            oAuthAccountRepository.findActiveByProviderAndProviderId(profile.provider, profile.providerId)
-                ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
-
+        val account = getActiveOAuthAccount(profile)
         validateOAuthAccountMatchesUser(account, user)
         validateAuthenticatableStatus(user)
+        updateOAuthAccountLogin(account, profile)
+        return user
+    }
+
+    private fun createOAuthAccount(
+        user: User,
+        profile: OAuthUserProfile,
+        now: LocalDateTime,
+    ) {
+        oAuthAccountRepository.create(user.id, profile, now) ?: throw CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
+    }
+
+    private fun getActiveOAuthAccount(profile: OAuthUserProfile): OAuthAccount =
+        oAuthAccountRepository.findActiveByProviderAndProviderId(profile.provider, profile.providerId)
+            ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
+
+    private fun updateOAuthAccountLogin(
+        account: OAuthAccount,
+        profile: OAuthUserProfile,
+    ) {
         oAuthAccountRepository.updateLogin(account.id, profile, LocalDateTime.now())
             ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
-        return user
     }
 
     private fun validateOAuthAccountMatchesUser(
