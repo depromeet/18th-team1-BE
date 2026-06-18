@@ -108,6 +108,8 @@ class OAuthUserUseCaseTest {
             nickname = nickname,
             profileImageId = null,
             status = UserStatus.ACTIVE,
+            withdrawalRequestedAt = null,
+            withdrawalDueAt = null,
             deletedAt = null,
             createdAt = now,
             updatedAt = now,
