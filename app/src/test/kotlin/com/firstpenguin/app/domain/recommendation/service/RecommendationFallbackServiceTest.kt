@@ -34,7 +34,7 @@ class RecommendationFallbackServiceTest {
     }
 
     @Test
-    fun `후보가 부족하면 emotion range semantic need relaxed random 순서로 보강한다`() {
+    fun `후보가 부족하면 exact emotion emotion range semantic need relaxed random 순서로 보강한다`() {
         val provider =
             FakeRecommendationCandidateProvider(
                 needCandidates = listOf(candidate(1L), candidate(2L)),
@@ -51,7 +51,7 @@ class RecommendationFallbackServiceTest {
                 existingCandidates = listOf(candidate(1L)),
             )
 
-        assertEquals(listOf("EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
+        assertEquals(listOf("EMOTION", "EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
         assertEquals(
             listOf(1L, 3L, 2L, 4L, 5L, 6L, 7L, 8L, 9L, 10L),
             result.map { candidate -> candidate.quoteId },
@@ -81,7 +81,7 @@ class RecommendationFallbackServiceTest {
                 },
             )
 
-        assertEquals(listOf("EMOTION_RANGE", "SEMANTIC", "NEED", "RELAXED", "RANDOM"), events)
+        assertEquals(listOf("EMOTION", "EMOTION_RANGE", "SEMANTIC", "NEED", "RELAXED", "RANDOM"), events)
         assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
     }
 
@@ -107,7 +107,7 @@ class RecommendationFallbackServiceTest {
                 prioritizeSemanticFallback = true,
             )
 
-        assertEquals(listOf("SEMANTIC", "EMOTION_RANGE"), events)
+        assertEquals(listOf("SEMANTIC", "EMOTION"), events)
         assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
     }
 
@@ -122,11 +122,11 @@ class RecommendationFallbackServiceTest {
             existingCandidates = emptyList(),
         )
 
-        assertEquals(listOf(TagType.NEED), provider.capturedTypes.single())
+        assertTrue(provider.capturedTypes.contains(listOf(TagType.NEED)))
     }
 
     @Test
-    fun `top score가 낮으면 후보가 충분해도 emotion과 semantic까지 우선 보강한다`() {
+    fun `top score가 낮으면 후보가 충분해도 exact emotion과 emotion range까지 우선 보강한다`() {
         val events = mutableListOf<String>()
         val provider =
             FakeRecommendationCandidateProvider(
@@ -151,9 +151,9 @@ class RecommendationFallbackServiceTest {
                 },
             )
 
-        assertEquals(listOf("EMOTION_RANGE", "SEMANTIC"), events)
+        assertEquals(listOf("EMOTION", "EMOTION_RANGE"), events)
         assertEquals(
-            listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 12L, 15L),
+            listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 12L),
             result.map { candidate -> candidate.quoteId },
         )
     }

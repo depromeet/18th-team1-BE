@@ -73,7 +73,7 @@ class RecommendationResultComposerTest {
                 moodTagIdByCode = emptyMap(),
             )
 
-        assertEquals(listOf("EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
+        assertEquals(listOf("EMOTION", "EMOTION_RANGE", "NEED", "RELAXED", "RANDOM"), provider.calls)
         assertEquals((1L..10L).toList(), result?.quotes?.map { quote -> quote.quoteId })
         assertEquals(RecommendationCandidateSource.PRIMARY, result?.quotes?.first()?.source)
         assertEquals(RecommendationCandidateSource.FALLBACK_RANDOM, result?.quotes?.last()?.source)
@@ -267,7 +267,7 @@ class RecommendationResultComposerTest {
     }
 
     @Test
-    fun `긴 일반 감정 입력은 semantic 후보를 소량 섞는다`() {
+    fun `긴 일반 감정 입력도 구체 태그가 없으면 semantic 후보를 섞지 않는다`() {
         val semanticCandidate =
             candidate(
                 quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
@@ -294,7 +294,7 @@ class RecommendationResultComposerTest {
             moodTagIdByCode = emptyMap(),
         )
 
-        assertEquals(listOf(GENERIC_TEXT_SEMANTIC_SEED_CANDIDATE_LIMIT), semanticProvider.similarCandidateLimits)
+        assertTrue(semanticProvider.similarCandidateLimits.isEmpty())
     }
 
     @Test
@@ -564,7 +564,6 @@ class RecommendationResultComposerTest {
         const val LOW_SEMANTIC_SCORE = 0.1
         const val HAPPY_EMOTION_VALUE = 8
         const val SPECIFIC_SEMANTIC_SEED_CANDIDATE_LIMIT = 30
-        const val GENERIC_TEXT_SEMANTIC_SEED_CANDIDATE_LIMIT = 10
         const val EMBEDDING_ELAPSED_MS = 123L
         const val FALLBACK_EMBEDDING_INPUT = "diaryText: 행복해서!"
 

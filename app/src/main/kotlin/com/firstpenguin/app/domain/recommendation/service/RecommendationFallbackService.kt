@@ -65,16 +65,21 @@ class RecommendationFallbackService(
         semanticCandidates: () -> List<RecommendationCandidate>,
         prioritizeSemanticFallback: Boolean,
     ): List<FallbackStep> {
-        val emotionStep =
+        val exactEmotionStep =
+            fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
+                candidateProvider.findCandidates(effectiveTags.only(TagType.EMOTION), FALLBACK_FETCH_LIMIT)
+            }
+        val emotionRangeStep =
             fallbackStep(RecommendationCandidateSource.FALLBACK_EMOTION) {
                 candidateProvider.findCandidatesByEmotionRangeId(input.emotionRangeId, FALLBACK_FETCH_LIMIT)
             }
         val semanticStep = fallbackStep(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticCandidates)
+        val emotionSteps = listOf(exactEmotionStep, emotionRangeStep)
         val firstSteps =
             if (prioritizeSemanticFallback) {
-                listOf(semanticStep, emotionStep)
+                listOf(semanticStep) + emotionSteps
             } else {
-                listOf(emotionStep, semanticStep)
+                emotionSteps + semanticStep
             }
 
         return firstSteps +

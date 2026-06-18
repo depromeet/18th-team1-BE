@@ -16,7 +16,7 @@ object RecommendationSemanticExpansionPolicy {
             effectiveTags.hasSpecificSemanticTag() -> RecommendationSemanticExpansionDecision.SPECIFIC
             input.isShortAnalysisText() -> RecommendationSemanticExpansionDecision.NONE
             input.diaryText.hasValue() -> RecommendationSemanticExpansionDecision.SPECIFIC
-            else -> RecommendationSemanticExpansionDecision.GENERIC_TEXT
+            else -> RecommendationSemanticExpansionDecision.NONE
         }
 
     private fun Collection<EffectiveTag>.hasSpecificSemanticTag(): Boolean = any(::isSpecificSemanticTag)
@@ -55,14 +55,6 @@ data class RecommendationSemanticExpansionDecision(
                 prioritizeFallback = true,
                 requireMetadataForStrongSemantic = false,
             )
-        val GENERIC_TEXT =
-            RecommendationSemanticExpansionDecision(
-                seedLimit = GENERIC_TEXT_SEMANTIC_SEED_LIMIT,
-                prioritizeFallback = false,
-                requireMetadataForStrongSemantic = true,
-            )
-
         private const val SPECIFIC_SEMANTIC_SEED_LIMIT = 30
-        private const val GENERIC_TEXT_SEMANTIC_SEED_LIMIT = 10
     }
 }
