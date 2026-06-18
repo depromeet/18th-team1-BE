@@ -1,5 +1,6 @@
 package com.firstpenguin.app.domain.user.dto
 
+import com.firstpenguin.app.domain.user.model.OAuthAccount
 import com.firstpenguin.app.domain.user.model.User
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
@@ -22,12 +23,13 @@ data class UserResponse(
     companion object {
         fun from(
             user: User,
+            oAuthAccount: OAuthAccount,
             profileImageUrl: String?,
         ): UserResponse =
             UserResponse(
                 id = user.id,
-                provider = user.provider.name,
-                email = user.email,
+                provider = oAuthAccount.provider.name,
+                email = oAuthAccount.email,
                 nickname = user.nickname,
                 profileImageUrl = profileImageUrl,
                 createdAt = user.createdAt.toLocalDate(),
