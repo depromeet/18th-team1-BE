@@ -26,6 +26,7 @@ class RecommendationRepository(
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.eq(recommendationDate))
             .and(RecommendationTable.QUOTE_ID.isNull)
+            .and(activeRecommendation())
             .orderBy(RecommendationTable.CREATED_AT.desc())
             .limit(1)
             .fetchOne()
@@ -43,6 +44,7 @@ class RecommendationRepository(
             .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.between(start, end))
+            .and(activeRecommendation())
             .orderBy(RecommendationTable.CREATED_AT.asc())
             .fetch(::toRecommendation)
 
@@ -59,6 +61,7 @@ class RecommendationRepository(
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.RECOMMENDATION_DATE.between(start, end))
             .and(RecommendationTable.QUOTE_ID.isNotNull)
+            .and(activeRecommendation())
             .orderBy(RecommendationTable.CREATED_AT.asc())
             .fetch(::toRecommendation)
 
@@ -69,6 +72,7 @@ class RecommendationRepository(
             .join(EmotionRangeTable.EMOTION_RANGES)
             .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.ID.eq(id))
+            .and(activeRecommendation())
             .fetchOne()
             ?.let(::toRecommendation)
 
@@ -79,6 +83,7 @@ class RecommendationRepository(
             .join(EmotionRangeTable.EMOTION_RANGES)
             .on(RecommendationTable.EMOTION_RANGE_ID.eq(EmotionRangeTable.ID))
             .where(RecommendationTable.ID.eq(id))
+            .and(activeRecommendation())
             .forUpdate()
             .fetchOne()
             ?.let(::toRecommendation)
@@ -100,7 +105,10 @@ class RecommendationRepository(
             .from(RecommendationTable.RECOMMENDATIONS)
             .where(RecommendationTable.USER_ID.eq(userId))
             .and(RecommendationTable.QUOTE_ID.isNotNull)
+            .and(activeRecommendation())
             .fetchOne(0, Int::class.java) ?: 0
+
+    private fun activeRecommendation() = RecommendationTable.DELETED_AT.isNull
 
     private fun toRecommendation(record: Record): Recommendation =
         Recommendation(
@@ -114,6 +122,7 @@ class RecommendationRepository(
             emotionRangeId = record.get(RecommendationTable.EMOTION_RANGE_ID),
             emotionRangeName = EmotionRangeName.from(record.get(EmotionRangeTable.NAME)),
             createdAt = record.get(RecommendationTable.CREATED_AT),
+            deletedAt = record.get(RecommendationTable.DELETED_AT),
         )
 
     private companion object {
@@ -129,6 +138,7 @@ class RecommendationRepository(
                 RecommendationTable.EMOTION_RANGE_ID,
                 EmotionRangeTable.NAME,
                 RecommendationTable.CREATED_AT,
+                RecommendationTable.DELETED_AT,
             )
     }
 }

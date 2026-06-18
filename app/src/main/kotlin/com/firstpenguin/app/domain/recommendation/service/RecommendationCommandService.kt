@@ -3,7 +3,6 @@ package com.firstpenguin.app.domain.recommendation.service
 import com.firstpenguin.app.domain.recommendation.model.Recommendation
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationCommandRepository
 import com.firstpenguin.app.domain.recommendation.repository.RecommendationQuoteRepository
-import com.firstpenguin.app.domain.recommendation.repository.RecommendationTagRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service
 class RecommendationCommandService(
     private val recommendationCommandRepository: RecommendationCommandRepository,
     private val recommendationQuoteRepository: RecommendationQuoteRepository,
-    private val recommendationTagRepository: RecommendationTagRepository,
     private val recommendationValidationService: RecommendationValidationService,
 ) {
     fun selectRecommendationQuote(
@@ -36,9 +34,7 @@ class RecommendationCommandService(
     }
 
     fun deleteRecommendation(recommendationId: Long) {
-        recommendationQuoteRepository.deleteByRecommendationId(recommendationId)
-        recommendationTagRepository.deleteByRecommendationId(recommendationId)
-        recommendationCommandRepository.deleteById(recommendationId)
+        recommendationCommandRepository.softDeleteById(recommendationId)
     }
 
     private fun existsRecommendationQuote(
