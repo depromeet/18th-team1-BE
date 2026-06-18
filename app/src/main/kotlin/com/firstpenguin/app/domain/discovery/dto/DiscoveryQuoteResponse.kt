@@ -26,7 +26,10 @@ data class DiscoveryQuoteResponse(
     @field:Schema(description = "책 표지 이미지 URL", example = "https://cdn.example.com/book-cover-placeholder.png")
     val bookCoverImageUrl: String,
     @get:JsonProperty("genre_id")
-    @field:Schema(description = "책 장르 ID", example = "1")
+    @field:Schema(
+        description = "책 장르 ID. 1=일반문학, 2=SF, 3=추리･미스터리, 4=공포･스릴러, 5=판타지, 6=로맨스, 7=역사, 8=무협, 9=시･에세이.",
+        example = "1",
+    )
     val genreId: Long,
     @field:Schema(description = "책 장르", example = "일반문학", nullable = true)
     val genre: String?,
