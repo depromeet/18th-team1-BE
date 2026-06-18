@@ -66,7 +66,7 @@ class UserRepository(
             .set(withdrawalCancelValues(now))
             .where(UserTable.ID.eq(id))
             .and(UserTable.STATUS.eq(UserStatus.WITHDRAWAL_REQUESTED.name))
-            .and(UserTable.WITHDRAWAL_DUE_AT.gt(now))
+            .and(UserTable.WITHDRAWAL_DUE_AT.ge(now))
             .returningResult(USER_FIELDS)
             .fetchOne(::toUser)
 

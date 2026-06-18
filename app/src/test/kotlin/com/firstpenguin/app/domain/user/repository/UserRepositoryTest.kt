@@ -60,7 +60,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun `탈퇴 요청 취소는 유예 기간이 지나지 않은 사용자만 활성 상태로 변경한다`() {
+    fun `탈퇴 요청 취소는 유예 기간 이내 사용자만 활성 상태로 변경한다`() {
         val capturedSql =
             captureSql { dsl ->
                 UserRepository(dsl).reactivateWithdrawalRequested(USER_ID, LocalDateTime.now())
@@ -70,7 +70,7 @@ class UserRepositoryTest {
         assertTrue(normalizedSql.startsWith("""update "users" set"""), normalizedSql)
         assertTrue(normalizedSql.contains("withdrawal_requested_at"), normalizedSql)
         assertTrue(normalizedSql.contains("withdrawal_due_at"), normalizedSql)
-        assertTrue(normalizedSql.contains(""""users"."withdrawal_due_at" >"""), normalizedSql)
+        assertTrue(normalizedSql.contains(""""users"."withdrawal_due_at" >="""), normalizedSql)
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
