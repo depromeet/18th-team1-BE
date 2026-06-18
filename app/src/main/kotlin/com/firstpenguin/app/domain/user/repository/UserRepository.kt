@@ -45,6 +45,31 @@ class UserRepository(
         step.where(UserTable.ID.eq(id)).execute()
     }
 
+    fun requestWithdrawal(
+        id: Long,
+        requestedAt: LocalDateTime,
+        dueAt: LocalDateTime,
+    ): Int =
+        dsl
+            .update(UserTable.USERS)
+            .set(withdrawalRequestValues(requestedAt, dueAt))
+            .where(UserTable.ID.eq(id))
+            .and(UserTable.STATUS.eq(UserStatus.ACTIVE.name))
+            .execute()
+
+    fun reactivateWithdrawalRequested(
+        id: Long,
+        now: LocalDateTime,
+    ): User? =
+        dsl
+            .update(UserTable.USERS)
+            .set(withdrawalCancelValues(now))
+            .where(UserTable.ID.eq(id))
+            .and(UserTable.STATUS.eq(UserStatus.WITHDRAWAL_REQUESTED.name))
+            .and(UserTable.WITHDRAWAL_DUE_AT.gt(now))
+            .returningResult(USER_FIELDS)
+            .fetchOne(::toUser)
+
     fun existsByNickname(
         nickname: String,
         excludedUserId: Long,
@@ -58,12 +83,33 @@ class UserRepository(
                 .and(UserTable.DELETED_AT.isNull),
         )
 
+    private fun withdrawalRequestValues(
+        requestedAt: LocalDateTime,
+        dueAt: LocalDateTime,
+    ): Map<Field<*>, Any?> =
+        mapOf(
+            UserTable.STATUS to UserStatus.WITHDRAWAL_REQUESTED.name,
+            UserTable.WITHDRAWAL_REQUESTED_AT to requestedAt,
+            UserTable.WITHDRAWAL_DUE_AT to dueAt,
+            UserTable.UPDATED_AT to requestedAt,
+        )
+
+    private fun withdrawalCancelValues(now: LocalDateTime): Map<Field<*>, Any?> =
+        mapOf(
+            UserTable.STATUS to UserStatus.ACTIVE.name,
+            UserTable.WITHDRAWAL_REQUESTED_AT to null,
+            UserTable.WITHDRAWAL_DUE_AT to null,
+            UserTable.UPDATED_AT to now,
+        )
+
     private fun toUser(record: Record): User =
         User(
             id = record.get(UserTable.ID),
             nickname = record.get(UserTable.NICKNAME),
             profileImageId = record.get(UserTable.PROFILE_IMAGE_ID),
             status = UserStatus.valueOf(record.get(UserTable.STATUS)),
+            withdrawalRequestedAt = record.get(UserTable.WITHDRAWAL_REQUESTED_AT),
+            withdrawalDueAt = record.get(UserTable.WITHDRAWAL_DUE_AT),
             deletedAt = record.get(UserTable.DELETED_AT),
             createdAt = record.get(UserTable.CREATED_AT),
             updatedAt = record.get(UserTable.UPDATED_AT),
@@ -76,6 +122,8 @@ class UserRepository(
                 UserTable.NICKNAME,
                 UserTable.PROFILE_IMAGE_ID,
                 UserTable.STATUS,
+                UserTable.WITHDRAWAL_REQUESTED_AT,
+                UserTable.WITHDRAWAL_DUE_AT,
                 UserTable.DELETED_AT,
                 UserTable.CREATED_AT,
                 UserTable.UPDATED_AT,

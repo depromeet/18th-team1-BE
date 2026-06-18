@@ -36,7 +36,7 @@ class RefreshTokenService(
         val storedToken = findStoredTokenOrDeleteAll(refreshToken, claims.userId)
         validateStoredToken(storedToken.id, storedToken.expiresAt)
 
-        val user = userService.getById(claims.userId)
+        val user = userService.getAuthenticatableById(claims.userId)
         val newRefreshToken = jwtTokenProvider.createRefreshToken(user.id)
         refreshTokenRepository.updateToken(
             id = storedToken.id,
@@ -52,6 +52,10 @@ class RefreshTokenService(
 
     fun logout(refreshToken: String) {
         refreshTokenRepository.deleteByTokenHash(jwtTokenProvider.hash(refreshToken))
+    }
+
+    fun logoutAll(userId: Long) {
+        refreshTokenRepository.deleteByUserId(userId)
     }
 
     private fun findStoredTokenOrDeleteAll(
