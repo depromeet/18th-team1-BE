@@ -5,6 +5,6 @@ data class DiscoveryQuoteSearchCriteria(
     val query: String,
     val sort: DiscoveryQuoteSearchSort,
     val cursor: DiscoveryQuoteSearchCursor?,
-    val genre: DiscoveryGenre?,
+    val genreId: Long?,
     val limit: Int,
 )

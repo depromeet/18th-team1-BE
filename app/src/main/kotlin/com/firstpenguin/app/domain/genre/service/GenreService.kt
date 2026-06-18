@@ -9,4 +9,6 @@ class GenreService(
     private val genreRepository: GenreRepository,
 ) {
     fun getGenres(): List<Genre> = genreRepository.findAll()
+
+    fun existsGenre(id: Long): Boolean = genreRepository.existsById(id)
 }

@@ -11,6 +11,7 @@ data class DiscoveryQuote(
     val title: String,
     val author: String,
     val bookCoverImageUrl: String,
+    val genreId: Long,
     val genre: String?,
     val needTag: DiscoveryNeedTag?,
     val emotionValue: Int,

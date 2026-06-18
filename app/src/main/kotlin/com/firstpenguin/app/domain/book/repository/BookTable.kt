@@ -12,6 +12,7 @@ internal object BookTable {
     val ALADIN_LINK = DSL.field(DSL.name("books", "aladin_link"), String::class.java)
     val COVER_IMAGE_URL = DSL.field(DSL.name("books", "cover_image_url"), String::class.java)
     val GENRE = DSL.field(DSL.name("books", "genre"), String::class.java)
+    val GENRE_ID = DSL.field(DSL.name("books", "genre_id"), Long::class.java)
     val CREATED_AT = DSL.field(DSL.name("books", "created_at"), LocalDateTime::class.java)
     val UPDATED_AT = DSL.field(DSL.name("books", "updated_at"), LocalDateTime::class.java)
     val DELETED_AT = DSL.field(DSL.name("books", "deleted_at"), LocalDateTime::class.java)
