@@ -83,9 +83,11 @@ class RecommendationResultComposer(
             )
         val rankedQuotes =
             rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
+                .deferLowMetadataSemanticFallbacks()
                 .diversifyRoleTags()
                 .preferEmotionMatches(semanticExpansion)
                 .preferEmotionSources(semanticExpansion)
+                .deferLowMetadataSemanticFallbacks()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
         if (rankedQuotes.isEmpty()) return null
@@ -278,8 +280,17 @@ private fun RankedQuotes.preferEmotionSources(semanticExpansion: SemanticExpansi
         .plus(filterNot { quote -> quote.source.isEmotionSource() || quote.isStrongSemanticMatch(semanticExpansion) })
         .distinctBy { quote -> quote.quoteId }
 
+private fun RankedQuotes.deferLowMetadataSemanticFallbacks(): RankedQuotes =
+    filterNot(RankedRecommendationQuote::isLowMetadataSemanticFallback)
+        .plus(filter(RankedRecommendationQuote::isLowMetadataSemanticFallback))
+        .distinctBy { quote -> quote.quoteId }
+
 private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(semanticExpansion: SemanticExpansion): Boolean =
     score.emotionScore <= NO_EMOTION_SCORE && !isStrongSemanticMatch(semanticExpansion)
+
+private fun RankedRecommendationQuote.isLowMetadataSemanticFallback(): Boolean =
+    source == RecommendationCandidateSource.FALLBACK_SEMANTIC &&
+        score.metadataScore < STRONG_SEMANTIC_METADATA_SCORE
 
 private fun RankedRecommendationQuote.isStrongSemanticMatch(semanticExpansion: SemanticExpansion): Boolean =
     score.semanticScore >= STRONG_SEMANTIC_SCORE &&

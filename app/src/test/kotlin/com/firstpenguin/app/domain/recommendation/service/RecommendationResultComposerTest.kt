@@ -366,7 +366,50 @@ class RecommendationResultComposerTest {
     }
 
     @Test
-    fun `free text와 embedding이 있으면 후보가 충분해도 semantic 후보를 먼저 섞는다`() {
+    fun `metadataScore가 충분한 semantic fallback 후보는 top10에 유지한다`() {
+        val semanticCandidate =
+            candidate(
+                quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                roleTagId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                tagIdsByType =
+                    mapOf(
+                        TagType.NEED to setOf(NEED_TAG_ID),
+                        TagType.EMOTION to setOf(EMOTION_TAG_ID),
+                        TagType.SITUATION to setOf(SITUATION_TAG_ID),
+                    ),
+            )
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("회사에서 한 실수가 계속 떠올라 마음이 무겁다", listOf(0.1)),
+                semanticScores = mapOf(HIGH_SEMANTIC_FALLBACK_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+                similarCandidates = listOf(semanticCandidate),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "회사에서 한 실수가 계속 떠올라 마음이 무겁다",
+                feelingText = "회사에서 한 실수가 계속 떠올라 마음이 무겁다",
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags = effectiveTags + effectiveTag(SITUATION_TAG_ID, "SITUATION_FAILURE", TagType.SITUATION),
+                candidates = (1L..9L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+            )
+
+        val semanticQuote =
+            requireNotNull(result).quotes.first { quote ->
+                quote.quoteId == HIGH_SEMANTIC_FALLBACK_QUOTE_ID
+            }
+
+        assertEquals(RecommendationCandidateSource.FALLBACK_SEMANTIC, semanticQuote.source)
+        assertEquals(listOf(SPECIFIC_SEMANTIC_SEED_CANDIDATE_LIMIT), semanticProvider.similarCandidateLimits)
+    }
+
+    @Test
+    fun `metadataScore가 낮은 semantic fallback 후보는 strong semantic이어도 top10 뒤로 미룬다`() {
         val semanticCandidate =
             candidate(
                 quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
@@ -393,9 +436,9 @@ class RecommendationResultComposerTest {
                 candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
                 moodTagIdByCode = emptyMap(),
             )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
 
-        assertEquals(HIGH_SEMANTIC_FALLBACK_QUOTE_ID, result?.mainQuote?.quoteId)
-        assertEquals(RecommendationCandidateSource.FALLBACK_SEMANTIC, result?.mainQuote?.source)
+        assertTrue(HIGH_SEMANTIC_FALLBACK_QUOTE_ID !in quoteIds)
         assertEquals(listOf(SPECIFIC_SEMANTIC_SEED_CANDIDATE_LIMIT), semanticProvider.similarCandidateLimits)
     }
 
