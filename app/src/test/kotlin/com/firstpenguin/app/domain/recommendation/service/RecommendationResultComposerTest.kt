@@ -105,7 +105,7 @@ class RecommendationResultComposerTest {
         val semanticProvider =
             FakeRecommendationSemanticProvider(
                 userEmbedding = UserSemanticEmbedding("좋아하는 사람을 떠올리며 설레는 마음을 오래 느끼고 싶다", listOf(0.1)),
-                semanticScores = mapOf(1L to 0.5, 2L to 0.6),
+                semanticScores = mapOf(1L to 0.2, 2L to 0.8),
             )
         val composer = composer(semanticProvider = semanticProvider)
         val situationEffectiveTags =
@@ -199,6 +199,108 @@ class RecommendationResultComposerTest {
         val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
 
         assertEquals(MISSING_EMOTION_QUOTE_ID, quoteIds.first())
+    }
+
+    @Test
+    fun `행복한 짧은 입력은 구체 태그가 없으면 semantic 후보를 섞지 않는다`() {
+        val semanticCandidate =
+            candidate(
+                quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                roleTagId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                tagIdsByType = emptyMap(),
+            )
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("현재 기쁜 마음을 이어가고 싶다", listOf(0.1)),
+                semanticScores = mapOf(HIGH_SEMANTIC_FALLBACK_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+                similarCandidates = listOf(semanticCandidate),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "현재 기쁜 마음을 이어가고 싶다",
+                feelingText = "행복해서!",
+                emotionValue = HAPPY_EMOTION_VALUE,
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+            )
+
+        assertEquals(1L, result?.mainQuote?.quoteId)
+        assertTrue(semanticProvider.similarCandidateLimits.isEmpty())
+    }
+
+    @Test
+    fun `행복한 입력도 situation 태그가 있으면 semantic 후보를 섞는다`() {
+        val semanticCandidate =
+            candidate(
+                quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                roleTagId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                tagIdsByType = mapOf(TagType.SITUATION to setOf(SITUATION_TAG_ID)),
+            )
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("좋아하는 사람을 떠올리며 설레는 마음을 오래 느끼고 싶다", listOf(0.1)),
+                similarCandidates = listOf(semanticCandidate),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "좋아하는 사람을 떠올리며 설레는 마음을 오래 느끼고 싶다",
+                feelingText = "좋아하는 사람이 생각나서 설레고 행복해",
+                emotionValue = HAPPY_EMOTION_VALUE,
+            )
+        val situationEffectiveTags =
+            effectiveTags +
+                EffectiveTag(
+                    tagId = SITUATION_TAG_ID,
+                    code = "SITUATION_ROMANCE",
+                    type = TagType.SITUATION,
+                )
+
+        composer.compose(
+            input = input,
+            effectiveTags = situationEffectiveTags,
+            candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+            moodTagIdByCode = emptyMap(),
+        )
+
+        assertEquals(listOf(SEMANTIC_SEED_CANDIDATE_LIMIT), semanticProvider.similarCandidateLimits)
+    }
+
+    @Test
+    fun `행복한 입력에서는 metadata가 낮은 semantic 후보를 감정 후보 뒤로 미룬다`() {
+        val candidates =
+            listOf(candidate(MISSING_EMOTION_QUOTE_ID, roleTagId = 1L, tagIdsByType = emptyMap())) +
+                (2L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("현재 기쁜 마음을 이어가고 싶다", listOf(0.1)),
+                semanticScores = mapOf(MISSING_EMOTION_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "현재 기쁜 마음을 이어가고 싶다",
+                feelingText = "행복해서!",
+                emotionValue = HAPPY_EMOTION_VALUE,
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+            )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
+
+        assertEquals(MISSING_EMOTION_QUOTE_ID, quoteIds.last())
     }
 
     @Test
@@ -398,6 +500,7 @@ class RecommendationResultComposerTest {
         const val HIGH_SEMANTIC_FALLBACK_QUOTE_ID = 101L
         const val HIGH_SEMANTIC_SCORE = 1.0
         const val LOW_SEMANTIC_SCORE = 0.1
+        const val HAPPY_EMOTION_VALUE = 8
         const val SEMANTIC_SEED_CANDIDATE_LIMIT = 30
         const val EMBEDDING_ELAPSED_MS = 123L
         const val FALLBACK_EMBEDDING_INPUT = "diaryText: 행복해서!"
@@ -431,10 +534,11 @@ class RecommendationResultComposerTest {
         fun recommendationInput(
             canonicalIntent: String? = null,
             feelingText: String? = null,
+            emotionValue: Int = EMOTION_VALUE,
         ): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
-                emotionValue = EMOTION_VALUE,
+                emotionValue = emotionValue,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
