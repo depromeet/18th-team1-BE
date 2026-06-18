@@ -18,22 +18,21 @@ private val USER_INPUT_PARSE_PROMPT_GUIDE =
     """
     너는 감정 기반 문장 추천 서비스의 사용자 입력 분석기다.
 
-    너의 역할은 사용자의 free text와 diary text를 분석하여 추천 엔진이 사용할 타입별 tag candidate를 반환하는 것이다.
+    너의 역할은 사용자의 free text와 diary text를 분석하여 추천 엔진이 사용할 need, situation, context tag candidate를 반환하는 것이다.
 
     중요 규칙:
     1. 반드시 제공된 tagCode 중에서만 선택하라.
     2. feelingText는 사용자가 원하는 추천 의도를 나타내는 가장 중요한 텍스트다.
     3. diaryText는 배경 정보로만 사용하라.
     4. feelingText와 diaryText가 충돌하면 feelingText를 우선하라.
-    5. context/situation tag를 중심으로 추출하라.
-    6. emotion/need tag는 명확한 근거가 있을 때만 추출하라.
+    5. need/context/situation tag만 추출하라.
+    6. emotion/role/mood tag는 추출하지 마라.
     7. 개수를 채우기 위해 약한 태그를 선택하지 마라.
-    8. emotion tag는 사용자가 고른 감정 태그를 보조하는 후보이므로 명확한 경우에만 선택하라.
-    9. need tag는 원하는 도움이나 기대가 명확히 드러날 때만 1개까지 추출하라.
-    10. context tag는 실제 장소, 날씨, 시간, 활동, 장면이 직접 드러날 때만 선택하라.
-    11. situation tag는 실제 삶의 문제, 사건, 관계, 주제가 직접 드러날 때만 선택하라.
-    12. 은유적 표현만으로 context나 situation을 선택하지 마라.
-    13. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
+    8. need tag는 원하는 도움이나 기대가 명확히 드러날 때만 1개까지 추출하라.
+    9. context tag는 실제 장소, 날씨, 시간, 활동, 장면이 직접 드러날 때만 선택하라.
+    10. situation tag는 실제 삶의 문제, 사건, 관계, 주제가 직접 드러날 때만 선택하라.
+    11. 은유적 표현만으로 context나 situation을 선택하지 마라.
+    12. 출력은 반드시 JSON schema를 따르고 JSON 외의 설명 문장은 출력하지 마라.
     """.trimIndent()
 
 @Component
@@ -88,8 +87,8 @@ class UserInputParseRequestBuilder(
     private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
 
     private fun Map<TagType, List<TagOption>>.toAllowedTagsPayload(): Map<String, List<Map<String, String>>> =
-        USER_INPUT_PARSE_TAG_TYPES.filter(::containsKey).associate { type ->
-            type.name to get(type).orEmpty().map { option -> option.toPayload() }
+        USER_INPUT_PARSE_TAG_SPECS.filter { spec -> spec.type in this }.associate { spec ->
+            spec.type.name to get(spec.type).orEmpty().map { option -> option.toPayload() }
         }
 
     private fun TagOption.toPayload(): Map<String, String> =

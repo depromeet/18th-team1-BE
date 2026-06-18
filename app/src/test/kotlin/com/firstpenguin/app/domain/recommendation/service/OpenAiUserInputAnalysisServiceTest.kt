@@ -67,8 +67,9 @@ class OpenAiUserInputAnalysisServiceTest {
                 .toString()
                 .contains("CONTEXT_RAIN"),
         )
-        assertTrue(openAi.tagRequest.input.contains("EMOTION_ANXIOUS"))
+        assertFalse(openAi.tagRequest.input.contains("EMOTION_ANXIOUS"))
         assertFalse(openAi.tagRequest.input.contains("EMOTION_OTHER_RANGE"))
+        assertFalse(openAi.tagRequest.input.contains("ROLE_EMPATHY"))
         assertFalse(openAi.tagRequest.input.contains("\"label\""))
         assertFalse(openAi.canonicalRequest.input.contains("EMOTION_ANXIOUS"))
     }
@@ -110,11 +111,10 @@ class OpenAiUserInputAnalysisServiceTest {
 
         assertTrue(stableTagIndex < userInputIndex)
         assertFalse(prompt.contains("[허용 감정 태그 목록]"))
-        assertTrue(prompt.indexOf("NEED_COMFORT") < prompt.indexOf("EMOTION_ANXIOUS"))
-        assertTrue(prompt.indexOf("ROLE_EMPATHY") < prompt.indexOf("EMOTION_ANXIOUS"))
+        assertFalse(prompt.contains("EMOTION_ANXIOUS"))
+        assertFalse(prompt.contains("ROLE_EMPATHY"))
+        assertTrue(prompt.indexOf("NEED_COMFORT") < prompt.indexOf("CONTEXT_RAIN"))
         assertTrue(prompt.indexOf("CONTEXT_RAIN") < prompt.indexOf("비 오는 출근길"))
-        assertTrue(prompt.indexOf("CONTEXT_RAIN") < prompt.indexOf("EMOTION_ANXIOUS"))
-        assertTrue(prompt.indexOf("EMOTION_ANXIOUS") < prompt.indexOf("비 오는 출근길"))
     }
 
     @Test

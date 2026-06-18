@@ -9,10 +9,11 @@ import org.springframework.stereotype.Component
 class RecommendationRanker {
     fun rank(
         candidates: List<RecommendationCandidate>,
+        useSemanticScore: Boolean = true,
         scoreOf: (RecommendationCandidate) -> RecommendationScoreBreakdown,
     ): List<RankedRecommendationQuote> =
         candidates
-            .map { candidate -> candidate to scoreOf(candidate).withFinalScore() }
+            .map { candidate -> candidate to scoreOf(candidate).withFinalScore(useSemanticScore) }
             .sortedWith(
                 compareByDescending<Pair<RecommendationCandidate, RecommendationScoreBreakdown>> {
                     it.second.finalScore
@@ -26,12 +27,15 @@ class RecommendationRanker {
                 )
             }
 
-    private fun RecommendationScoreBreakdown.withFinalScore(): RecommendationScoreBreakdown =
-        copy(finalScore = METADATA_WEIGHT * metadataScore + SEMANTIC_WEIGHT * semanticScore)
+    private fun RecommendationScoreBreakdown.withFinalScore(useSemanticScore: Boolean): RecommendationScoreBreakdown {
+        if (!useSemanticScore) return copy(finalScore = metadataScore)
+
+        return copy(finalScore = METADATA_WEIGHT * metadataScore + SEMANTIC_WEIGHT * semanticScore)
+    }
 
     private companion object {
         const val FIRST_RANK = 1
-        const val METADATA_WEIGHT = 0.55
-        const val SEMANTIC_WEIGHT = 0.45
+        const val METADATA_WEIGHT = 0.45
+        const val SEMANTIC_WEIGHT = 0.55
     }
 }

@@ -19,16 +19,16 @@ class UserInputParseSchemaTest {
     }
 
     @Test
-    fun `schema는 mood와 avoid를 반환 대상에 포함하지 않는다`() {
+    fun `schema는 need situation context만 반환 대상에 포함한다`() {
         val schema = userInputParseSchema(tagGroups).toString()
 
         assertFalse(schema.contains("MOOD"))
         assertFalse(schema.contains("AVOID"))
-        assertTrue(schema.contains("EMOTION"))
         assertTrue(schema.contains("NEED"))
         assertTrue(schema.contains("SITUATION"))
         assertTrue(schema.contains("CONTEXT"))
-        assertTrue(schema.contains("ROLE"))
+        assertFalse(schema.contains("EMOTION"))
+        assertFalse(schema.contains("ROLE"))
         assertFalse(schema.contains("evidence"))
     }
 
@@ -43,15 +43,14 @@ class UserInputParseSchemaTest {
                     "needTagCandidates",
                     "situationTagCandidates",
                     "contextTagCandidates",
-                    "roleTagCandidates",
-                    "emotionTagCandidates",
                 ),
             ),
         )
-        assertTrue(required.indexOf("roleTagCandidates") < required.indexOf("emotionTagCandidates"))
         assertFalse(required.contains("canonicalIntent"))
         assertFalse(required.contains("intentType"))
         assertFalse(required.contains("tagCandidates"))
+        assertFalse(required.contains("roleTagCandidates"))
+        assertFalse(required.contains("emotionTagCandidates"))
         assertFalse(required.contains("quoteId"))
     }
 
@@ -59,16 +58,19 @@ class UserInputParseSchemaTest {
     fun `schema는 허용 tagCode를 tag type별 후보 배열 안에 나눠서 둔다`() {
         val schema = userInputParseSchema(tagGroups).toString()
 
-        assertTrue(schema.contains("emotionTagCandidates"))
-        assertTrue(schema.contains("EMOTION_CODE"))
+        assertFalse(schema.contains("emotionTagCandidates"))
+        assertFalse(schema.contains("EMOTION_CODE"))
         assertTrue(schema.contains("needTagCandidates"))
         assertTrue(schema.contains("NEED_CODE"))
-        assertTrue(schema.indexOf("NEED_CODE") < schema.indexOf("EMOTION_CODE"))
+        assertTrue(schema.contains("situationTagCandidates"))
+        assertTrue(schema.contains("SITUATION_CODE"))
+        assertTrue(schema.contains("contextTagCandidates"))
+        assertTrue(schema.contains("CONTEXT_CODE"))
     }
 
     @Test
     fun `tag candidate schema는 priority를 요구하지 않는다`() {
-        val itemSchema = itemSchemaOf("emotionTagCandidates")
+        val itemSchema = itemSchemaOf("contextTagCandidates")
         val required = itemSchema["required"] as List<*>
         val properties = itemSchema["properties"] as Map<*, *>
 

@@ -72,7 +72,6 @@ class OpenAiUserInputAnalysisService(
             .getActiveTagsByType()
             .filterKeys(USER_INPUT_PARSE_TAG_TYPES::contains)
             .withoutNeedIfSelected(input)
-            .onlyInputEmotionRange(input)
 
     private fun async(block: () -> UserInputAnalysis): CompletableFuture<UserInputAnalysis?> =
         CompletableFuture.supplyAsync(
@@ -85,13 +84,6 @@ class OpenAiUserInputAnalysisService(
     private fun String?.normalizedText(): String? = this?.trim()?.takeIf { text -> text.isNotEmpty() }
 
     private fun String?.hasValue(): Boolean = normalizedText() != null
-
-    private fun TagOptionGroups.onlyInputEmotionRange(input: RecommendationInput): TagOptionGroups =
-        mapValues { (type, options) ->
-            if (type != TagType.EMOTION) return@mapValues options
-
-            options.filter { option -> option.emotionRangeId == input.emotionRangeId }
-        }
 
     private fun TagOptionGroups.withoutNeedIfSelected(input: RecommendationInput): TagOptionGroups {
         if (input.needTag == null) return this

@@ -37,6 +37,23 @@ class IntentTypePolicyTest {
     }
 
     @Test
+    fun `importance가 낮아도 context tag가 있으면 context based로 계산한다`() {
+        val result =
+            IntentTypePolicy.resolve(
+                input = recommendationInput(),
+                effectiveTags =
+                    listOf(
+                        effectiveTag(
+                            type = TagType.CONTEXT,
+                            importance = BACKGROUND_IMPORTANCE,
+                        ),
+                    ),
+            )
+
+        assertEquals(IntentType.CONTEXT_BASED, result)
+    }
+
+    @Test
     fun `situation tag가 있으면 situation based로 계산한다`() {
         val result =
             IntentTypePolicy.resolve(
@@ -80,17 +97,22 @@ class IntentTypePolicyTest {
             createdAt = CREATED_AT,
         )
 
-    private fun effectiveTag(type: TagType): EffectiveTag =
+    private fun effectiveTag(
+        type: TagType,
+        importance: Double = 1.0,
+    ): EffectiveTag =
         EffectiveTag(
             tagId = type.ordinal.toLong(),
             code = "${type.name}_CODE",
             type = type,
+            importance = importance,
         )
 
     private companion object {
         const val USER_ID = 1L
         const val EMOTION_RANGE_ID = 1L
         const val EMOTION_VALUE = 1
+        const val BACKGROUND_IMPORTANCE = 0.165
         val CREATED_AT: LocalDateTime = LocalDateTime.of(2026, 6, 16, 0, 0)
     }
 }
