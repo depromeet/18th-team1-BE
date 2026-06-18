@@ -52,10 +52,7 @@ class UserRepository(
     ): Int =
         dsl
             .update(UserTable.USERS)
-            .set(UserTable.STATUS, UserStatus.WITHDRAWAL_REQUESTED.name)
-            .set(UserTable.WITHDRAWAL_REQUESTED_AT, requestedAt)
-            .set(UserTable.WITHDRAWAL_DUE_AT, dueAt)
-            .set(UserTable.UPDATED_AT, requestedAt)
+            .set(withdrawalRequestValues(requestedAt, dueAt))
             .where(UserTable.ID.eq(id))
             .and(UserTable.STATUS.eq(UserStatus.ACTIVE.name))
             .execute()
@@ -66,10 +63,7 @@ class UserRepository(
     ): User? =
         dsl
             .update(UserTable.USERS)
-            .set(UserTable.STATUS, UserStatus.ACTIVE.name)
-            .set(UserTable.WITHDRAWAL_REQUESTED_AT, null as LocalDateTime?)
-            .set(UserTable.WITHDRAWAL_DUE_AT, null as LocalDateTime?)
-            .set(UserTable.UPDATED_AT, now)
+            .set(withdrawalCancelValues(now))
             .where(UserTable.ID.eq(id))
             .and(UserTable.STATUS.eq(UserStatus.WITHDRAWAL_REQUESTED.name))
             .and(UserTable.WITHDRAWAL_DUE_AT.gt(now))
@@ -87,6 +81,25 @@ class UserRepository(
                 .where(UserTable.NICKNAME.eq(nickname))
                 .and(UserTable.ID.ne(excludedUserId))
                 .and(UserTable.DELETED_AT.isNull),
+        )
+
+    private fun withdrawalRequestValues(
+        requestedAt: LocalDateTime,
+        dueAt: LocalDateTime,
+    ): Map<Field<*>, Any?> =
+        mapOf(
+            UserTable.STATUS to UserStatus.WITHDRAWAL_REQUESTED.name,
+            UserTable.WITHDRAWAL_REQUESTED_AT to requestedAt,
+            UserTable.WITHDRAWAL_DUE_AT to dueAt,
+            UserTable.UPDATED_AT to requestedAt,
+        )
+
+    private fun withdrawalCancelValues(now: LocalDateTime): Map<Field<*>, Any?> =
+        mapOf(
+            UserTable.STATUS to UserStatus.ACTIVE.name,
+            UserTable.WITHDRAWAL_REQUESTED_AT to null,
+            UserTable.WITHDRAWAL_DUE_AT to null,
+            UserTable.UPDATED_AT to now,
         )
 
     private fun toUser(record: Record): User =

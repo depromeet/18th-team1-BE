@@ -42,12 +42,10 @@ class UserService(
     }
 
     fun requestWithdrawal(userId: Long) {
-        val user = getById(userId)
-        validateAuthenticatableStatus(user)
-
+        val user = getAuthenticatableById(userId)
         val now = LocalDateTime.now()
         val updatedCount = userRepository.requestWithdrawal(user.id, now, now.plusDays(WITHDRAWAL_GRACE_DAYS))
-        if (updatedCount == 0) throw CustomException(ErrorCode.USER_NOT_FOUND)
+        if (updatedCount == 0) throw CustomException(ErrorCode.USER_WITHDRAWAL_REQUEST_FAILED)
     }
 
     private fun validateNicknameAvailable(

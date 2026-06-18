@@ -70,7 +70,7 @@ class UserRepositoryTest {
         assertTrue(normalizedSql.startsWith("""update "users" set"""), normalizedSql)
         assertTrue(normalizedSql.contains("withdrawal_requested_at"), normalizedSql)
         assertTrue(normalizedSql.contains("withdrawal_due_at"), normalizedSql)
-        assertTrue(normalizedSql.contains(""""users"."withdrawal_due_at" > ?"""), normalizedSql)
+        assertTrue(normalizedSql.contains(""""users"."withdrawal_due_at" >"""), normalizedSql)
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {

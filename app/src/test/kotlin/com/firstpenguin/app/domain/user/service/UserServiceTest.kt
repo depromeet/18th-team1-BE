@@ -140,6 +140,21 @@ class UserServiceTest {
         Mockito.verify(userRepository).requestWithdrawal(Mockito.eq(USER_ID), anyDateTime(), anyDateTime())
     }
 
+    @Test
+    fun `회원 탈퇴 요청 상태 변경에 실패하면 예외가 발생한다`() {
+        Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(user())
+        Mockito
+            .`when`(userRepository.requestWithdrawal(Mockito.eq(USER_ID), anyDateTime(), anyDateTime()))
+            .thenReturn(0)
+
+        val exception =
+            assertFailsWith<CustomException> {
+                userService.requestWithdrawal(USER_ID)
+            }
+
+        assertEquals(ErrorCode.USER_WITHDRAWAL_REQUEST_FAILED, exception.errorCode)
+    }
+
     private fun nicknameDuplicateException(): DuplicateKeyException =
         DuplicateKeyException("duplicate key value violates unique constraint \"$USER_NICKNAME_UNIQUE_INDEX_NAME\"")
 
