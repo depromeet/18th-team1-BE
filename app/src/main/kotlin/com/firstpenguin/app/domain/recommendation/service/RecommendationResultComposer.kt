@@ -40,7 +40,7 @@ class RecommendationResultComposer(
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double> = emptyMap(),
-        userEmbedding: UserSemanticEmbedding? = semanticProvider.prepare(input),
+        userEmbedding: UserSemanticEmbedding? = null,
     ): RecommendationResult? =
         composeOrNull(
             input = input,
@@ -160,8 +160,9 @@ class RecommendationResultComposer(
         tagRarityWeights: Map<Long, Double>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<RankedRecommendationQuote> {
-        val recommendationCandidates = candidates.map { candidate -> candidate.candidate }
-        val sourceByQuoteId = candidates.associate { candidate -> candidate.quoteId to candidate.source }
+        val distinctCandidates = candidates.distinctBy { candidate -> candidate.quoteId }
+        val recommendationCandidates = distinctCandidates.map { candidate -> candidate.candidate }
+        val sourceByQuoteId = distinctCandidates.associate { candidate -> candidate.quoteId to candidate.source }
         val scoreWeights = RecommendationFinalScoreWeightPolicy.weightsOf(effectiveTags, recommendationCandidates)
         val semanticScores =
             semanticProvider.findScores(
