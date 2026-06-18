@@ -69,6 +69,7 @@ class MonthlySettlementRepository(
             author = record[MonthlySettlementTable.SELECTED_BOOK_AUTHOR],
             bookCoverImageUrl = record[MonthlySettlementTable.SELECTED_BOOK_COVER_IMAGE_URL],
             genre = record[MonthlySettlementTable.SELECTED_BOOK_GENRE],
+            bookPurchaseLink = record[MonthlySettlementTable.SELECTED_BOOK_PURCHASE_LINK],
         )
 
     private fun toMonthlySettlementEmotionTag(record: Record): MonthlySettlementEmotionTag =
@@ -108,6 +109,7 @@ class MonthlySettlementRepository(
                 MonthlySettlementTable.SELECTED_BOOK_AUTHOR,
                 MonthlySettlementTable.SELECTED_BOOK_COVER_IMAGE_URL,
                 MonthlySettlementTable.SELECTED_BOOK_GENRE,
+                MonthlySettlementTable.SELECTED_BOOK_PURCHASE_LINK,
                 MonthlySettlementTable.CREATED_AT,
             )
         val MONTHLY_SETTLEMENT_BOOK_FIELDS: List<Field<*>> =
@@ -137,9 +139,10 @@ private data class MonthlySelectedBookRow(
     val author: String?,
     val bookCoverImageUrl: String?,
     val genre: String?,
+    val bookPurchaseLink: String?,
 ) {
     fun toMonthlySelectedBook(): MonthlySettlementSelectedBook? {
-        val values = listOf(quoteId, bookId, quoteContent, title, author, bookCoverImageUrl, genre)
+        val values = listOf(quoteId, bookId, quoteContent, title, author, bookCoverImageUrl, genre, bookPurchaseLink)
 
         if (values.any { value -> value == null }) {
             return null
@@ -153,6 +156,7 @@ private data class MonthlySelectedBookRow(
             author = author!!,
             bookCoverImageUrl = bookCoverImageUrl!!,
             genre = genre!!,
+            bookPurchaseLink = bookPurchaseLink!!,
         )
     }
 }
