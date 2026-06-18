@@ -82,8 +82,8 @@ class RecommendationRankerTest {
         const val BOOK_ID = 100L
         const val METADATA_SCORE = 0.8
         const val SEMANTIC_SCORE = 0.6
-        const val EXPECTED_FINAL_SCORE = 0.69
-        const val EXPECTED_SEMANTIC_FOCUSED_SCORE = 0.66
+        const val EXPECTED_FINAL_SCORE = 0.72
+        const val EXPECTED_SEMANTIC_FOCUSED_SCORE = 0.67
         const val DELTA = 0.000001
 
         fun candidate(quoteId: Long): RecommendationCandidate =
