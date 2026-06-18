@@ -86,6 +86,32 @@ class RecommendationFallbackServiceTest {
     }
 
     @Test
+    fun `semantic 우선 보강을 요청하면 semantic 후보를 emotion range보다 먼저 조회한다`() {
+        val events = mutableListOf<String>()
+        val provider =
+            FakeRecommendationCandidateProvider(
+                emotionCandidates = (5L..10L).map(::candidate),
+                events = events,
+            )
+        val service = RecommendationFallbackService(provider)
+
+        val result =
+            service.supplementCandidates(
+                input = recommendationInput(),
+                effectiveTags = effectiveTags,
+                existingCandidates = listOf(candidate(1L)),
+                semanticCandidates = {
+                    events.add("SEMANTIC")
+                    listOf(candidate(2L), candidate(3L), candidate(4L))
+                },
+                prioritizeSemanticFallback = true,
+            )
+
+        assertEquals(listOf("SEMANTIC", "EMOTION_RANGE"), events)
+        assertEquals((1L..10L).toList(), result.map { candidate -> candidate.quoteId })
+    }
+
+    @Test
     fun `need fallback은 need effectiveTag만 전달한다`() {
         val provider = FakeRecommendationCandidateProvider(randomCandidates = (1L..10L).map(::candidate))
         val service = RecommendationFallbackService(provider)

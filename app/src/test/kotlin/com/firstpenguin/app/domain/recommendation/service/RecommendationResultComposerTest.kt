@@ -156,7 +156,7 @@ class RecommendationResultComposerTest {
         val semanticProvider =
             FakeRecommendationSemanticProvider(
                 userEmbedding = UserSemanticEmbedding("행복한 마음을 나누고 싶다", listOf(0.1)),
-                semanticScores = mapOf(MISSING_EMOTION_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+                semanticScores = mapOf(MISSING_EMOTION_QUOTE_ID to LOW_SEMANTIC_SCORE),
             )
         val composer = composer(semanticProvider = semanticProvider)
 
@@ -170,6 +170,69 @@ class RecommendationResultComposerTest {
         val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
 
         assertEquals(MISSING_EMOTION_QUOTE_ID, quoteIds.last())
+    }
+
+    @Test
+    fun `semantic score가 높은 감정 미매칭 후보는 감정 후처리에서 뒤로 밀지 않는다`() {
+        val candidates =
+            listOf(candidate(MISSING_EMOTION_QUOTE_ID, roleTagId = 1L, tagIdsByType = emptyMap())) +
+                (2L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) }
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("퇴근길 실수 생각에 마음이 무겁다", listOf(0.1)),
+                semanticScores = mapOf(MISSING_EMOTION_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "퇴근길 실수 생각에 마음이 무겁다",
+                feelingText = "퇴근길 실수 생각에 마음이 무겁다",
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidates = candidates,
+                moodTagIdByCode = emptyMap(),
+            )
+        val quoteIds = requireNotNull(result).quotes.map { quote -> quote.quoteId }
+
+        assertEquals(MISSING_EMOTION_QUOTE_ID, quoteIds.first())
+    }
+
+    @Test
+    fun `free text와 embedding이 있으면 후보가 충분해도 semantic 후보를 먼저 섞는다`() {
+        val semanticCandidate =
+            candidate(
+                quoteId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                roleTagId = HIGH_SEMANTIC_FALLBACK_QUOTE_ID,
+                tagIdsByType = emptyMap(),
+            )
+        val semanticProvider =
+            FakeRecommendationSemanticProvider(
+                userEmbedding = UserSemanticEmbedding("회사에서 한 실수가 계속 떠올라 마음이 무겁다", listOf(0.1)),
+                semanticScores = mapOf(HIGH_SEMANTIC_FALLBACK_QUOTE_ID to HIGH_SEMANTIC_SCORE),
+                similarCandidates = listOf(semanticCandidate),
+            )
+        val composer = composer(semanticProvider = semanticProvider)
+        val input =
+            recommendationInput(
+                canonicalIntent = "회사에서 한 실수가 계속 떠올라 마음이 무겁다",
+                feelingText = "회사에서 한 실수가 계속 떠올라 마음이 무겁다",
+            )
+
+        val result =
+            composer.compose(
+                input = input,
+                effectiveTags = effectiveTags,
+                candidates = (1L..10L).map { quoteId -> candidate(quoteId, roleTagId = quoteId) },
+                moodTagIdByCode = emptyMap(),
+            )
+
+        assertEquals(HIGH_SEMANTIC_FALLBACK_QUOTE_ID, result?.mainQuote?.quoteId)
+        assertEquals(RecommendationCandidateSource.FALLBACK_SEMANTIC, result?.mainQuote?.source)
+        assertEquals(listOf(SEMANTIC_SEED_CANDIDATE_LIMIT), semanticProvider.similarCandidateLimits)
     }
 
     @Test
@@ -308,12 +371,16 @@ class RecommendationResultComposerTest {
         override fun findSimilarCandidates(
             userEmbedding: UserSemanticEmbedding?,
             excludedQuoteIds: Collection<Long>,
+            limit: Int,
         ): List<RecommendationCandidate> =
             if (userEmbedding == null) {
                 emptyList()
             } else {
+                similarCandidateLimits.add(limit)
                 similarCandidates.filterNot { candidate -> candidate.quoteId in excludedQuoteIds }
             }
+
+        val similarCandidateLimits = mutableListOf<Int>()
     }
 
     private companion object {
@@ -328,7 +395,10 @@ class RecommendationResultComposerTest {
         const val OTHER_ROLE_TAG_ID = 302L
         const val MISSING_EMOTION_QUOTE_ID = 1L
         const val HIGH_NEED_FALLBACK_QUOTE_ID = 100L
+        const val HIGH_SEMANTIC_FALLBACK_QUOTE_ID = 101L
         const val HIGH_SEMANTIC_SCORE = 1.0
+        const val LOW_SEMANTIC_SCORE = 0.1
+        const val SEMANTIC_SEED_CANDIDATE_LIMIT = 30
         const val EMBEDDING_ELAPSED_MS = 123L
         const val FALLBACK_EMBEDDING_INPUT = "diaryText: 행복해서!"
 
@@ -358,14 +428,17 @@ class RecommendationResultComposerTest {
                 semanticProvider = semanticProvider,
             )
 
-        fun recommendationInput(canonicalIntent: String? = null): RecommendationInput =
+        fun recommendationInput(
+            canonicalIntent: String? = null,
+            feelingText: String? = null,
+        ): RecommendationInput =
             RecommendationInput(
                 userId = USER_ID,
                 emotionValue = EMOTION_VALUE,
                 emotionRangeId = EMOTION_RANGE_ID,
                 emotionTags = listOf(tag(EMOTION_TAG_ID, TagType.EMOTION, "EMOTION_ANXIOUS")),
                 needTag = tag(NEED_TAG_ID, TagType.NEED, "NEED_COMFORT"),
-                feelingText = null,
+                feelingText = feelingText,
                 diaryText = null,
                 analysis =
                     UserInputAnalysis(
