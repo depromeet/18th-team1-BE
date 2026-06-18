@@ -1,6 +1,7 @@
 package com.firstpenguin.app.domain.monthlysettlement.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementBook
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
@@ -36,7 +37,7 @@ class MonthlySettlementQuoteAggregationRepository(
         endExclusive: LocalDate,
     ): String? =
         dsl
-            .select(BookTable.GENRE)
+            .select(GenreTable.LABEL)
             .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
             .join(RecommendationTable.RECOMMENDATIONS)
             .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
@@ -44,13 +45,15 @@ class MonthlySettlementQuoteAggregationRepository(
             .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(GenreTable.GENRES)
+            .on(GenreTable.ID.eq(BookTable.GENRE_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(activeQuoteAndBookCondition())
-            .and(bookGenreExists())
-            .groupBy(BookTable.GENRE)
-            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.GENRE.asc())
+            .and(genreLabelExists())
+            .groupBy(GenreTable.LABEL)
+            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), GenreTable.LABEL.asc())
             .limit(1)
-            .fetchOne(BookTable.GENRE)
+            .fetchOne(GenreTable.LABEL)
 
     fun findRecommendedBooksByGenre(
         userId: Long,
@@ -70,9 +73,11 @@ class MonthlySettlementQuoteAggregationRepository(
             .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(GenreTable.GENRES)
+            .on(GenreTable.ID.eq(BookTable.GENRE_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(activeQuoteAndBookCondition())
-            .and(BookTable.GENRE.eq(genre))
+            .and(GenreTable.LABEL.eq(genre))
             .groupBy(MONTHLY_BOOK_FIELDS)
             .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.ID.asc())
             .limit(limit)
@@ -89,8 +94,10 @@ class MonthlySettlementQuoteAggregationRepository(
         return dsl
             .select(MONTHLY_BOOK_FIELDS)
             .from(BookTable.BOOKS)
+            .join(GenreTable.GENRES)
+            .on(GenreTable.ID.eq(BookTable.GENRE_ID))
             .where(BookTable.DELETED_AT.isNull)
-            .and(BookTable.GENRE.eq(genre))
+            .and(GenreTable.LABEL.eq(genre))
             .and(excludedBookCondition(excludedBookIds))
             .orderBy(BookTable.ID.asc())
             .limit(limit)
@@ -112,10 +119,10 @@ class MonthlySettlementQuoteAggregationRepository(
             .isNull
             .and(BookTable.DELETED_AT.isNull)
 
-    private fun bookGenreExists(): Condition =
-        BookTable.GENRE
+    private fun genreLabelExists(): Condition =
+        GenreTable.LABEL
             .isNotNull
-            .and(DSL.trim(BookTable.GENRE).ne(""))
+            .and(DSL.trim(GenreTable.LABEL).ne(""))
 
     private fun excludedBookCondition(excludedBookIds: List<Long>): Condition {
         if (excludedBookIds.isEmpty()) return DSL.noCondition()
@@ -129,7 +136,7 @@ class MonthlySettlementQuoteAggregationRepository(
             title = record[BookTable.TITLE]!!,
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
-            genre = record[BookTable.GENRE]!!,
+            genre = record[GenreTable.LABEL]!!,
             sortOrder = 0,
         )
 
@@ -140,7 +147,7 @@ class MonthlySettlementQuoteAggregationRepository(
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.GENRE,
+                GenreTable.LABEL,
             )
     }
 }

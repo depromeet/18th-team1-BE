@@ -5,6 +5,7 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.user.repository.UserTable
@@ -40,6 +41,7 @@ class DiscoveryRepositoryTest {
         assertFalse(normalizedSql.contains("daily_recommendation_id"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
         assertTrue(normalizedSql.contains("join \"users\""), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"users\".\"nickname\""), normalizedSql)
         assertTrue(normalizedSql.contains("emotion_value"), normalizedSql)
         assertTrue(normalizedSql.contains("recommended_at"), normalizedSql)
@@ -234,7 +236,7 @@ class DiscoveryRepositoryTest {
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
                 BookTable.GENRE_ID,
-                BookTable.GENRE,
+                GenreTable.LABEL,
                 DSL.field("need_tag_id", Long::class.java),
                 DSL.field("need_tag_label", String::class.java),
                 DSL.field("emotion_value", Int::class.java),

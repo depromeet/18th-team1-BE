@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.monthlysettlement.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementEmotionTag
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSelectedBook
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
@@ -66,10 +67,12 @@ class MonthlySettlementEmotionAggregationRepository(
             .on(QuoteMetadataTable.ID.eq(QuoteMetadataTagTable.QUOTE_METADATA_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(GenreTable.GENRES)
+            .on(GenreTable.ID.eq(BookTable.GENRE_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(QuoteMetadataTagTable.TAG_ID.eq(tagId))
             .and(activeQuoteAndBookCondition())
-            .and(bookGenreExists())
+            .and(genreLabelExists())
             .orderBy(DSL.rand())
             .limit(1)
             .fetchOne(::toMonthlySelectedBook)
@@ -89,10 +92,10 @@ class MonthlySettlementEmotionAggregationRepository(
             .isNull
             .and(BookTable.DELETED_AT.isNull)
 
-    private fun bookGenreExists(): Condition =
-        BookTable.GENRE
+    private fun genreLabelExists(): Condition =
+        GenreTable.LABEL
             .isNotNull
-            .and(DSL.trim(BookTable.GENRE).ne(""))
+            .and(DSL.trim(GenreTable.LABEL).ne(""))
 
     private fun toEmotionTagCount(
         index: Int,
@@ -113,7 +116,7 @@ class MonthlySettlementEmotionAggregationRepository(
             title = record[BookTable.TITLE]!!,
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
-            genre = record[BookTable.GENRE]!!,
+            genre = record[GenreTable.LABEL]!!,
             bookPurchaseLink = record[BookTable.ALADIN_LINK]!!,
         )
 
@@ -127,7 +130,7 @@ class MonthlySettlementEmotionAggregationRepository(
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.GENRE,
+                GenreTable.LABEL,
                 BookTable.ALADIN_LINK,
             )
     }

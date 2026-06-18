@@ -41,7 +41,7 @@ class MonthlySettlementRepositoryTest {
     }
 
     @Test
-    fun `가장 많이 만난 장르는 책 genre를 문장 기준으로 집계한다`() {
+    fun `가장 많이 만난 장르는 genre 기준 테이블 라벨을 문장 기준으로 집계한다`() {
         val capturedSql =
             captureSql { dsl ->
                 MonthlySettlementQuoteAggregationRepository(dsl).findMostFrequentGenre(
@@ -52,11 +52,12 @@ class MonthlySettlementRepositoryTest {
             }
         val normalizedSql = capturedSql.normalized()
 
-        assertTrue(normalizedSql.contains("\"books\".\"genre\""), normalizedSql)
-        assertTrue(normalizedSql.contains("\"books\".\"genre\" is not null"), normalizedSql)
-        assertTrue(normalizedSql.contains("trim(\"books\".\"genre\") <> ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"genres\".\"label\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"genres\".\"label\" is not null"), normalizedSql)
+        assertTrue(normalizedSql.contains("trim(\"genres\".\"label\") <> ?"), normalizedSql)
         assertTrue(
-            normalizedSql.contains("order by count(\"recommendation_quotes\".\"id\") desc, \"books\".\"genre\" asc"),
+            normalizedSql.contains("order by count(\"recommendation_quotes\".\"id\") desc, \"genres\".\"label\" asc"),
             normalizedSql,
         )
     }
@@ -99,6 +100,7 @@ class MonthlySettlementRepositoryTest {
         val normalizedSql = capturedSql.normalized()
 
         assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"books\".\"aladin_link\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"recommendations\".\"user_id\" = ?"), normalizedSql)
         assertTrue(
