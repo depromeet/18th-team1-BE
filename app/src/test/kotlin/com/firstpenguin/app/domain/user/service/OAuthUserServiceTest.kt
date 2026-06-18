@@ -96,8 +96,8 @@ class OAuthUserServiceTest {
 
         assertEquals(ErrorCode.INTERNAL_SERVER_ERROR, exception.errorCode)
         Mockito.verify(oAuthAccountRepository, Mockito.never()).updateLogin(
-            eqValue(OAUTH_ACCOUNT_ID),
-            eqValue(OAUTH_USER_PROFILE),
+            anyLong(),
+            anyOAuthUserProfile(),
             anyDateTime(),
         )
     }
@@ -115,10 +115,20 @@ class OAuthUserServiceTest {
 
         assertEquals(ErrorCode.AUTH_USER_BLOCKED, exception.errorCode)
         Mockito.verify(oAuthAccountRepository, Mockito.never()).updateLogin(
-            eqValue(OAUTH_ACCOUNT_ID),
-            eqValue(OAUTH_USER_PROFILE),
+            anyLong(),
+            anyOAuthUserProfile(),
             anyDateTime(),
         )
+    }
+
+    private fun anyLong(): Long {
+        Mockito.anyLong()
+        return 0L
+    }
+
+    private fun anyOAuthUserProfile(): OAuthUserProfile {
+        Mockito.any(OAuthUserProfile::class.java)
+        return OAUTH_USER_PROFILE
     }
 
     private fun anyDateTime(): LocalDateTime {
