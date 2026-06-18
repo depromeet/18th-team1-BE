@@ -233,7 +233,7 @@ class DiscoveryUseCaseTest {
             discoveryUseCase.searchDiscoveryQuotes(
                 USER_ID,
                 SEARCH_QUERY,
-                sort = "scrapCount",
+                sort = "scrap",
                 cursor = EXPECTED_SCRAP_COUNT_CURSOR,
                 genre = GENRE,
             )
@@ -258,7 +258,7 @@ class DiscoveryUseCaseTest {
             discoveryUseCase.searchDiscoveryQuotes(
                 USER_ID,
                 SEARCH_QUERY,
-                sort = "scrapCount",
+                sort = "scrap",
                 cursor = null,
                 genre = null,
             )
