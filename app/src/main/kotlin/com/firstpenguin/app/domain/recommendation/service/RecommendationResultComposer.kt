@@ -40,7 +40,7 @@ class RecommendationResultComposer(
         candidates: List<RecommendationCandidate>,
         moodTagIdByCode: Map<String, Long>,
         tagRarityWeights: Map<Long, Double> = emptyMap(),
-        userEmbedding: UserSemanticEmbedding? = semanticProvider.prepare(input),
+        userEmbedding: UserSemanticEmbedding? = null,
     ): RecommendationResult? =
         composeOrNull(
             input = input,
@@ -83,9 +83,11 @@ class RecommendationResultComposer(
             )
         val rankedQuotes =
             rank(input, effectiveTags, supplementedCandidates, moodTagIdByCode, tagRarityWeights, userEmbedding)
+                .deferLowMetadataSemanticFallbacks()
                 .diversifyRoleTags()
                 .preferEmotionMatches(semanticExpansion)
                 .preferEmotionSources(semanticExpansion)
+                .deferLowMetadataSemanticFallbacks()
                 .take(RECOMMENDATION_RESULT_COUNT)
                 .rerank()
         if (rankedQuotes.isEmpty()) return null
@@ -158,8 +160,9 @@ class RecommendationResultComposer(
         tagRarityWeights: Map<Long, Double>,
         userEmbedding: UserSemanticEmbedding?,
     ): List<RankedRecommendationQuote> {
-        val recommendationCandidates = candidates.map { candidate -> candidate.candidate }
-        val sourceByQuoteId = candidates.associate { candidate -> candidate.quoteId to candidate.source }
+        val distinctCandidates = candidates.distinctBy { candidate -> candidate.quoteId }
+        val recommendationCandidates = distinctCandidates.map { candidate -> candidate.candidate }
+        val sourceByQuoteId = distinctCandidates.associate { candidate -> candidate.quoteId to candidate.source }
         val scoreWeights = RecommendationFinalScoreWeightPolicy.weightsOf(effectiveTags, recommendationCandidates)
         val semanticScores =
             semanticProvider.findScores(
@@ -278,8 +281,17 @@ private fun RankedQuotes.preferEmotionSources(semanticExpansion: SemanticExpansi
         .plus(filterNot { quote -> quote.source.isEmotionSource() || quote.isStrongSemanticMatch(semanticExpansion) })
         .distinctBy { quote -> quote.quoteId }
 
+private fun RankedQuotes.deferLowMetadataSemanticFallbacks(): RankedQuotes =
+    filterNot(RankedRecommendationQuote::isLowMetadataSemanticFallback)
+        .plus(filter(RankedRecommendationQuote::isLowMetadataSemanticFallback))
+        .distinctBy { quote -> quote.quoteId }
+
 private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(semanticExpansion: SemanticExpansion): Boolean =
     score.emotionScore <= NO_EMOTION_SCORE && !isStrongSemanticMatch(semanticExpansion)
+
+private fun RankedRecommendationQuote.isLowMetadataSemanticFallback(): Boolean =
+    source == RecommendationCandidateSource.FALLBACK_SEMANTIC &&
+        score.metadataScore < STRONG_SEMANTIC_METADATA_SCORE
 
 private fun RankedRecommendationQuote.isStrongSemanticMatch(semanticExpansion: SemanticExpansion): Boolean =
     score.semanticScore >= STRONG_SEMANTIC_SCORE &&
