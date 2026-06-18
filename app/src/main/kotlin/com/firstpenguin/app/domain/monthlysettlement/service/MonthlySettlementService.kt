@@ -1,16 +1,19 @@
 package com.firstpenguin.app.domain.monthlysettlement.service
 
+import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlement
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementBook
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementCreateCommand
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementEmotionTag
+import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSelectedBook
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSnapshot
-import com.firstpenguin.app.domain.monthlysettlement.repository.MonthlySettlementCommandRepository
 import com.firstpenguin.app.domain.monthlysettlement.repository.MonthlySettlementEmotionAggregationRepository
 import com.firstpenguin.app.domain.monthlysettlement.repository.MonthlySettlementQuoteAggregationRepository
 import com.firstpenguin.app.domain.monthlysettlement.repository.MonthlySettlementRepository
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 
 private const val MONTHLY_BOOK_COUNT = 3
@@ -19,7 +22,6 @@ private const val EMOTION_TAG_COUNT = 10
 @Service
 class MonthlySettlementService(
     private val monthlySettlementRepository: MonthlySettlementRepository,
-    private val monthlySettlementCommandRepository: MonthlySettlementCommandRepository,
     private val monthlySettlementQuoteAggregationRepository: MonthlySettlementQuoteAggregationRepository,
     private val monthlySettlementEmotionAggregationRepository: MonthlySettlementEmotionAggregationRepository,
 ) {
@@ -44,26 +46,7 @@ class MonthlySettlementService(
     fun createSnapshot(
         userId: Long,
         yearMonth: YearMonth,
-    ): MonthlySettlementSnapshot? {
-        val draft = createCommand(userId, yearMonth) ?: return null
-        val monthlySettlementId = monthlySettlementCommandRepository.insertMonthlySettlement(draft)
-
-        return findCreatedSnapshot(
-            userId = userId,
-            yearMonth = yearMonth,
-            monthlySettlementId = monthlySettlementId,
-        )
-    }
-
-    private fun findCreatedSnapshot(
-        userId: Long,
-        yearMonth: YearMonth,
-        monthlySettlementId: Long?,
-    ): MonthlySettlementSnapshot? {
-        if (monthlySettlementId == null) return findSnapshot(userId, yearMonth)
-
-        return checkNotNull(findSnapshot(userId, yearMonth))
-    }
+    ): MonthlySettlementSnapshot? = createCommand(userId, yearMonth)?.toSnapshot()
 
     private fun createCommand(
         userId: Long,
@@ -89,13 +72,7 @@ class MonthlySettlementService(
         val mostFrequentGenre =
             monthlySettlementQuoteAggregationRepository.findMostFrequentGenre(userId, start, endExclusive)
         val monthlyBooks = findMonthlyBooks(userId, yearMonth, mostFrequentGenre)
-        val monthlyBook =
-            monthlySettlementEmotionAggregationRepository.findMonthlyBookCandidateByEmotionTagId(
-                userId = userId,
-                start = start,
-                endExclusive = endExclusive,
-                tagId = topEmotionTag.tagId,
-            )
+        val monthlyBook = findMonthlyBook(userId, start, endExclusive, topEmotionTag)
 
         return MonthlySettlementCreateCommand(
             userId = userId,
@@ -110,6 +87,35 @@ class MonthlySettlementService(
             emotionTags = emotionTags,
         )
     }
+
+    private fun findMonthlyBook(
+        userId: Long,
+        start: LocalDate,
+        endExclusive: LocalDate,
+        topEmotionTag: MonthlySettlementEmotionTag,
+    ): MonthlySettlementSelectedBook? =
+        monthlySettlementEmotionAggregationRepository
+            .findMonthlyBookCandidateByEmotionTagId(
+                userId,
+                start,
+                endExclusive,
+                topEmotionTag.tagId,
+            ) ?: findMonthlyBookByEmotionRange(userId, start, endExclusive, topEmotionTag.emotionRangeId)
+
+    private fun findMonthlyBookByEmotionRange(
+        userId: Long,
+        start: LocalDate,
+        endExclusive: LocalDate,
+        emotionRangeId: Long?,
+    ): MonthlySettlementSelectedBook? =
+        emotionRangeId?.let {
+            monthlySettlementEmotionAggregationRepository.findMonthlyBookCandidateByEmotionRangeId(
+                userId,
+                start,
+                endExclusive,
+                it,
+            )
+        }
 
     private fun findMonthlyBooks(
         userId: Long,
@@ -153,4 +159,24 @@ class MonthlySettlementService(
         topEmotionTagLabel: String,
         yearMonth: YearMonth,
     ): String = "$topEmotionTagLabel ${yearMonth.monthValue}월을 보내셨군요. 이 감정과 유사한 문장이 담긴 책을 추천해요."
+
+    private fun MonthlySettlementCreateCommand.toSnapshot(): MonthlySettlementSnapshot =
+        MonthlySettlementSnapshot(
+            settlement =
+                MonthlySettlement(
+                    id = 0L,
+                    userId = userId,
+                    year = year,
+                    month = month,
+                    sharedQuoteCount = sharedQuoteCount,
+                    mostFrequentGenre = mostFrequentGenre,
+                    topEmotionTagId = topEmotionTag.tagId,
+                    topEmotionTagLabel = topEmotionTag.label,
+                    recommendationMessage = recommendationMessage,
+                    monthlyBook = monthlyBook,
+                    createdAt = LocalDateTime.now(),
+                ),
+            monthlyBooks = monthlyBooks,
+            emotionTags = emotionTags,
+        )
 }
