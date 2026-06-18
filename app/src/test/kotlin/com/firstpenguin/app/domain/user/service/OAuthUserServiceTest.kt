@@ -63,14 +63,14 @@ class OAuthUserServiceTest {
         Mockito
             .`when`(oAuthAccountRepository.findActiveByProviderAndProviderId(Provider.KAKAO, PROVIDER_ID))
             .thenReturn(account)
-        Mockito.`when`(
-            oAuthAccountRepository.updateLogin(
-                eqValue(OAUTH_ACCOUNT_ID),
-                eqValue(OAUTH_USER_PROFILE),
-                anyDateTime(),
-            ),
-        )
-            .thenReturn(account)
+        Mockito
+            .`when`(
+                oAuthAccountRepository.updateLogin(
+                    eqValue(OAUTH_ACCOUNT_ID),
+                    eqValue(OAUTH_USER_PROFILE),
+                    anyDateTime(),
+                ),
+            ).thenReturn(account)
 
         val result = oAuthUserService.updateOAuthLogin(user, OAUTH_USER_PROFILE)
 

@@ -22,8 +22,8 @@ class UserRepository(
     fun create(
         nickname: String,
         now: LocalDateTime,
-    ): User? {
-        return dsl
+    ): User? =
+        dsl
             .insertInto(UserTable.USERS)
             .set(UserTable.NICKNAME, nickname)
             .set(UserTable.STATUS, UserStatus.ACTIVE.name)
@@ -32,7 +32,6 @@ class UserRepository(
             .onConflictDoNothing()
             .returningResult(USER_FIELDS)
             .fetchOne(::toUser)
-    }
 
     fun update(
         id: Long,
