@@ -3,12 +3,12 @@ package com.firstpenguin.app.domain.discovery.usecase
 import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuoteResponse
 import com.firstpenguin.app.domain.discovery.dto.DiscoveryQuotesResponse
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
-import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuote
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.discovery.service.DiscoveryService
+import com.firstpenguin.app.domain.genre.service.GenreService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
 import org.springframework.stereotype.Service
@@ -20,14 +20,16 @@ private const val NEXT_PAGE_CHECK_COUNT = 1
 @Service
 class DiscoveryUseCase(
     private val discoveryService: DiscoveryService,
+    private val genreService: GenreService,
 ) {
     @Transactional(readOnly = true)
     fun getDiscoveryQuotes(
         userId: Long,
         cursor: String?,
-        genre: String?,
+        genreId: Long?,
     ): DiscoveryQuotesResponse {
-        val quotes = fetchQuotesWithNextPageCheck(userId, cursor, genre)
+        validateGenreId(genreId)
+        val quotes = fetchQuotesWithNextPageCheck(userId, cursor, genreId)
         return toDiscoveryQuotesResponse(quotes) { quote -> DiscoveryCursor.from(quote).encode() }
     }
 
@@ -37,10 +39,11 @@ class DiscoveryUseCase(
         query: String?,
         sort: String?,
         cursor: String?,
-        genre: String?,
+        genreId: Long?,
     ): DiscoveryQuotesResponse {
         val searchSort = DiscoveryQuoteSearchSort.parse(sort)
-        val quotes = fetchSearchQuotesWithNextPageCheck(userId, query, searchSort, cursor, genre)
+        validateGenreId(genreId)
+        val quotes = fetchSearchQuotesWithNextPageCheck(userId, query, searchSort, cursor, genreId)
         return toDiscoveryQuotesResponse(quotes) { quote ->
             DiscoveryQuoteSearchCursor
                 .from(quote, searchSort)
@@ -51,12 +54,12 @@ class DiscoveryUseCase(
     private fun fetchQuotesWithNextPageCheck(
         userId: Long,
         cursor: String?,
-        genre: String?,
+        genreId: Long?,
     ): List<DiscoveryQuote> =
         discoveryService.getRecommendedQuotes(
             userId = userId,
             cursor = DiscoveryCursor.parse(cursor),
-            genre = DiscoveryGenre.parse(genre),
+            genreId = genreId,
             limit = DISCOVERY_QUOTE_COUNT + NEXT_PAGE_CHECK_COUNT,
         )
 
@@ -65,7 +68,7 @@ class DiscoveryUseCase(
         query: String?,
         sort: DiscoveryQuoteSearchSort,
         cursor: String?,
-        genre: String?,
+        genreId: Long?,
     ): List<DiscoveryQuote> =
         discoveryService.searchRecommendedQuotes(
             DiscoveryQuoteSearchCriteria(
@@ -73,7 +76,7 @@ class DiscoveryUseCase(
                 query = normalizeQuery(query),
                 sort = sort,
                 cursor = DiscoveryQuoteSearchCursor.parse(cursor, sort),
-                genre = DiscoveryGenre.parse(genre),
+                genreId = genreId,
                 limit = DISCOVERY_QUOTE_COUNT + NEXT_PAGE_CHECK_COUNT,
             ),
         )
@@ -81,6 +84,13 @@ class DiscoveryUseCase(
     private fun normalizeQuery(query: String?): String =
         query?.trim()?.takeIf { text -> text.isNotBlank() }
             ?: throw CustomException(ErrorCode.INVALID_INPUT)
+
+    private fun validateGenreId(genreId: Long?) {
+        if (genreId == null) return
+        if (genreService.existsGenre(genreId)) return
+
+        throw CustomException(ErrorCode.INVALID_INPUT)
+    }
 
     private fun toDiscoveryQuotesResponse(
         quotes: List<DiscoveryQuote>,

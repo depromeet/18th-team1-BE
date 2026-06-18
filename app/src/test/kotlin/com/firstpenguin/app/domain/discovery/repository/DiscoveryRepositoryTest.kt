@@ -2,7 +2,6 @@ package com.firstpenguin.app.domain.discovery.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.discovery.model.DiscoveryCursor
-import com.firstpenguin.app.domain.discovery.model.DiscoveryGenre
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
@@ -29,7 +28,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = null,
-                    genre = null,
+                    genreId = null,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
@@ -72,7 +71,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = DiscoveryCursor(RECOMMENDED_AT, QUOTE_ID),
-                    genre = null,
+                    genreId = null,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
@@ -84,19 +83,19 @@ class DiscoveryRepositoryTest {
     }
 
     @Test
-    fun `장르가 있으면 책 장르 조건을 추가한다`() {
+    fun `장르 ID가 있으면 책 장르 ID 조건을 추가한다`() {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).findRecommendedQuotes(
                     userId = USER_ID,
                     cursor = null,
-                    genre = DiscoveryGenre.GENERAL_LITERATURE,
+                    genreId = GENRE_ID,
                     limit = DISCOVERY_QUOTE_FETCH_COUNT,
                 )
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre_id\" = ?"), normalizedSql)
     }
 
     @Test
@@ -144,7 +143,7 @@ class DiscoveryRepositoryTest {
                 DiscoveryRepository(dsl).searchRecommendedQuotes(
                     searchCriteria(
                         sort = DiscoveryQuoteSearchSort.SCRAP_COUNT,
-                        genre = DiscoveryGenre.GENERAL_LITERATURE,
+                        genreId = GENRE_ID,
                     ),
                 )
             }
@@ -152,7 +151,7 @@ class DiscoveryRepositoryTest {
 
         assertTrue(normalizedSql.contains("quote_scrap_counts"), normalizedSql)
         assertTrue(normalizedSql.contains("count(\"quote_scraps\".\"id\")"), normalizedSql)
-        assertTrue(normalizedSql.contains("\"books\".\"genre\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"books\".\"genre_id\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("order by \"scrap_count\" desc"), normalizedSql)
     }
 
@@ -198,14 +197,14 @@ class DiscoveryRepositoryTest {
         query: String = SEARCH_QUERY,
         sort: DiscoveryQuoteSearchSort = DiscoveryQuoteSearchSort.LATEST,
         cursor: DiscoveryQuoteSearchCursor? = null,
-        genre: DiscoveryGenre? = null,
+        genreId: Long? = null,
     ): DiscoveryQuoteSearchCriteria =
         DiscoveryQuoteSearchCriteria(
             userId = USER_ID,
             query = query,
             sort = sort,
             cursor = cursor,
-            genre = genre,
+            genreId = genreId,
             limit = DISCOVERY_QUOTE_FETCH_COUNT,
         )
 
@@ -218,6 +217,7 @@ class DiscoveryRepositoryTest {
         const val USER_ID = 1L
         const val DISCOVERY_QUOTE_FETCH_COUNT = 11
         const val QUOTE_ID = 10L
+        const val GENRE_ID = 1L
         const val SEARCH_QUERY = "새"
         const val SEARCH_META_QUERY = "100%_!"
         const val ESCAPED_SEARCH_META_QUERY = "%100!%!_!!%"
@@ -233,6 +233,7 @@ class DiscoveryRepositoryTest {
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
+                BookTable.GENRE_ID,
                 BookTable.GENRE,
                 DSL.field("need_tag_id", Long::class.java),
                 DSL.field("need_tag_label", String::class.java),
