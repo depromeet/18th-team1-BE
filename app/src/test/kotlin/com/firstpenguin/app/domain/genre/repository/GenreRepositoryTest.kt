@@ -26,6 +26,18 @@ class GenreRepositoryTest {
         )
     }
 
+    @Test
+    fun `장르 ID 존재 여부를 조회한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                GenreRepository(dsl).existsById(GENRE_ID)
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("from \"genres\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"genres\".\"id\" = ?"), normalizedSql)
+    }
+
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
         var capturedSql = ""
         lateinit var dsl: DSLContext
@@ -33,11 +45,31 @@ class GenreRepositoryTest {
             MockConnection(
                 MockDataProvider { context ->
                     capturedSql = context.sql()
-                    arrayOf(MockResult(0, dsl.newResult(GenreTable.ID, GenreTable.LABEL, GenreTable.SORT_ORDER)))
+                    arrayOf(resultFor(capturedSql, dsl))
                 },
             )
         dsl = DSL.using(connection, SQLDialect.POSTGRES)
         repositoryCall(dsl)
         return capturedSql
+    }
+
+    private fun resultFor(
+        sql: String,
+        dsl: DSLContext,
+    ): MockResult {
+        if (sql.contains("exists")) return existsResult(dsl)
+
+        return MockResult(0, dsl.newResult(GenreTable.ID, GenreTable.LABEL, GenreTable.SORT_ORDER))
+    }
+
+    private fun existsResult(dsl: DSLContext): MockResult {
+        val existsField = DSL.field("exists", Boolean::class.java)
+        val result = dsl.newResult(existsField)
+        result.add(dsl.newRecord(existsField).apply { set(existsField, true) })
+        return MockResult(1, result)
+    }
+
+    private companion object {
+        const val GENRE_ID = 1L
     }
 }
