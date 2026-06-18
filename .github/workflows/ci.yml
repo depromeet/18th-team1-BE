@@ -15,6 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Flyway 마이그레이션 버전 중복 검사
+        working-directory: .
+        run: |
+          duplicates=$(find app/src/main/resources/db/migration -maxdepth 1 -name 'V*.sql' \
+            -exec basename {} \; \
+            | sed -E 's/^V([0-9]+)__.*/\1/' \
+            | sort \
+            | uniq -d)
+
+          if [ -n "$duplicates" ]; then
+            echo "Flyway 마이그레이션 버전 중복:"
+            echo "$duplicates"
+            exit 1
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
