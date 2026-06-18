@@ -61,6 +61,15 @@ class UserServiceTest {
     }
 
     @Test
+    fun `탈퇴 요청 상태 사용자는 인증 실패`() {
+        Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(user(status = UserStatus.WITHDRAWAL_REQUESTED))
+
+        val exception = assertFailsWith<CustomException> { userService.validateAuthenticatableUser(USER_ID) }
+
+        assertEquals(ErrorCode.AUTH_USER_DELETED, exception.errorCode)
+    }
+
+    @Test
     fun `활성 사용자는 인증 가능`() {
         Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(user())
 
@@ -119,8 +128,25 @@ class UserServiceTest {
         }
     }
 
+    @Test
+    fun `회원 탈퇴 요청 시 탈퇴 요청 상태와 유예 만료 시각을 저장한다`() {
+        Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(user())
+        Mockito
+            .`when`(userRepository.requestWithdrawal(Mockito.eq(USER_ID), anyDateTime(), anyDateTime()))
+            .thenReturn(1)
+
+        userService.requestWithdrawal(USER_ID)
+
+        Mockito.verify(userRepository).requestWithdrawal(Mockito.eq(USER_ID), anyDateTime(), anyDateTime())
+    }
+
     private fun nicknameDuplicateException(): DuplicateKeyException =
         DuplicateKeyException("duplicate key value violates unique constraint \"$USER_NICKNAME_UNIQUE_INDEX_NAME\"")
+
+    private fun anyDateTime(): LocalDateTime {
+        Mockito.any(LocalDateTime::class.java)
+        return LocalDateTime.MIN
+    }
 
     private fun user(
         status: UserStatus = UserStatus.ACTIVE,
@@ -133,6 +159,8 @@ class UserServiceTest {
             nickname = "penguin",
             profileImageId = null,
             status = status,
+            withdrawalRequestedAt = null,
+            withdrawalDueAt = null,
             deletedAt = deletedAt,
             createdAt = now,
             updatedAt = now,
