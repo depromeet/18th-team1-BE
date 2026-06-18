@@ -1,0 +1,43 @@
+package com.firstpenguin.app.domain.genre.repository
+
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
+import org.jooq.DSLContext
+import org.jooq.SQLDialect
+import org.jooq.impl.DSL
+import org.jooq.tools.jdbc.MockConnection
+import org.jooq.tools.jdbc.MockDataProvider
+import org.jooq.tools.jdbc.MockResult
+import org.junit.jupiter.api.Test
+import kotlin.test.assertTrue
+
+class GenreRepositoryTest {
+    @Test
+    fun `장르 목록은 정렬 순서와 ID 기준으로 조회한다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                GenreRepository(dsl).findAll()
+            }
+        val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedSql.contains("from \"genres\""), normalizedSql)
+        assertTrue(
+            normalizedSql.contains("order by \"genres\".\"sort_order\" asc, \"genres\".\"id\" asc"),
+            normalizedSql,
+        )
+    }
+
+    private fun captureSql(repositoryCall: (DSLContext) -> Unit): String {
+        var capturedSql = ""
+        lateinit var dsl: DSLContext
+        val connection =
+            MockConnection(
+                MockDataProvider { context ->
+                    capturedSql = context.sql()
+                    arrayOf(MockResult(0, dsl.newResult(GenreTable.ID, GenreTable.LABEL, GenreTable.SORT_ORDER)))
+                },
+            )
+        dsl = DSL.using(connection, SQLDialect.POSTGRES)
+        repositoryCall(dsl)
+        return capturedSql
+    }
+}
