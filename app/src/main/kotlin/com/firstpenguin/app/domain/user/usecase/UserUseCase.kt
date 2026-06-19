@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.auth.service.RefreshTokenService
 import com.firstpenguin.app.domain.image.service.ImageService
 import com.firstpenguin.app.domain.user.dto.UpdateUserRequest
 import com.firstpenguin.app.domain.user.dto.UserResponse
+import com.firstpenguin.app.domain.user.dto.UserSignupDateResponse
 import com.firstpenguin.app.domain.user.service.OAuthUserService
 import com.firstpenguin.app.domain.user.service.UserService
 import com.firstpenguin.app.global.exception.CustomException
@@ -18,6 +19,9 @@ class UserUseCase(
     private val refreshTokenService: RefreshTokenService,
     private val userService: UserService,
 ) {
+    @Transactional(readOnly = true)
+    fun getSignupDate(userId: Long): UserSignupDateResponse = UserSignupDateResponse.from(userService.getById(userId))
+
     @Transactional(readOnly = true)
     fun getMe(userId: Long): UserResponse {
         val user = userService.getById(userId)
