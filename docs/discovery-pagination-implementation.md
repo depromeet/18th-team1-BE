@@ -81,12 +81,13 @@ MjAyNi0wNi0wNVQxMjozNDo1NnwxMA
 
 ## 조회 방식
 
-기존 발견탭 후보 생성 방식은 유지했다.
+발견탭은 최종 선택이 완료되고 삭제되지 않은 추천 이력만 사용한다.
 
-- `daily_recommendations`
-- `daily_recommendation_quotes`
+- `recommendations.quote_id IS NOT NULL`
+- `recommendations.deleted_at IS NULL`
 
-두 추천 이력 테이블을 `UNION ALL`로 합친 뒤, 같은 문장이 여러 번 추천됐으면 최신 추천 이력 1개를 대표 이벤트로 사용한다.
+`recommendation_quotes`는 추천 후보 목록이므로 발견탭에서 사용하지 않는다.
+같은 문장이 여러 번 최종 선택됐으면 최신 추천 이력 1개를 대표 이벤트로 사용한다.
 삭제된 문장과 삭제된 책은 제외한다.
 로그인 사용자의 스크랩 여부는 `quote_scraps`를 left join해서 계산한다.
 
@@ -124,7 +125,8 @@ OR (recommended_at = :recommendedAt AND quote_id < :quoteId)
 
 다음 시나리오를 검증했다.
 
-- 추천 이력 테이블을 합쳐 최신순으로 조회한다.
+- 최종 선택되고 삭제되지 않은 추천 문장만 최신순으로 조회한다.
+- 추천 후보 테이블을 조회하지 않는다.
 - 커서가 있으면 다음 페이지 조건을 추가한다.
 - 응답은 11개 조회 결과 중 10개만 반환한다.
 - 11개가 조회되면 `hasNext=true`, `nextCursor`를 반환한다.
@@ -140,11 +142,9 @@ cd app && ./gradlew formatKotlin lintKotlin detekt
 
 ## 아직 최적화하지 않은 부분
 
-현재 쿼리는 추천 이력을 합치고 `row_number()`로 최신 대표 이벤트를 뽑는다.
+현재 쿼리는 최종 선택된 추천 이력에서 `row_number()`로 최신 대표 이벤트를 뽑는다.
 데이터가 많아지면 다음 지점을 확인해야 한다.
 
 - `recommended_at`, `quote_id` 기반 정렬/커서 조건에 맞는 인덱스 필요 여부
-- `UNION ALL` 후보 테이블 규모 증가 시 실행 계획
 - 최신 대표 이벤트를 매번 계산하지 않고 별도 materialized view나 캐시로 관리할지 여부
 - `nextCursor`에 서명 값을 붙여 클라이언트 조작을 더 강하게 막을지 여부
-
