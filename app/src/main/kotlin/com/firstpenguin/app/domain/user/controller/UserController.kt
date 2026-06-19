@@ -4,6 +4,7 @@ import com.firstpenguin.app.domain.auth.model.AuthenticatedUser
 import com.firstpenguin.app.domain.auth.token.RefreshTokenCookieManager
 import com.firstpenguin.app.domain.user.dto.UpdateUserRequest
 import com.firstpenguin.app.domain.user.dto.UserResponse
+import com.firstpenguin.app.domain.user.dto.UserSignupDateResponse
 import com.firstpenguin.app.domain.user.usecase.UserUseCase
 import com.firstpenguin.app.global.response.ErrorResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -21,17 +22,52 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/users")
-@Tag(name = "사용자", description = "로그인한 사용자 정보 API")
+@Tag(name = "사용자", description = "사용자 정보 API")
 class UserController(
     private val refreshTokenCookieManager: RefreshTokenCookieManager,
     private val userUseCase: UserUseCase,
 ) {
+    @GetMapping("/{userId}/signup-date")
+    @Operation(
+        summary = "사용자 가입일 조회",
+        description = "인증 없이 사용자 ID로 가입일을 조회합니다. signupDate는 yyyy-MM-dd 형식입니다.",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "사용자 가입일 조회 성공",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = UserSignupDateResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "사용자를 찾을 수 없습니다.",
+                content = [
+                    Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = Schema(implementation = ErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun getSignupDate(
+        @Parameter(description = "사용자 ID", example = "1")
+        @PathVariable userId: Long,
+    ): UserSignupDateResponse = userUseCase.getSignupDate(userId)
+
     @GetMapping("/me")
     @Operation(
         summary = "내 정보 조회",

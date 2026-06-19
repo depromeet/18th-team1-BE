@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 
 class DiscoveryRepositoryTest {
     @Test
-    fun `추천 이력 테이블을 합쳐 최신순 문장을 조회한다`() {
+    fun `최종 선택되고 삭제되지 않은 추천 문장만 최신순으로 조회한다`() {
         val capturedSql =
             captureSql { dsl ->
                 DiscoveryRepository(dsl).findRecommendedQuotes(
@@ -35,10 +35,7 @@ class DiscoveryRepositoryTest {
             }
         val normalizedSql = capturedSql.replace(Regex("\\s+"), " ")
 
-        assertTrue(normalizedSql.contains("recommendations"), normalizedSql)
-        assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
-        assertFalse(normalizedSql.contains("daily_recommendation_quotes"), normalizedSql)
-        assertFalse(normalizedSql.contains("daily_recommendation_id"), normalizedSql)
+        assertSelectedRecommendationsOnly(normalizedSql)
         assertTrue(normalizedSql.contains("recommended_user_id"), normalizedSql)
         assertTrue(normalizedSql.contains("join \"users\""), normalizedSql)
         assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
@@ -53,7 +50,6 @@ class DiscoveryRepositoryTest {
         assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_scraps\".\"user_id\" = ?"), normalizedSql)
         assertTrue(normalizedSql.contains("row_number()"), normalizedSql)
-        assertTrue(normalizedSql.contains(" union all "), normalizedSql)
         assertTrue(
             normalizedSql.contains(
                 "order by \"ranked_recommendation_events\".\"recommended_at\" desc, \"quotes\".\"id\" desc",
@@ -115,6 +111,7 @@ class DiscoveryRepositoryTest {
         assertFalse(normalizedSql.contains("\"books\".\"title\" ilike"), normalizedSql)
         assertFalse(normalizedSql.contains("\"books\".\"author\" ilike"), normalizedSql)
         assertFalse(normalizedSql.contains("\"users\".\"nickname\" ilike"), normalizedSql)
+        assertSelectedRecommendationsOnly(normalizedSql)
         assertTrue(
             normalizedSql.contains(
                 "order by \"ranked_recommendation_events\".\"recommended_at\" desc, \"quotes\".\"id\" desc",
@@ -177,6 +174,14 @@ class DiscoveryRepositoryTest {
     }
 
     private fun captureSql(repositoryCall: (DSLContext) -> Unit): String = captureQuery(repositoryCall).sql
+
+    private fun assertSelectedRecommendationsOnly(normalizedSql: String) {
+        assertTrue(normalizedSql.contains("from \"recommendations\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"recommendations\".\"quote_id\" is not null"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"recommendations\".\"deleted_at\" is null"), normalizedSql)
+        assertFalse(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertFalse(normalizedSql.contains(" union all "), normalizedSql)
+    }
 
     private fun captureQuery(repositoryCall: (DSLContext) -> Unit): CapturedQuery {
         var capturedSql = ""

@@ -4,7 +4,6 @@ import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementBook
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
-import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -18,16 +17,14 @@ import java.time.LocalDate
 class MonthlySettlementQuoteAggregationRepository(
     private val dsl: DSLContext,
 ) {
-    fun countRecommendedQuotes(
+    fun countSelectedQuotes(
         userId: Long,
         start: LocalDate,
         endExclusive: LocalDate,
     ): Int =
         dsl
             .selectCount()
-            .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
-            .join(RecommendationTable.RECOMMENDATIONS)
-            .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
+            .from(RecommendationTable.RECOMMENDATIONS)
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .fetchOne(0, Int::class.java) ?: 0
 
@@ -38,11 +35,9 @@ class MonthlySettlementQuoteAggregationRepository(
     ): String? =
         dsl
             .select(GenreTable.LABEL)
-            .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
-            .join(RecommendationTable.RECOMMENDATIONS)
-            .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
+            .from(RecommendationTable.RECOMMENDATIONS)
             .join(QuoteTable.QUOTES)
-            .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
+            .on(QuoteTable.ID.eq(RecommendationTable.QUOTE_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
             .join(GenreTable.GENRES)
@@ -51,11 +46,11 @@ class MonthlySettlementQuoteAggregationRepository(
             .and(activeQuoteAndBookCondition())
             .and(genreLabelExists())
             .groupBy(GenreTable.LABEL)
-            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), GenreTable.LABEL.asc())
+            .orderBy(DSL.count(RecommendationTable.ID).desc(), GenreTable.LABEL.asc())
             .limit(1)
             .fetchOne(GenreTable.LABEL)
 
-    fun findRecommendedBooksByGenre(
+    fun findSelectedBooksByGenre(
         userId: Long,
         start: LocalDate,
         endExclusive: LocalDate,
@@ -66,11 +61,9 @@ class MonthlySettlementQuoteAggregationRepository(
 
         return dsl
             .select(MONTHLY_BOOK_FIELDS)
-            .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
-            .join(RecommendationTable.RECOMMENDATIONS)
-            .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
+            .from(RecommendationTable.RECOMMENDATIONS)
             .join(QuoteTable.QUOTES)
-            .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
+            .on(QuoteTable.ID.eq(RecommendationTable.QUOTE_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
             .join(GenreTable.GENRES)
@@ -79,7 +72,7 @@ class MonthlySettlementQuoteAggregationRepository(
             .and(activeQuoteAndBookCondition())
             .and(GenreTable.LABEL.eq(genre))
             .groupBy(MONTHLY_BOOK_FIELDS)
-            .orderBy(DSL.count(RecommendationQuoteTable.ID).desc(), BookTable.ID.asc())
+            .orderBy(DSL.count(RecommendationTable.ID).desc(), BookTable.ID.asc())
             .limit(limit)
             .fetch(::toMonthlyBookCandidate)
     }
@@ -113,6 +106,8 @@ class MonthlySettlementQuoteAggregationRepository(
             .eq(userId)
             .and(RecommendationTable.RECOMMENDATION_DATE.ge(start))
             .and(RecommendationTable.RECOMMENDATION_DATE.lt(endExclusive))
+            .and(RecommendationTable.QUOTE_ID.isNotNull)
+            .and(RecommendationTable.DELETED_AT.isNull)
 
     private fun activeQuoteAndBookCondition(): Condition =
         QuoteTable.DELETED_AT

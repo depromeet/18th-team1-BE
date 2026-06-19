@@ -20,7 +20,8 @@ internal object SharedCalendarImageHeaderHelper {
         month: LocalDate,
         books: Map<Int, List<String>>,
     ): ByteArray {
-        val template = readTemplate()
+        val layout = calendarLayout(month)
+        val template = readTemplate(layout.templatePath)
         val image = BufferedImage(template.width, template.height, BufferedImage.TYPE_INT_ARGB)
         val graphics = image.createGraphics()
         val loadedBooks = books.mapValues { (_, urls) -> urls.mapNotNull(SafeRemoteImageLoader::readOrNull) }
@@ -29,7 +30,7 @@ internal object SharedCalendarImageHeaderHelper {
             graphics.configureRendering()
             graphics.drawImage(template, 0, 0, null)
             graphics.drawHeader(month)
-            graphics.drawCalendar(month, loadedBooks)
+            graphics.drawCalendar(month, loadedBooks, layout)
         } finally {
             graphics.dispose()
         }
@@ -46,6 +47,7 @@ internal object SharedCalendarImageHeaderHelper {
     private fun Graphics2D.drawCalendar(
         month: LocalDate,
         books: Map<Int, List<BufferedImage>>,
+        layout: CalendarLayout,
     ) {
         val firstDay = month.withDayOfMonth(1)
         val lastDay = firstDay.lengthOfMonth()
@@ -57,7 +59,7 @@ internal object SharedCalendarImageHeaderHelper {
             val col = offset % 7
             val row = offset / 7
             val cellX = COLUMN_CENTERS[col] - (CELL_WIDTH / 2).toInt()
-            val cellY = FIRST_CELL_TOP + row * SLOT_HEIGHT
+            val cellY = layout.firstCellTop + row * layout.slotHeight
             drawCell(cellX, cellY)
             drawDayNumber(day, cellX, cellY)
         }
@@ -67,7 +69,7 @@ internal object SharedCalendarImageHeaderHelper {
             val col = offset % 7
             val row = offset / 7
             val coverCenterX = COLUMN_CENTERS[col]
-            val cellCenterY = FIRST_CELL_TOP + row * SLOT_HEIGHT + (CELL_HEIGHT / 2).toInt()
+            val cellCenterY = layout.firstCellTop + row * layout.slotHeight + (CELL_HEIGHT / 2).toInt()
             val coverY = cellCenterY - COVER_HEIGHT / 2
             drawStackedCovers(coverImages, coverCenterX, coverY)
         }
@@ -162,6 +164,21 @@ internal object SharedCalendarImageHeaderHelper {
     }
 }
 
+private data class CalendarLayout(
+    val templatePath: String,
+    val firstCellTop: Int,
+    val slotHeight: Int,
+)
+
+private fun calendarLayout(month: LocalDate): CalendarLayout {
+    val firstDay = month.withDayOfMonth(1)
+    val startCol = firstDay.dayOfWeek.value % DAYS_IN_WEEK
+    val rowCount = (startCol + firstDay.lengthOfMonth() + DAYS_IN_WEEK - 1) / DAYS_IN_WEEK
+    if (rowCount >= SIX_WEEK_ROW_COUNT) return SIX_WEEK_LAYOUT
+
+    return DEFAULT_LAYOUT
+}
+
 private fun Graphics2D.configureRendering() {
     setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
@@ -193,13 +210,13 @@ private fun BufferedImage.isLightNear(
     return total / (count * 3) >= LIGHT_COVER_THRESHOLD
 }
 
-private fun readTemplate(): BufferedImage =
+private fun readTemplate(templatePath: String): BufferedImage =
     SharedCalendarImageHeaderHelper::class
         .java
         .classLoader
-        .getResourceAsStream(TEMPLATE_PATH)
+        .getResourceAsStream(templatePath)
         ?.use { stream -> ImageIO.read(stream) }
-        ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $TEMPLATE_PATH")
+        ?: throw IllegalStateException("공유 이미지 템플릿을 읽을 수 없습니다: $templatePath")
 
 private fun font(
     path: String,
@@ -234,6 +251,7 @@ private val COLUMN_CENTERS = intArrayOf(160, 285, 410, 535, 660, 785, 910)
 
 private const val IMAGE_FORMAT = "png"
 private const val TEMPLATE_PATH = "images/shareviews/shareview_5.png"
+private const val SIX_WEEK_TEMPLATE_PATH = "images/shareviews/shareview_5_6w.png"
 
 private const val HEADER_X = 87
 private const val HEADER_BASELINE_Y = 190
@@ -241,7 +259,11 @@ private const val HEADER_FONT_SIZE = 90F
 private const val HEADER_FONT_PATH = "fonts/GT-Pressura-Bold-Trial.otf"
 
 private const val FIRST_CELL_TOP = 585
+private const val SIX_WEEK_FIRST_CELL_TOP = 550
 private const val SLOT_HEIGHT = 240
+private const val SIX_WEEK_SLOT_HEIGHT = 202
+private const val SIX_WEEK_ROW_COUNT = 6
+private const val DAYS_IN_WEEK = 7
 private const val CELL_WIDTH = 110F
 private const val CELL_HEIGHT = 110F
 private const val CELL_ARC = 20F
@@ -267,3 +289,5 @@ private val CELL_BG_COLOR = Color(0xF7, 0xF7, 0xF7)
 private val DAY_TEXT_COLOR = Color(0xDC, 0xDC, 0xDC)
 
 private val HEADER_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH)
+private val DEFAULT_LAYOUT = CalendarLayout(TEMPLATE_PATH, FIRST_CELL_TOP, SLOT_HEIGHT)
+private val SIX_WEEK_LAYOUT = CalendarLayout(SIX_WEEK_TEMPLATE_PATH, SIX_WEEK_FIRST_CELL_TOP, SIX_WEEK_SLOT_HEIGHT)

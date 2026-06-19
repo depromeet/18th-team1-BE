@@ -22,7 +22,7 @@ class MonthlySettlementController(
 ) {
     @Operation(
         summary = "월말 결산 조회 API",
-        description = "사용자가 해당 월에 추천받은 문장 기준의 월말 결산을 조회한다.",
+        description = "사용자가 해당 월에 최종 선택한 추천 문장 기준의 월말 결산을 조회한다.",
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @GetMapping

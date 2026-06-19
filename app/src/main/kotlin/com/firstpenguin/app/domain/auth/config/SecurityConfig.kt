@@ -117,10 +117,12 @@ class SecurityConfig(
                 "/oauth2/**",
                 "/login/oauth2/**",
                 "/monthly-settlements/shared",
+                "/users/*/signup-date",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**",
                 "/error",
+                "/system/environment",
                 "/actuator/health",
             )
     }

@@ -2,10 +2,10 @@
 
 ## 목표
 
-월말 결산은 사용자가 해당 월에 추천받은 문장을 기준으로 한 달의 장르와 감정 흐름을 보여주는 기능이다.
+월말 결산은 사용자가 해당 월에 최종 선택한 추천 문장을 기준으로 한 달의 장르와 감정 흐름을 보여주는 기능이다.
 
-별도 지시가 없다면 월말 결산에서 말하는 "문장"은 일기 작성에 사용한 문장이 아니라 추천받은 문장이다.
-최신 dev 기준으로 추천받은 문장의 source table은 `recommendation_quotes`다.
+별도 지시가 없다면 월말 결산에서 말하는 "문장"은 추천 후보가 아니라 사용자가 최종 선택한 문장이다.
+최종 선택 문장의 source column은 `recommendations.quote_id`다.
 
 관련 이슈: #103
 
@@ -16,7 +16,8 @@
 | 구분 | 최신 테이블 |
 |------|-------------|
 | 추천 요청 | `recommendations` |
-| 추천받은 문장 | `recommendation_quotes` |
+| 최종 선택한 문장 | `recommendations.quote_id` |
+| 추천 후보 문장 | `recommendation_quotes` |
 | 추천 요청 시 입력한 태그 | `recommendation_tags` |
 
 책 장르 source column은 현재 `books.category`다.
@@ -105,8 +106,8 @@ Authorization: Bearer {accessToken}
 
 | 필드 | 설명 |
 |------|------|
-| `sharedQuoteCount` | 해당 월에 추천받은 문장 수 |
-| `mostFrequentGenre` | 추천받은 문장 기준으로 가장 많이 등장한 책 장르 |
+| `sharedQuoteCount` | 해당 월에 최종 선택한 추천 문장 수 |
+| `mostFrequentGenre` | 최종 선택한 문장 기준으로 가장 많이 등장한 책 장르 |
 | `monthlyBooks` | `mostFrequentGenre`에 해당하는 책 3권. 같은 장르의 전체 책 후보가 3권 미만이면 가능한 만큼 반환 |
 | `emotionTags` | 추천 요청 시 입력한 감정 태그 통계. 최소 1개, 최대 10개 |
 | `recommendationMessage` | 1등 감정과 월을 사용한 결산 문장 |
@@ -124,28 +125,28 @@ recommendation_date < next-month-01
 기본 추천 문장 source는 다음과 같다.
 
 ```text
-recommendations
--> recommendation_quotes
--> quotes
+recommendations.quote_id
+-> quotes.id
 -> books
 ```
 
 `recommendations.quote_id`는 사용자가 선택한 최종 문장이다.
-월말 결산의 "함께한 문장"은 추천받은 후보 문장 전체이므로 `recommendation_quotes`만 기준으로 집계한다.
+`recommendation_quotes`는 추천 1회에서 노출한 후보 문장 목록이므로 월말 결산 집계에서 사용하지 않는다.
+최종 선택이 완료되지 않은 추천과 삭제된 추천은 모든 월말 결산 집계에서 제외한다.
 
 ## 1. 함께한 문장
 
-`sharedQuoteCount`는 해당 월 `recommendation_quotes` row 수다.
+`sharedQuoteCount`는 해당 월의 `recommendations.quote_id IS NOT NULL`이고 `deleted_at IS NULL`인 추천 row 수다.
 
-같은 quote가 여러 번 추천되면 여러 번 함께한 문장으로 센다.
-같은 책의 여러 문장이 추천된 경우에도 문장 기준으로 각각 센다.
+같은 quote를 여러 추천에서 최종 선택하면 추천 횟수만큼 함께한 문장으로 센다.
+추천 후보 10개를 생성해도 최종 선택한 문장 1개만 센다.
 
 ## 2. 해당 월의 장르
 
-추천받은 문장의 `quote_id`를 `quotes.book_id`로 변환하고, 다시 `books.category`를 읽어 장르를 집계한다.
+최종 선택한 `recommendations.quote_id`를 `quotes.book_id`로 변환하고, 책의 장르를 집계한다.
 
-장르 count는 문장 기준이다.
-같은 책의 여러 문장이 추천되면 해당 책의 장르 count가 문장 수만큼 증가한다.
+장르 count는 최종 선택된 추천 문장 기준이다.
+같은 책의 여러 문장을 최종 선택하면 해당 책의 장르 count가 선택 횟수만큼 증가한다.
 
 `books.category`가 `NULL`이거나 blank인 책은 장르 집계에서 제외한다.
 
@@ -163,8 +164,8 @@ genre ASC
 `monthlyBooks`는 `mostFrequentGenre`에 속한 책 3권이다.
 같은 장르의 전체 책 후보가 3권 미만일 때만 가능한 개수만 반환한다.
 
-우선 해당 월에 추천받은 문장들의 책 중 `mostFrequentGenre`에 해당하는 책을 고른다.
-같은 책의 여러 문장이 추천되면 책 ranking count는 해당 문장 수만큼 증가한다.
+우선 해당 월에 최종 선택한 문장들의 책 중 `mostFrequentGenre`에 해당하는 책을 고른다.
+같은 책의 문장을 여러 번 최종 선택하면 책 ranking count는 선택 횟수만큼 증가한다.
 
 정렬 기준은 다음 순서로 고정한다.
 
@@ -197,7 +198,7 @@ recommendations
 ```
 
 `tags.type = 'EMOTION'`인 태그만 집계한다.
-감정 count는 추천 요청 단위로 증가한다.
+감정 count는 최종 선택이 완료된 추천 요청 단위로 증가한다.
 해당 추천 요청에서 더보기로 여러 문장을 받았더라도 감정 태그 count를 `recommendation_quotes` row 수만큼 곱하지 않는다.
 
 정렬 기준은 다음 순서로 고정한다.
@@ -232,19 +233,16 @@ tags.id ASC
 
 `monthlyBook`은 1등 감정을 기준으로 찾은 문장 1개와 그 문장의 책이다.
 
-후보 문장은 `quote_metadata_tags` 기준으로 찾는다.
-즉, 추천 요청 때 입력한 1등 감정과 같은 tag를 가진 문장 메타데이터를 찾고, 그 문장이 속한 책을 반환한다.
+후보 문장은 해당 월에 최종 선택한 문장 중 `quote_metadata_tags`가 1등 감정과 일치하는 문장이다.
+추천 후보로 노출됐지만 사용자가 선택하지 않은 문장은 제외한다.
 
 ```text
-tags.id = top emotion tag id
--> quote_metadata_tags.tag_id
+recommendations.quote_id
 -> quote_metadata.quote_id
+-> quote_metadata_tags.tag_id = top emotion tag id
 -> quotes
 -> books
 ```
-
-후보는 전체 문장 풀에서 찾는다.
-해당 월에 이미 추천받은 문장 제외 정책은 이번 범위에 넣지 않는다.
 
 후보가 여러 개면 월말 결산 생성 시 랜덤으로 1개를 선정한다.
 선정된 quote와 book 정보는 월말 결산 스냅샷에 저장하고 이후 조회에서 바꾸지 않는다.
@@ -376,11 +374,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS monthly_settlement_books_settlement_sort_uidx
 
 ```text
 종료된 월이고,
-해당 월에 사용자의 recommendation_quotes row가 1개 이상 있고,
+해당 월에 사용자가 최종 선택하고 삭제하지 않은 recommendations row가 1개 이상 있고,
 monthly_settlements에 해당 user_id/year/month row가 없다.
 ```
 
-누락 사용자 조회는 `recommendations`와 `recommendation_quotes`를 기준으로 한다.
+누락 사용자 조회는 `recommendations.quote_id IS NOT NULL`과 `recommendations.deleted_at IS NULL`을 기준으로 한다.
 스케줄러 재실행 시 누락된 사용자만 다시 생성할 수 있어야 한다.
 
 조회 API에서도 과거 월인데 결산 row가 없고 추천 문장이 존재하면 즉시 생성해 복구한다.
@@ -448,9 +446,9 @@ if (!requestedMonth.isBefore(currentMonth)) {
 
 단위 테스트는 다음 시나리오를 검증한다.
 
-- `sharedQuoteCount`는 `recommendation_quotes` row 수 기준이다.
-- `recommendations.quote_id`는 함께한 문장 수 집계에 사용하지 않는다.
-- 같은 책의 여러 문장이 추천되면 장르 count는 문장 수만큼 증가한다.
+- `sharedQuoteCount`는 최종 선택이 완료되고 삭제되지 않은 `recommendations` row 수 기준이다.
+- `recommendation_quotes`의 추천 후보는 문장 수, 장르, 책 순위, 이달의 책 집계에서 제외한다.
+- 같은 책의 여러 문장을 최종 선택하면 장르 count는 선택 횟수만큼 증가한다.
 - top genre는 `books.category` 기준으로 결정하되 코드 개념명은 genre를 사용한다.
 - top genre 책 3권은 추천받은 책을 우선 사용한다.
 - 추천받은 top genre 책이 3권 미만이면 같은 장르의 다른 책으로 채운다.

@@ -2,8 +2,8 @@
 
 ## 목표
 
-발견탭은 로그인 사용자가 추천받은 문장을 다시 탐색할 수 있는 목록 API다.
-목록에는 누군가에게 한 번이라도 추천된 문장만 노출한다.
+발견탭은 로그인 사용자가 다른 사용자가 최종 선택한 추천 문장을 탐색할 수 있는 목록 API다.
+목록에는 누군가가 추천 후보 중 최종 선택한 문장만 노출한다.
 
 첫 구현 범위는 랜덤 문장 10개 조회까지였다.
 이후 커서 페이지네이션, 장르 필터, 스크랩 생성/삭제 API를 별도 작업으로 확장했다.
@@ -60,30 +60,22 @@ access token이 없거나 만료/조작된 경우 기존 인증 에러 응답을
 
 ## DB
 
-발견탭 후보 문장 전용 테이블은 만들지 않는다.
-기존 추천 이력 테이블을 기준으로 후보를 만든다.
+발견탭 전용 테이블은 만들지 않는다.
+사용자의 최종 선택 결과인 `recommendations.quote_id`를 기준으로 목록을 만든다.
+`recommendation_quotes`는 추천 후보 목록이므로 발견탭 조회에 사용하지 않는다.
 
 ```sql
 SELECT
     quote_id,
     user_id AS recommended_user_id,
     created_at AS recommended_at
-FROM daily_recommendations
-
-UNION ALL
-
-SELECT
-    daily_recommendation_quotes.quote_id,
-    daily_recommendations.user_id AS recommended_user_id,
-    daily_recommendation_quotes.created_at AS recommended_at
-FROM daily_recommendation_quotes
-JOIN daily_recommendations
-    ON daily_recommendations.id = daily_recommendation_quotes.daily_recommendation_id
+FROM recommendations
+WHERE quote_id IS NOT NULL
+  AND deleted_at IS NULL
 ```
 
-같은 문장이라도 추천받은 사용자가 다르면 서로 다른 발견탭 카드로 노출할 수 있다.
-중복 제거 기준은 `quoteId` 단독이 아니라 `recommendedUserId + quoteId` 조합이다.
-같은 사용자가 같은 문장을 여러 번 추천받은 경우에는 최신 추천 이력 1개를 대표로 사용한다.
+같은 문장을 여러 사용자가 최종 선택해도 발견탭에는 한 번만 노출한다.
+중복 제거 기준은 `quoteId`이며, 가장 최근에 최종 선택한 추천 이력을 대표로 사용한다.
 삭제된 문장이나 삭제된 책은 응답에서 제외한다.
 
 ### 신규 테이블
@@ -111,14 +103,12 @@ CREATE INDEX IF NOT EXISTS quote_scraps_quote_id_idx
 
 ### 신규 인덱스
 
-추천 이력에서 후보를 모으므로 다음 인덱스를 추가한다.
+최종 선택된 추천 이력을 조회하므로 다음 인덱스를 사용한다.
 
 ```sql
-CREATE INDEX IF NOT EXISTS daily_recommendations_quote_id_idx
-    ON daily_recommendations (quote_id);
-
-CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
-    ON daily_recommendation_quotes (quote_id);
+CREATE INDEX IF NOT EXISTS recommendations_active_quote_id_idx
+    ON recommendations (quote_id)
+    WHERE deleted_at IS NULL;
 ```
 
 ## 구현 순서
@@ -131,9 +121,9 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
    - 발견탭에서는 별도 스크랩 service/repository를 호출하지 않는다.
    - `DiscoveryRepository`에서 `quote_scraps`를 직접 left join해 `isScrapped`를 계산한다.
 3. 발견탭 조회 repository를 만든다.
-   - 추천 이력에서 후보 `quote_id`, 추천받은 `user_id`, 추천 이력 `created_at`을 조회한다.
-   - 같은 `recommendedUserId + quoteId` 조합이 여러 번 추천됐으면 최신 추천 이력 1개를 대표로 사용한다.
-   - 같은 `quoteId`라도 `recommendedUserId`가 다르면 별도 카드로 응답할 수 있다.
+   - 완료되고 삭제되지 않은 추천에서 `quote_id`, 추천받은 `user_id`, 추천 이력 `created_at`을 조회한다.
+   - `recommendation_quotes`의 후보 문장은 조회하지 않는다.
+   - 같은 `quoteId`가 여러 번 최종 선택됐으면 최신 추천 이력 1개를 대표로 사용한다.
    - `quotes`, `books`를 join한다.
    - `quote_scraps`를 로그인 사용자 ID 기준으로 left join하고 `quote_scraps.id IS NOT NULL`을 `isScrapped`로 변환한다.
    - `ORDER BY random()`과 `LIMIT 10`으로 랜덤 목록을 가져온다.
@@ -150,10 +140,9 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
 
 ## 예외와 경계 조건
 
-추천 이력이 없으면 빈 목록을 반환한다.
-추천된 문장이 10개 미만이면 가능한 개수만 반환한다.
-같은 `recommendedUserId + quoteId` 조합이 여러 추천 이력에 있어도 한 번만 반환한다.
-같은 문장이라도 추천받은 사용자가 다르면 여러 번 반환될 수 있다.
+최종 선택된 추천 이력이 없으면 빈 목록을 반환한다.
+최종 선택된 문장이 10개 미만이면 가능한 개수만 반환한다.
+같은 `quoteId`가 여러 추천 이력에 있어도 한 번만 반환한다.
 
 인증 실패 처리 방식은 기존 JWT 필터와 security entry point를 따른다.
 
@@ -162,8 +151,9 @@ CREATE INDEX IF NOT EXISTS daily_recommendation_quotes_quote_id_idx
 단위 테스트는 다음 시나리오를 검증한다.
 
 - 로그인 사용자는 스크랩한 문장만 `isScrapped=true`로 응답한다.
-- 후보 추천 이력이 중복되어도 같은 `recommendedUserId + quoteId` 조합은 한 번만 응답한다.
-- 같은 `quoteId`라도 추천받은 사용자가 다르면 별도 응답으로 포함될 수 있다.
+- 최종 선택되고 삭제되지 않은 `recommendations.quote_id`만 조회한다.
+- `recommendation_quotes` 후보 문장은 조회하지 않는다.
+- 같은 `quoteId`의 최종 선택 이력이 중복되어도 한 번만 응답한다.
 - 추천 이력이 없으면 빈 목록을 반환한다.
 - 응답에 `recommendedUserId`, `recommendedAt`이 포함된다.
 
