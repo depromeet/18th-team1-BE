@@ -134,26 +134,6 @@ resource "google_compute_address" "api" {
 }
 
 # ============================================
-# Persistent Disk
-# ============================================
-resource "google_compute_disk" "postgres_data" {
-  name = "${var.env}-${var.service_name}-disk-postgres-data"
-  type = var.postgres_disk_type
-  zone = var.zone
-  size = var.postgres_disk_size_gb
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  labels = {
-    env     = var.env
-    service = var.service_name
-    role    = "postgres-data"
-  }
-}
-
-# ============================================
 # VM Instance
 # ============================================
 resource "google_compute_instance" "api" {
@@ -179,12 +159,6 @@ resource "google_compute_instance" "api" {
       size  = var.boot_disk_size_gb
       type  = var.boot_disk_type
     }
-  }
-
-  attached_disk {
-    source      = google_compute_disk.postgres_data.id
-    device_name = "postgres-data"
-    mode        = "READ_WRITE"
   }
 
   network_interface {

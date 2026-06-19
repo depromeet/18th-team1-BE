@@ -5,10 +5,8 @@ env          = "prod"
 service_name = "firstpenguin"
 machine_type = "e2-standard-2"
 
-boot_disk_size_gb     = 50
-boot_disk_type        = "pd-ssd"
-postgres_disk_size_gb = 100
-postgres_disk_type    = "pd-ssd"
+boot_disk_size_gb = 100
+boot_disk_type    = "pd-ssd"
 
 public_subnet_cidr     = "10.1.1.0/24"
 private_subnet_cidr    = "10.1.10.0/24"

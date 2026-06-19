@@ -36,23 +36,11 @@ variable "machine_type" {
 variable "boot_disk_size_gb" {
   description = "VM boot disk 크기(GB)"
   type        = number
-  default     = 50
+  default     = 100
 }
 
 variable "boot_disk_type" {
   description = "VM boot disk 타입"
-  type        = string
-  default     = "pd-ssd"
-}
-
-variable "postgres_disk_size_gb" {
-  description = "PostgreSQL 데이터 디스크 크기(GB)"
-  type        = number
-  default     = 100
-}
-
-variable "postgres_disk_type" {
-  description = "PostgreSQL 데이터 디스크 타입"
   type        = string
   default     = "pd-ssd"
 }

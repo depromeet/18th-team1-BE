@@ -22,8 +22,3 @@ output "service_account_email" {
   description = "API 서버 서비스 계정 이메일"
   value       = google_service_account.api.email
 }
-
-output "postgres_data_disk_name" {
-  description = "PostgreSQL 데이터 디스크 이름"
-  value       = google_compute_disk.postgres_data.name
-}
