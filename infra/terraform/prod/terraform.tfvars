@@ -3,7 +3,7 @@ region       = "asia-northeast3"
 zone         = "asia-northeast3-a"
 env          = "prod"
 service_name = "firstpenguin"
-machine_type = "e2-medium"
+machine_type = "e2-standard-2"
 
 boot_disk_size_gb     = 50
 boot_disk_type        = "pd-ssd"
@@ -14,9 +14,10 @@ public_subnet_cidr     = "10.1.1.0/24"
 private_subnet_cidr    = "10.1.10.0/24"
 internal_source_ranges = ["10.1.0.0/16"]
 
-ssh_source_ranges  = ["0.0.0.0/0"]
-app_source_ranges  = ["0.0.0.0/0"]
-icmp_source_ranges = ["0.0.0.0/0"]
+ssh_source_ranges      = ["0.0.0.0/0"]
+app_source_ranges      = ["0.0.0.0/0"]
+postgres_source_ranges = ["0.0.0.0/0"]
+icmp_source_ranges     = ["0.0.0.0/0"]
 
 gcs_cors_origins = [
   "https://senti.today",

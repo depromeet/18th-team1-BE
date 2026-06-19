@@ -30,7 +30,7 @@ variable "service_name" {
 variable "machine_type" {
   description = "VM 머신 타입"
   type        = string
-  default     = "e2-medium"
+  default     = "e2-standard-2"
 }
 
 variable "boot_disk_size_gb" {
@@ -83,6 +83,12 @@ variable "ssh_source_ranges" {
 
 variable "app_source_ranges" {
   description = "8080 애플리케이션 접근 허용 CIDR 목록"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "postgres_source_ranges" {
+  description = "5432 PostgreSQL 접근 허용 CIDR 목록"
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
