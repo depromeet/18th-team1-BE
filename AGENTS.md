@@ -41,6 +41,14 @@ docs/                 — 프로젝트 문서 (convention.md, husky.md)
 - 이미지처럼 여러 도메인이 참조하는 공용 리소스는 `images`와 `image_owners(image_id, owner_type, owner_id, sort_order)` 같은 느슨한 참조 구조를 우선 고려한다.
 - jOOQ는 SQL 생성과 실행을 돕는 도구이며 ORM 연관관계 매핑을 만들지 않는다. 애플리케이션 관계는 repository/usecase에서 명시적으로 조회한다.
 
+## 추천 데이터 규칙
+
+- `recommendations.quote_id`는 사용자가 최종 선택한 문장이다.
+- `recommendation_quotes`는 추천 1회에서 노출할 후보 문장 목록이며, 사용자의 선택 결과가 아니다.
+- 사용자 선택 이력, 통계, 결산, 발견탭처럼 최종 선택 결과를 사용하는 로직은 `recommendations.quote_id IS NOT NULL`을 기준으로 조회한다.
+- 삭제된 선택 결과를 제외해야 하는 조회는 `recommendations.deleted_at IS NULL` 조건도 함께 적용한다.
+- `recommendation_quotes`는 후보 노출, 선택 유효성 검증 등 후보 자체가 필요한 로직에서만 사용한다.
+
 ## 트랜잭션 규칙
 
 - `@Transactional`은 usecase 계층에만 선언한다.

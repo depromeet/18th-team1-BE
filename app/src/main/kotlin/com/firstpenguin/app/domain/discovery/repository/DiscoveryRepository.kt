@@ -11,7 +11,6 @@ import com.firstpenguin.app.domain.emotion.repository.table.TagTable
 import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
-import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTagTable
 import com.firstpenguin.app.domain.user.repository.UserTable
@@ -39,8 +38,8 @@ class DiscoveryRepository(
     ): List<DiscoveryQuote> {
         if (limit <= 0) return emptyList()
 
-        val recommendationEvents = recommendationEvents()
-        val rankedRecommendationEvents = rankedRecommendationEvents(recommendationEvents)
+        val selectedRecommendationEvents = selectedRecommendationEvents()
+        val rankedRecommendationEvents = rankedRecommendationEvents(selectedRecommendationEvents)
         val needTags = recommendationNeedTags()
         val scrapCount = DSL.inline(0).`as`(SCRAP_COUNT)
 
@@ -55,8 +54,8 @@ class DiscoveryRepository(
     fun searchRecommendedQuotes(criteria: DiscoveryQuoteSearchCriteria): List<DiscoveryQuote> {
         if (criteria.limit <= 0) return emptyList()
 
-        val recommendationEvents = recommendationEvents()
-        val rankedRecommendationEvents = rankedRecommendationEvents(recommendationEvents)
+        val selectedRecommendationEvents = selectedRecommendationEvents()
+        val rankedRecommendationEvents = rankedRecommendationEvents(selectedRecommendationEvents)
         val needTags = recommendationNeedTags()
         val quoteScrapCounts = quoteScrapCounts()
         val scrapCount = scrapCount(quoteScrapCounts)
@@ -251,7 +250,7 @@ class DiscoveryRepository(
             )
         }
 
-    private fun recommendationEvents(): Table<*> =
+    private fun selectedRecommendationEvents(): Table<*> =
         DSL
             .select(
                 RecommendationTable.ID.`as`(RECOMMENDATION_ID),
@@ -260,18 +259,9 @@ class DiscoveryRepository(
                 RecommendationTable.EMOTION_VALUE.`as`(RECOMMENDED_EMOTION_VALUE),
                 RecommendationTable.CREATED_AT.`as`(RECOMMENDED_AT),
             ).from(RecommendationTable.RECOMMENDATIONS)
-            .unionAll(
-                DSL
-                    .select(
-                        RecommendationQuoteTable.RECOMMENDATION_ID.`as`(RECOMMENDATION_ID),
-                        RecommendationQuoteTable.QUOTE_ID.`as`(RECOMMENDED_QUOTE_ID),
-                        RecommendationTable.USER_ID.`as`(RECOMMENDED_USER_ID),
-                        RecommendationTable.EMOTION_VALUE.`as`(RECOMMENDED_EMOTION_VALUE),
-                        RecommendationQuoteTable.CREATED_AT.`as`(RECOMMENDED_AT),
-                    ).from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
-                    .join(RecommendationTable.RECOMMENDATIONS)
-                    .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID)),
-            ).asTable(RECOMMENDATION_EVENTS)
+            .where(RecommendationTable.QUOTE_ID.isNotNull)
+            .and(RecommendationTable.DELETED_AT.isNull)
+            .asTable(SELECTED_RECOMMENDATION_EVENTS)
 
     private fun rankedRecommendationEvents(recommendationEvents: Table<*>): Table<*> =
         DSL
@@ -367,7 +357,7 @@ class DiscoveryRepository(
     }
 
     private companion object {
-        const val RECOMMENDATION_EVENTS = "recommendation_events"
+        const val SELECTED_RECOMMENDATION_EVENTS = "selected_recommendation_events"
         const val RANKED_RECOMMENDATION_EVENTS = "ranked_recommendation_events"
         const val RECOMMENDATION_NEED_TAGS = "recommendation_need_tags"
         const val QUOTE_SCRAP_COUNTS = "quote_scrap_counts"
