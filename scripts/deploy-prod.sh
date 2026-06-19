@@ -4,6 +4,8 @@ set -Eeuo pipefail
 APP_DIR="/opt/firstpenguin/app"
 CONFIG_DIR="$APP_DIR/config"
 COMPOSE_FILE="$APP_DIR/docker-compose-prod.yml"
+HEALTHCHECK_MAX_ATTEMPTS=24
+HEALTHCHECK_INTERVAL_SECONDS=5
 
 for required_file in "$APP_DIR/.env" "$COMPOSE_FILE" "$CONFIG_DIR/application-prod.yml"; do
   if [ ! -f "$required_file" ]; then
@@ -30,7 +32,7 @@ echo "=== 앱 재시작 ==="
 docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate app
 
 echo "=== 헬스체크 ==="
-for attempt in $(seq 1 12); do
+for attempt in $(seq 1 "$HEALTHCHECK_MAX_ATTEMPTS"); do
   if curl -sSf --connect-timeout 2 --max-time 3 \
     http://localhost:8080/api/actuator/health >/dev/null; then
     echo "헬스체크 성공"
@@ -39,10 +41,12 @@ for attempt in $(seq 1 12); do
     exit 0
   fi
 
-  echo "대기 중... ($attempt/12)"
-  sleep 5
+  echo "대기 중... ($attempt/$HEALTHCHECK_MAX_ATTEMPTS)"
+  if [ "$attempt" -lt "$HEALTHCHECK_MAX_ATTEMPTS" ]; then
+    sleep "$HEALTHCHECK_INTERVAL_SECONDS"
+  fi
 done
 
-echo "헬스체크 실패: 앱이 60초 내에 준비되지 않았습니다."
+echo "헬스체크 실패: 제한 시간 내에 앱이 준비되지 않았습니다."
 docker compose -f "$COMPOSE_FILE" logs --tail=100 app
 exit 1
