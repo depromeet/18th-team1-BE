@@ -1,28 +1,20 @@
 package com.firstpenguin.app.domain.system.controller
 
+import com.firstpenguin.app.domain.system.dto.EnvironmentResponse
+import com.firstpenguin.app.domain.system.usecase.SystemUseCase
 import org.junit.jupiter.api.Test
-import org.springframework.mock.env.MockEnvironment
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.mockito.Mockito
+import kotlin.test.assertSame
 
 class SystemControllerTest {
     @Test
-    fun `prod profile이면 prod true를 반환한다`() {
-        val environment = MockEnvironment().apply { setActiveProfiles("prod") }
-        val response = SystemController(environment, true).getEnvironment()
+    fun `환경 확인은 usecase로 위임한다`() {
+        val systemUseCase = Mockito.mock(SystemUseCase::class.java)
+        val response = EnvironmentResponse(listOf("prod"), prod = true, devTokenEnabled = true)
 
-        assertEquals(listOf("prod"), response.activeProfiles)
-        assertTrue(response.prod)
-        assertTrue(response.devTokenEnabled)
-    }
+        Mockito.`when`(systemUseCase.getEnvironment()).thenReturn(response)
 
-    @Test
-    fun `active profile이 없으면 default를 반환한다`() {
-        val response = SystemController(MockEnvironment(), false).getEnvironment()
-
-        assertEquals(listOf("default"), response.activeProfiles)
-        assertFalse(response.prod)
-        assertFalse(response.devTokenEnabled)
+        assertSame(response, SystemController(systemUseCase).getEnvironment())
+        Mockito.verify(systemUseCase).getEnvironment()
     }
 }
