@@ -24,6 +24,23 @@ class SecurityConfigTest {
         assertTrue(config.allowedMethods.orEmpty().contains(HttpMethod.PATCH.name()))
     }
 
+    @Test
+    fun `월말 결산 공유 조회 API는 인증 없이 접근할 수 있다`() {
+        assertTrue(permitAllPatterns().contains("/monthly-settlements/shared"))
+    }
+
+    @Test
+    fun `사용자 가입일 조회 API는 인증 없이 접근할 수 있다`() {
+        assertTrue(permitAllPatterns().contains("/users/*/signup-date"))
+    }
+
+    private fun permitAllPatterns(): List<String> {
+        val field = SecurityConfig::class.java.getDeclaredField("PERMIT_ALL_PATTERNS")
+        field.isAccessible = true
+
+        return (field.get(null) as Array<*>).filterIsInstance<String>()
+    }
+
     private fun securityConfig(): SecurityConfig =
         SecurityConfig(
             jwtAuthenticationFilter = Mockito.mock(JwtAuthenticationFilter::class.java),

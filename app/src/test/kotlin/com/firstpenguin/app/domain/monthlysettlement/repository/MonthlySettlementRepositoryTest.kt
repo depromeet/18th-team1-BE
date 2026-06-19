@@ -41,7 +41,7 @@ class MonthlySettlementRepositoryTest {
     }
 
     @Test
-    fun `가장 많이 만난 장르는 책 genre를 문장 기준으로 집계한다`() {
+    fun `가장 많이 만난 장르는 genre 기준 테이블 라벨을 문장 기준으로 집계한다`() {
         val capturedSql =
             captureSql { dsl ->
                 MonthlySettlementQuoteAggregationRepository(dsl).findMostFrequentGenre(
@@ -52,11 +52,12 @@ class MonthlySettlementRepositoryTest {
             }
         val normalizedSql = capturedSql.normalized()
 
-        assertTrue(normalizedSql.contains("\"books\".\"genre\""), normalizedSql)
-        assertTrue(normalizedSql.contains("\"books\".\"genre\" is not null"), normalizedSql)
-        assertTrue(normalizedSql.contains("trim(\"books\".\"genre\") <> ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"genres\".\"label\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"genres\".\"label\" is not null"), normalizedSql)
+        assertTrue(normalizedSql.contains("trim(\"genres\".\"label\") <> ?"), normalizedSql)
         assertTrue(
-            normalizedSql.contains("order by count(\"recommendation_quotes\".\"id\") desc, \"books\".\"genre\" asc"),
+            normalizedSql.contains("order by count(\"recommendation_quotes\".\"id\") desc, \"genres\".\"label\" asc"),
             normalizedSql,
         )
     }
@@ -76,6 +77,7 @@ class MonthlySettlementRepositoryTest {
 
         assertTrue(normalizedSql.contains("recommendation_tags"), normalizedSql)
         assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"emotion_range_id\""), normalizedSql)
         assertTrue(
             normalizedSql.contains(
                 "order by \"tag_count\" desc, \"tags\".\"sort_order\" asc, \"tags\".\"id\" asc",
@@ -99,6 +101,7 @@ class MonthlySettlementRepositoryTest {
         val normalizedSql = capturedSql.normalized()
 
         assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"genres\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"books\".\"aladin_link\""), normalizedSql)
         assertTrue(normalizedSql.contains("\"recommendations\".\"user_id\" = ?"), normalizedSql)
         assertTrue(
@@ -112,6 +115,28 @@ class MonthlySettlementRepositoryTest {
         assertTrue(normalizedSql.contains("quote_metadata_tags"), normalizedSql)
         assertTrue(normalizedSql.contains("quote_metadata"), normalizedSql)
         assertTrue(normalizedSql.contains("\"quote_metadata_tags\".\"tag_id\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("order by random()"), normalizedSql)
+    }
+
+    @Test
+    fun `이달의 책 후보는 정확한 태그가 없으면 같은 감정 범위의 quote metadata tag로 조회할 수 있다`() {
+        val capturedSql =
+            captureSql { dsl ->
+                MonthlySettlementEmotionAggregationRepository(dsl).findMonthlyBookCandidateByEmotionRangeId(
+                    userId = USER_ID,
+                    start = START,
+                    endExclusive = END_EXCLUSIVE,
+                    emotionRangeId = EMOTION_RANGE_ID,
+                )
+            }
+        val normalizedSql = capturedSql.normalized()
+
+        assertTrue(normalizedSql.contains("recommendation_quotes"), normalizedSql)
+        assertTrue(normalizedSql.contains("join \"tags\""), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"type\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("\"tags\".\"emotion_range_id\" = ?"), normalizedSql)
+        assertTrue(normalizedSql.contains("quote_metadata_tags"), normalizedSql)
+        assertTrue(normalizedSql.contains("group by"), normalizedSql)
         assertTrue(normalizedSql.contains("order by random()"), normalizedSql)
     }
 
@@ -183,6 +208,7 @@ class MonthlySettlementRepositoryTest {
         const val MONTH = 3
         const val SHARED_QUOTE_COUNT = 27
         const val TAG_ID = 10L
+        const val EMOTION_RANGE_ID = 1L
         const val TAG_LABEL = "무기력한"
         const val TAG_COUNT = 5
         const val EMOTION_TAG_LIMIT = 10

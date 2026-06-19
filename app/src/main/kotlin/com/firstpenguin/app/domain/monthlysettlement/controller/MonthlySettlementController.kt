@@ -38,4 +38,22 @@ class MonthlySettlementController(
                 month = month,
             ),
         )
+
+    @Operation(
+        summary = "월말 결산 공유 조회 API",
+        description = "공유 URL에서 토큰 없이 사용자 ID와 조회 월로 월말 결산을 조회한다.",
+    )
+    @GetMapping("/shared")
+    fun getSharedMonthlySettlement(
+        @Parameter(description = "조회 대상 사용자 ID", example = "1") @RequestParam userId: Long,
+        @Parameter(description = "조회 연도", example = "2026") @RequestParam year: Int,
+        @Parameter(description = "조회 월", example = "3") @RequestParam month: Int,
+    ): ResponseEntity<MonthlySettlementResponse> =
+        ResponseEntity.ok(
+            monthlySettlementUseCase.getMonthlySettlement(
+                userId = userId,
+                year = year,
+                month = month,
+            ),
+        )
 }

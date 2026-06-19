@@ -8,6 +8,7 @@ import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCriteria
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchCursor
 import com.firstpenguin.app.domain.discovery.model.DiscoveryQuoteSearchSort
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.quote.repository.QuoteScrapTable
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
@@ -89,6 +90,8 @@ class DiscoveryRepository(
         .on(QuoteTable.ID.eq(recommendedQuoteId(rankedRecommendationEvents)))
         .join(BookTable.BOOKS)
         .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+        .join(GenreTable.GENRES)
+        .on(GenreTable.ID.eq(BookTable.GENRE_ID))
         .leftJoin(QuoteScrapTable.QUOTE_SCRAPS)
         .on(QuoteScrapTable.QUOTE_ID.eq(QuoteTable.ID))
         .and(QuoteScrapTable.USER_ID.eq(userId))
@@ -232,7 +235,7 @@ class DiscoveryRepository(
             author = record.get(BookTable.AUTHOR),
             bookCoverImageUrl = record.get(BookTable.COVER_IMAGE_URL),
             genreId = record.get(BookTable.GENRE_ID),
-            genre = record.get(BookTable.GENRE),
+            genre = record.get(GenreTable.LABEL),
             needTag = toNeedTag(record),
             emotionValue = record.get(RECOMMENDED_EMOTION_VALUE_FIELD),
             recommendedAt = record.get(RECOMMENDED_AT_FIELD),
@@ -323,7 +326,7 @@ class DiscoveryRepository(
             BookTable.AUTHOR,
             BookTable.COVER_IMAGE_URL,
             BookTable.GENRE_ID,
-            BookTable.GENRE,
+            GenreTable.LABEL,
             needTagId(needTags),
             needTagLabel(needTags),
             recommendedEmotionValue(rankedRecommendationEvents),

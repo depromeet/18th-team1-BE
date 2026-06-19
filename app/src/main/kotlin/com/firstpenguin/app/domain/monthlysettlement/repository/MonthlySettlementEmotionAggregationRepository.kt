@@ -2,6 +2,7 @@ package com.firstpenguin.app.domain.monthlysettlement.repository
 
 import com.firstpenguin.app.domain.book.repository.BookTable
 import com.firstpenguin.app.domain.emotion.repository.table.TagTable
+import com.firstpenguin.app.domain.genre.repository.table.GenreTable
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementEmotionTag
 import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSelectedBook
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
@@ -32,7 +33,7 @@ class MonthlySettlementEmotionAggregationRepository(
         if (limit <= 0) return emptyList()
 
         return dsl
-            .select(TagTable.ID, TagTable.LABEL, TAG_COUNT)
+            .select(TagTable.ID, TagTable.EMOTION_RANGE_ID, TagTable.LABEL, TAG_COUNT)
             .from(RecommendationTagTable.RECOMMENDATION_TAGS)
             .join(RecommendationTable.RECOMMENDATIONS)
             .on(RecommendationTable.ID.eq(RecommendationTagTable.RECOMMENDATION_ID))
@@ -40,7 +41,7 @@ class MonthlySettlementEmotionAggregationRepository(
             .on(TagTable.ID.eq(RecommendationTagTable.TAG_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
             .and(TagTable.TYPE.eq(TagType.EMOTION.name))
-            .groupBy(TagTable.ID, TagTable.LABEL, TagTable.SORT_ORDER)
+            .groupBy(TagTable.ID, TagTable.EMOTION_RANGE_ID, TagTable.LABEL, TagTable.SORT_ORDER)
             .orderBy(TAG_COUNT.desc(), TagTable.SORT_ORDER.asc(), TagTable.ID.asc())
             .limit(limit)
             .fetch()
@@ -53,6 +54,32 @@ class MonthlySettlementEmotionAggregationRepository(
         endExclusive: LocalDate,
         tagId: Long,
     ): MonthlySettlementSelectedBook? =
+        findMonthlyBookCandidate(
+            userId = userId,
+            start = start,
+            endExclusive = endExclusive,
+            tagCondition = QuoteMetadataTagTable.TAG_ID.eq(tagId),
+        )
+
+    fun findMonthlyBookCandidateByEmotionRangeId(
+        userId: Long,
+        start: LocalDate,
+        endExclusive: LocalDate,
+        emotionRangeId: Long,
+    ): MonthlySettlementSelectedBook? =
+        findMonthlyBookCandidate(
+            userId = userId,
+            start = start,
+            endExclusive = endExclusive,
+            tagCondition = emotionRangeCondition(emotionRangeId),
+        )
+
+    private fun findMonthlyBookCandidate(
+        userId: Long,
+        start: LocalDate,
+        endExclusive: LocalDate,
+        tagCondition: Condition,
+    ): MonthlySettlementSelectedBook? =
         dsl
             .select(MONTHLY_SELECTED_BOOK_FIELDS)
             .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
@@ -64,15 +91,25 @@ class MonthlySettlementEmotionAggregationRepository(
             .on(QuoteTable.ID.eq(QuoteMetadataTable.QUOTE_ID))
             .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
             .on(QuoteMetadataTable.ID.eq(QuoteMetadataTagTable.QUOTE_METADATA_ID))
+            .join(TagTable.TAGS)
+            .on(TagTable.ID.eq(QuoteMetadataTagTable.TAG_ID))
             .join(BookTable.BOOKS)
             .on(BookTable.ID.eq(QuoteTable.BOOK_ID))
+            .join(GenreTable.GENRES)
+            .on(GenreTable.ID.eq(BookTable.GENRE_ID))
             .where(monthlyRecommendationCondition(userId, start, endExclusive))
-            .and(QuoteMetadataTagTable.TAG_ID.eq(tagId))
+            .and(tagCondition)
             .and(activeQuoteAndBookCondition())
-            .and(bookGenreExists())
+            .and(genreLabelExists())
+            .groupBy(MONTHLY_SELECTED_BOOK_FIELDS)
             .orderBy(DSL.rand())
             .limit(1)
             .fetchOne(::toMonthlySelectedBook)
+
+    private fun emotionRangeCondition(emotionRangeId: Long): Condition =
+        TagTable.TYPE
+            .eq(TagType.EMOTION.name)
+            .and(TagTable.EMOTION_RANGE_ID.eq(emotionRangeId))
 
     private fun monthlyRecommendationCondition(
         userId: Long,
@@ -89,10 +126,10 @@ class MonthlySettlementEmotionAggregationRepository(
             .isNull
             .and(BookTable.DELETED_AT.isNull)
 
-    private fun bookGenreExists(): Condition =
-        BookTable.GENRE
+    private fun genreLabelExists(): Condition =
+        GenreTable.LABEL
             .isNotNull
-            .and(DSL.trim(BookTable.GENRE).ne(""))
+            .and(DSL.trim(GenreTable.LABEL).ne(""))
 
     private fun toEmotionTagCount(
         index: Int,
@@ -100,6 +137,7 @@ class MonthlySettlementEmotionAggregationRepository(
     ): MonthlySettlementEmotionTag =
         MonthlySettlementEmotionTag(
             tagId = record[TagTable.ID]!!,
+            emotionRangeId = record[TagTable.EMOTION_RANGE_ID],
             label = record[TagTable.LABEL]!!,
             count = record[TAG_COUNT]!!,
             sortOrder = index + 1,
@@ -113,7 +151,7 @@ class MonthlySettlementEmotionAggregationRepository(
             title = record[BookTable.TITLE]!!,
             author = record[BookTable.AUTHOR]!!,
             bookCoverImageUrl = record[BookTable.COVER_IMAGE_URL]!!,
-            genre = record[BookTable.GENRE]!!,
+            genre = record[GenreTable.LABEL]!!,
             bookPurchaseLink = record[BookTable.ALADIN_LINK]!!,
         )
 
@@ -127,7 +165,7 @@ class MonthlySettlementEmotionAggregationRepository(
                 BookTable.TITLE,
                 BookTable.AUTHOR,
                 BookTable.COVER_IMAGE_URL,
-                BookTable.GENRE,
+                GenreTable.LABEL,
                 BookTable.ALADIN_LINK,
             )
     }

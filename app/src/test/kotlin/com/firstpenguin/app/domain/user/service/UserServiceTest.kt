@@ -24,6 +24,15 @@ class UserServiceTest {
     }
 
     @Test
+    fun `존재하지 않는 사용자 조회 시 실패한다`() {
+        Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(null)
+
+        val exception = assertFailsWith<CustomException> { userService.getById(USER_ID) }
+
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.errorCode)
+    }
+
+    @Test
     fun `인증 사용자가 존재하지 않으면 인증 실패`() {
         Mockito.`when`(userRepository.findById(USER_ID)).thenReturn(null)
 

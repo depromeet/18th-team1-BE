@@ -150,11 +150,11 @@ class RecommendationController(
     )
     @DeleteMapping("/{recommendationId}")
     fun deleteRecommendation(
-//        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
+        @Parameter(hidden = true) @AuthenticationPrincipal authenticatedUser: AuthenticatedUser,
         @PathVariable recommendationId: Long,
     ): ResponseEntity<Unit> {
         recommendationUseCase.deleteRecommendation(
-            userId = 9001L,
+            userId = authenticatedUser.id,
             recommendationId = recommendationId,
         )
 
