@@ -13,7 +13,7 @@ import java.time.ZoneId
 class MonthlySettlementUseCase(
     private val monthlySettlementService: MonthlySettlementService,
 ) {
-    @Transactional
+    @Transactional(readOnly = true)
     fun getMonthlySettlement(
         userId: Long,
         year: Int,
@@ -21,8 +21,7 @@ class MonthlySettlementUseCase(
     ): MonthlySettlementResponse {
         val yearMonth = validateYearMonth(year, month)
         val snapshot =
-            monthlySettlementService.findSnapshot(userId, yearMonth)
-                ?: monthlySettlementService.createSnapshot(userId, yearMonth)
+            monthlySettlementService.createSnapshot(userId, yearMonth)
                 ?: return MonthlySettlementResponse.empty(
                     year = yearMonth.year,
                     month = yearMonth.monthValue,
@@ -40,7 +39,7 @@ class MonthlySettlementUseCase(
         }
 
         val requestedMonth = YearMonth.of(year, month)
-        if (requestedMonth.isBefore(currentMonth())) return requestedMonth
+        if (!requestedMonth.isAfter(currentMonth())) return requestedMonth
 
         throw CustomException(ErrorCode.MONTHLY_SETTLEMENT_NOT_AVAILABLE)
     }
