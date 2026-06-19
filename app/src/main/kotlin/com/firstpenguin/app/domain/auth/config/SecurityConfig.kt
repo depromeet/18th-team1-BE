@@ -122,6 +122,7 @@ class SecurityConfig(
                 "/swagger-ui.html",
                 "/v3/api-docs/**",
                 "/error",
+                "/system/environment",
                 "/actuator/health",
             )
     }
