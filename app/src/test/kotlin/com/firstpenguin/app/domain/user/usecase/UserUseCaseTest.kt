@@ -32,6 +32,17 @@ class UserUseCaseTest {
     }
 
     @Test
+    fun `사용자 ID로 가입일을 조회한다`() {
+        val user = user()
+        Mockito.`when`(userService.getById(USER_ID)).thenReturn(user)
+
+        val response = userUseCase.getSignupDate(USER_ID)
+
+        assertEquals(user.createdAt.toLocalDate(), response.signupDate)
+        Mockito.verify(userService).getById(USER_ID)
+    }
+
+    @Test
     fun `내 정보 조회 응답에 OAuth provider와 가입한 날짜를 포함한다`() {
         val user = user()
         val oAuthAccount = oAuthAccount()
