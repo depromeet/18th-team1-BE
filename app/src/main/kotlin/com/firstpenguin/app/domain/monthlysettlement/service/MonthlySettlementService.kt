@@ -55,7 +55,7 @@ class MonthlySettlementService(
         val start = yearMonth.atDay(1)
         val endExclusive = yearMonth.plusMonths(1).atDay(1)
         val sharedQuoteCount =
-            monthlySettlementQuoteAggregationRepository.countRecommendedQuotes(userId, start, endExclusive)
+            monthlySettlementQuoteAggregationRepository.countSelectedQuotes(userId, start, endExclusive)
 
         if (sharedQuoteCount == 0) return null
 
@@ -126,31 +126,31 @@ class MonthlySettlementService(
 
         val start = yearMonth.atDay(1)
         val endExclusive = yearMonth.plusMonths(1).atDay(1)
-        val recommendedBooks =
-            monthlySettlementQuoteAggregationRepository.findRecommendedBooksByGenre(
+        val selectedBooks =
+            monthlySettlementQuoteAggregationRepository.findSelectedBooksByGenre(
                 userId = userId,
                 start = start,
                 endExclusive = endExclusive,
                 genre = genre,
                 limit = MONTHLY_BOOK_COUNT,
             )
-        val fallbackBooks = findFallbackBooks(genre, recommendedBooks)
+        val fallbackBooks = findFallbackBooks(genre, selectedBooks)
 
-        return (recommendedBooks + fallbackBooks)
+        return (selectedBooks + fallbackBooks)
             .take(MONTHLY_BOOK_COUNT)
             .mapIndexed { index, book -> book.copy(sortOrder = index + 1) }
     }
 
     private fun findFallbackBooks(
         genre: String,
-        recommendedBooks: List<MonthlySettlementBook>,
+        selectedBooks: List<MonthlySettlementBook>,
     ): List<MonthlySettlementBook> {
-        val shortage = MONTHLY_BOOK_COUNT - recommendedBooks.size
+        val shortage = MONTHLY_BOOK_COUNT - selectedBooks.size
         if (shortage <= 0) return emptyList()
 
         return monthlySettlementQuoteAggregationRepository.findFallbackBooksByGenre(
             genre = genre,
-            excludedBookIds = recommendedBooks.map { book -> book.bookId },
+            excludedBookIds = selectedBooks.map { book -> book.bookId },
             limit = shortage,
         )
     }

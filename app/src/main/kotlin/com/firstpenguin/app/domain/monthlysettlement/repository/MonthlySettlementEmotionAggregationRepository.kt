@@ -8,7 +8,6 @@ import com.firstpenguin.app.domain.monthlysettlement.model.MonthlySettlementSele
 import com.firstpenguin.app.domain.quote.repository.QuoteTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTable
 import com.firstpenguin.app.domain.quotemetadata.repository.table.QuoteMetadataTagTable
-import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationQuoteTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTable
 import com.firstpenguin.app.domain.recommendation.repository.table.RecommendationTagTable
 import com.firstpenguin.app.global.enums.TagType
@@ -82,11 +81,9 @@ class MonthlySettlementEmotionAggregationRepository(
     ): MonthlySettlementSelectedBook? =
         dsl
             .select(MONTHLY_SELECTED_BOOK_FIELDS)
-            .from(RecommendationQuoteTable.RECOMMENDATION_QUOTES)
-            .join(RecommendationTable.RECOMMENDATIONS)
-            .on(RecommendationTable.ID.eq(RecommendationQuoteTable.RECOMMENDATION_ID))
+            .from(RecommendationTable.RECOMMENDATIONS)
             .join(QuoteTable.QUOTES)
-            .on(QuoteTable.ID.eq(RecommendationQuoteTable.QUOTE_ID))
+            .on(QuoteTable.ID.eq(RecommendationTable.QUOTE_ID))
             .join(QuoteMetadataTable.QUOTE_METADATA)
             .on(QuoteTable.ID.eq(QuoteMetadataTable.QUOTE_ID))
             .join(QuoteMetadataTagTable.QUOTE_METADATA_TAGS)
@@ -120,6 +117,8 @@ class MonthlySettlementEmotionAggregationRepository(
             .eq(userId)
             .and(RecommendationTable.RECOMMENDATION_DATE.ge(start))
             .and(RecommendationTable.RECOMMENDATION_DATE.lt(endExclusive))
+            .and(RecommendationTable.QUOTE_ID.isNotNull)
+            .and(RecommendationTable.DELETED_AT.isNull)
 
     private fun activeQuoteAndBookCondition(): Condition =
         QuoteTable.DELETED_AT

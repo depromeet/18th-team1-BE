@@ -86,7 +86,7 @@ class MonthlySettlementServiceTest {
 
     private fun stubMonthlySettlementInputs() {
         Mockito
-            .`when`(monthlySettlementQuoteAggregationRepository.countRecommendedQuotes(USER_ID, START, END_EXCLUSIVE))
+            .`when`(monthlySettlementQuoteAggregationRepository.countSelectedQuotes(USER_ID, START, END_EXCLUSIVE))
             .thenReturn(SHARED_QUOTE_COUNT)
         Mockito
             .`when`(
