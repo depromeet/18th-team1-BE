@@ -23,7 +23,6 @@ private const val NO_ROLE_TAG_COUNT = 0
 private const val DEFAULT_SEMANTIC_SCORE = 0.0
 private const val STRONG_SEMANTIC_SCORE = 0.55
 private const val STRONG_SEMANTIC_METADATA_SCORE = 0.25
-private const val VERY_STRONG_SEMANTIC_SCORE = 0.65
 private const val LOW_METADATA_SEMANTIC_DEFER_SCORE = 0.30
 private const val SEMANTIC_DOMINANCE_MARGIN = 0.15
 
@@ -298,27 +297,20 @@ private fun RankedQuotes.deferLowMetadataSemanticFallbacks(): RankedQuotes =
     ).distinctBy { quote -> quote.quoteId }
 
 private fun RankedQuotes.deferLowMetadataSemanticDominatedQuotes(): RankedQuotes =
-    filterIndexed { index, quote ->
-        val semanticDominated =
-            quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
-                quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
-        val protectedPriority =
-            index < SCORE_PRIORITY_QUOTE_COUNT &&
-                quote.score.semanticScore >= VERY_STRONG_SEMANTIC_SCORE
-
-        !semanticDominated || protectedPriority
-    }.plus(
-        filterIndexed { index, quote ->
-            val semanticDominated =
-                quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
-                    quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
-            val protectedPriority =
-                index < SCORE_PRIORITY_QUOTE_COUNT &&
-                    quote.score.semanticScore >= VERY_STRONG_SEMANTIC_SCORE
-
-            semanticDominated && !protectedPriority
-        },
-    ).distinctBy { quote -> quote.quoteId }
+    take(SCORE_PRIORITY_QUOTE_COUNT)
+        .plus(
+            drop(SCORE_PRIORITY_QUOTE_COUNT)
+                .filterNot { quote ->
+                    quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
+                        quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
+                },
+        ).plus(
+            drop(SCORE_PRIORITY_QUOTE_COUNT)
+                .filter { quote ->
+                    quote.score.metadataScore < LOW_METADATA_SEMANTIC_DEFER_SCORE &&
+                        quote.score.semanticScore > quote.score.metadataScore + SEMANTIC_DOMINANCE_MARGIN
+                },
+        ).distinctBy { quote -> quote.quoteId }
 
 private fun RankedRecommendationQuote.shouldDeferForMissingEmotion(semanticExpansion: SemanticExpansion): Boolean =
     score.emotionScore <= NO_EMOTION_SCORE && !isStrongSemanticMatch(semanticExpansion)
