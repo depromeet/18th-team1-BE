@@ -34,6 +34,11 @@ class SecurityConfigTest {
         assertTrue(permitAllPatterns().contains("/users/*/signup-date"))
     }
 
+    @Test
+    fun `시스템 환경 확인 API는 인증 없이 접근할 수 있다`() {
+        assertTrue(permitAllPatterns().contains("/system/environment"))
+    }
+
     private fun permitAllPatterns(): List<String> {
         val field = SecurityConfig::class.java.getDeclaredField("PERMIT_ALL_PATTERNS")
         field.isAccessible = true
