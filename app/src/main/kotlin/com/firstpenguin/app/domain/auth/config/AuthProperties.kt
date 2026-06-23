@@ -28,6 +28,8 @@ data class AuthProperties(
         var cookieName: String = "refresh_token",
         var cookiePath: String = "/api/auth",
         var secure: Boolean = true,
+        @field:NotBlank
+        var sameSite: String = "Lax",
     )
 
     data class OAuth2(

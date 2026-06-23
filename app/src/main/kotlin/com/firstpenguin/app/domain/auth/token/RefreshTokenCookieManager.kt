@@ -24,6 +24,6 @@ class RefreshTokenCookieManager(
             .from(authProperties.refreshToken.cookieName, value)
             .httpOnly(true)
             .secure(authProperties.refreshToken.secure)
-            .sameSite("Lax")
+            .sameSite(authProperties.refreshToken.sameSite)
             .path(authProperties.refreshToken.cookiePath)
 }
