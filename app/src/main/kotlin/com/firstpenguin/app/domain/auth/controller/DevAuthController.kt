@@ -4,14 +4,12 @@ import com.firstpenguin.app.domain.auth.dto.AccessTokenResponse
 import com.firstpenguin.app.domain.auth.dto.TokenPairResponse
 import com.firstpenguin.app.domain.auth.token.RefreshTokenCookieManager
 import com.firstpenguin.app.domain.auth.usecase.DevAuthUseCase
-import com.firstpenguin.app.global.security.ADMIN_BATCH_SECRET_HEADER
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -35,11 +33,8 @@ class DevAuthController(
         summary = "[TEMP] 운영 임시 로그인 토큰 발급",
         description = "app.token.enabled=true일 때만 활성화. user_id=9065 사용자의 Access Token과 Refresh Token을 발급합니다.",
     )
-    fun temporaryLoginToken(
-        @RequestHeader(ADMIN_BATCH_SECRET_HEADER, required = false) adminSecret: String?,
-        response: HttpServletResponse,
-    ): TokenPairResponse {
-        val tokenPair = devAuthUseCase.issueTemporaryLoginToken(adminSecret)
+    fun temporaryLoginToken(response: HttpServletResponse): TokenPairResponse {
+        val tokenPair = devAuthUseCase.issueTemporaryLoginToken()
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(tokenPair.refreshToken).toString())
         return TokenPairResponse.from(tokenPair)
     }

@@ -38,10 +38,10 @@ class DevAuthControllerTest {
         val response = MockHttpServletResponse()
         val tokenPair = TokenPair(ACCESS_TOKEN, REFRESH_TOKEN)
         val refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN).build()
-        Mockito.`when`(devAuthUseCase.issueTemporaryLoginToken(ADMIN_SECRET)).thenReturn(tokenPair)
+        Mockito.`when`(devAuthUseCase.issueTemporaryLoginToken()).thenReturn(tokenPair)
         Mockito.`when`(refreshTokenCookieManager.create(REFRESH_TOKEN)).thenReturn(refreshTokenCookie)
 
-        val result = devAuthController.temporaryLoginToken(ADMIN_SECRET, response)
+        val result = devAuthController.temporaryLoginToken(response)
 
         assertEquals(ACCESS_TOKEN, result.accessToken)
         assertEquals(REFRESH_TOKEN, result.refreshToken)
@@ -49,7 +49,6 @@ class DevAuthControllerTest {
     }
 
     private companion object {
-        const val ADMIN_SECRET = "admin-secret"
         const val ACCESS_TOKEN = "access-token"
         const val REFRESH_TOKEN = "refresh-token"
         const val REFRESH_TOKEN_COOKIE_NAME = "refresh_token"

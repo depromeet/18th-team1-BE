@@ -11,14 +11,12 @@ import com.firstpenguin.app.domain.user.service.OAuthUserService
 import com.firstpenguin.app.domain.user.service.UserService
 import com.firstpenguin.app.global.exception.CustomException
 import com.firstpenguin.app.global.exception.ErrorCode
-import com.firstpenguin.app.global.security.AdminBatchSecretValidator
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
 @Component
 class DevAuthUseCase(
     private val oAuthUserService: OAuthUserService,
-    private val adminBatchSecretValidator: AdminBatchSecretValidator,
     private val userService: UserService,
     private val refreshTokenService: RefreshTokenService,
     private val jwtTokenProvider: JwtTokenProvider,
@@ -30,8 +28,7 @@ class DevAuthUseCase(
     }
 
     @Transactional
-    fun issueTemporaryLoginToken(adminSecret: String?): TokenPair {
-        adminBatchSecretValidator.validate(adminSecret)
+    fun issueTemporaryLoginToken(): TokenPair {
         val user = userService.getAuthenticatableById(TEMPORARY_LOGIN_USER_ID)
         val refreshToken = refreshTokenService.issue(user)
         return TokenPair(jwtTokenProvider.createAccessToken(user), refreshToken)
