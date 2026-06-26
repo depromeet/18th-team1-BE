@@ -114,6 +114,7 @@ class SecurityConfig(
                 "/auth/refresh",
                 "/auth/logout",
                 "/auth/dev-token",
+                "/auth/temporary-login-token",
                 "/oauth2/**",
                 "/login/oauth2/**",
                 "/monthly-settlements/shared",
