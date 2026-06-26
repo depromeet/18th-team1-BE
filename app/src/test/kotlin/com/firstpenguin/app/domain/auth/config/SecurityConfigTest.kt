@@ -39,6 +39,11 @@ class SecurityConfigTest {
         assertTrue(permitAllPatterns().contains("/system/environment"))
     }
 
+    @Test
+    fun `운영 임시 로그인 토큰 발급 API는 인증 없이 접근할 수 있다`() {
+        assertTrue(permitAllPatterns().contains("/auth/temporary-login-token"))
+    }
+
     private fun permitAllPatterns(): List<String> {
         val field = SecurityConfig::class.java.getDeclaredField("PERMIT_ALL_PATTERNS")
         field.isAccessible = true
